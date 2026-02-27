@@ -1,0 +1,120 @@
+export default class Rotas {
+
+    #conn = null;
+    #found = null;
+    #tb_name = 'tb_rotas';
+    #entidade_negocio = 0;
+
+    #field = {
+        id: 0,
+        nom_rota: '',
+        entidade_negocio: '',
+        ativo: 1
+    }
+
+    constructor(connection, entidade_negocio = 0) {
+        
+        if (!connection) throw new Error('Conexao Invalida.');
+
+        if (Number(entidade_negocio) > 0) {
+           this.#entidade_negocio = Number(entidade_negocio);
+        } else {
+            throw new Error('Entidade de Negocio não fornecida.');
+        }
+
+        this.#field.entidade_negocio = this.#entidade_negocio;
+
+        this.#conn = connection;
+    }
+
+    get found() {return this.#found}
+
+    set id(id) {this.#field.id = Number(id)}
+    get id() {return this.#field.id}
+
+    set nom_rota(nom_rota) {this.#field.nom_rota = nom_rota}
+    get nom_rota() {return this.#field.nom_rota}
+    get entidade_negocio() {return this.#field.entidade_negocio}
+
+    set ativo(ativo) {this.#field.ativo = ativo}
+    get ativo() {return this.#field.ativo}
+
+    async ExecuteQuery(query) {
+        try {
+            const rows = await this.#conn.execute(query);
+            return rows;
+        } catch (error) {
+            throw error;
+        }
+
+    }
+
+    async FindById(id) {
+        
+        try {
+
+            let query = `SELECT * FROM ${this.#tb_name} WHERE id = :id AND entidade_negocio = :entidade_negocio`;
+            
+            const [rows] = await this.#conn.query(query,{id,entidade_negocio: this.#entidade_negocio});
+
+            if (rows) {
+                this.#field.id = rows.id;
+                this.#field.nom_rota = rows.nom_rota;
+                this.#field.ativo = rows.ativo;
+                this.#found = true;
+            } else {
+                this.#found = false;
+            }
+
+            return this.#found ? rows : this.#found;
+        } catch (error) {
+            throw error;
+        }
+
+    }
+
+    async Save() {
+        try {
+            let query = null;
+
+            if (this.#found) {
+                query = `UPDATE ${this.#tb_name} SET nom_rota = :nom_rota, entidade_negocio = :entidade_negocio, ativo = :ativo
+                WHERE id = :id AND entidade_negocio = :entidade_negocio`;
+            } else {
+                this.#field.id = await this.#newId();
+
+                query = `INSERT INTO ${this.#tb_name} SET nom_rota = :nom_rota, entidade_negocio = :entidade_negocio, ativo = :ativo,
+                id = :id`;
+            }
+
+            return await this.#conn.query(query,this.#field);
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    async Excluir(id) {
+        try {
+            
+            const query = `DELETE FROM ${this.#tb_name} WHERE id = :id AND entidade_negocio= :entidade_negocio`;
+
+            void await this.#conn.query(query,{id,entidade_negocio: this.#field.entidade_negocio});
+            
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    async #newId() {
+        try {
+            const query =  `SELECT IFNULL(MAX(id),0) + 1 as newid FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio`;
+            const [rows] = await this.#conn.query(query,{entidade_negocio: this.#field.entidade_negocio});
+
+            return rows.newid;
+        } catch (error) {
+            throw error;
+        }
+
+    }
+
+}
