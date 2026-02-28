@@ -403,7 +403,8 @@ export class ControllerDistribuicao{
 
         res.status(resdata.status).json(resdata);
 
-}   
+    }
+     
     static async DevolverProduto(req,res) {
 
         const db = new Database('dbcred');
@@ -461,3 +462,6 @@ export class ControllerDistribuicao{
     }
 }
 
+export class ControllerVendas {
+    
+}

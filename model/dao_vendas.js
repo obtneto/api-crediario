@@ -6,7 +6,7 @@ export default class Vendas {
     #entidade_negocio = 0;
 
     #field = {
-        id: 0,
+        id: '0',
         dt_venda: '',
         id_vendedor: 0,
         id_cobrador:0,
@@ -40,22 +40,22 @@ export default class Vendas {
 
     get found() {return this.#found}
 
-    set id(id) {this.#field.id = Number(id)}
+    set id(id) {this.#field.id = String(id)}
     get id() {return this.#field.id}
 
     set dt_venda(dt_venda) {this.#field.dt_venda = dt_venda}
     get dt_venda() {return this.#field.dt_venda}
 
-    set id_vendedor(id_vendedor) {this.#field.id_vendedor = id_vendedor}
+    set id_vendedor(id_vendedor) {this.#field.id_vendedor = Number(id_vendedor)}
     get id_vendedor() {return this.#field.id_vendedor}
 
-    set id_cobrador(id_cobrador) {this.#field.id_cobrador = id_cobrador}
+    set id_cobrador(id_cobrador) {this.#field.id_cobrador = Number(id_cobrador)}
     get id_cobrador() {return this.#field.id_cobrador}
 
-    set id_rota(id_rota) {this.#field.id_rota = id_rota}
+    set id_rota(id_rota) {this.#field.id_rota = Number(id_rota)}
     get id_rota() {return this.#field.id_rota}
 
-    set id_tipo_pag(id_tipo_pag) {this.#field.id_tipo_pag = id_tipo_pag}
+    set id_tipo_pag(id_tipo_pag) {this.#field.id_tipo_pag = Number(id_tipo_pag)}
     get id_tipo_pag() {return this.#field.id_tipo_pag}
 
     set cpf_cliente(cpf_cliente) {this.#field.cpf_cliente = cpf_cliente}
@@ -64,13 +64,13 @@ export default class Vendas {
     set marca_venda(marca_venda) {this.#field.marca_venda = marca_venda}
     get marca_venda() {return this.#field.marca_venda}
 
-    set num_recibo(num_recibo) {this.#field.num_recibo = num_recibo}
+    set num_recibo(num_recibo) {this.#field.num_recibo = Number(num_recibo)}
     get num_recibo() {return this.#field.num_recibo}
 
     set referencia(referencia) {this.#field.referencia = referencia}
     get referencia() {return this.#field.referencia}
 
-    set val_tot_venda(val_tot_venda) {this.#field.val_tot_venda = val_tot_venda}
+    set val_tot_venda(val_tot_venda) {this.#field.val_tot_venda = Number(val_tot_venda)}
     get val_tot_venda() {return this.#field.val_tot_venda}
 
     set situacao(situacao) {this.#field.situacao = situacao}
