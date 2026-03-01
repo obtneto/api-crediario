@@ -79,6 +79,9 @@ export default class Vendas {
     set dia_pagam(dia_pagam) {this.#field.dia_pagam = dia_pagam}
     get dia_pagam() {return this.#field.dia_pagam}
 
+    set melhor_dia(melhor_dia) {this.#field.melhor_dia = melhor_dia}
+    get melhor_dia() {return this.#field.melhor_dia}
+
     get entidade_negocio() {return this.#entidade_negocio}
 
     async ExecuteQuery(query, params = {}) {

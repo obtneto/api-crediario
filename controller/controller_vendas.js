@@ -1,5 +1,7 @@
 import Database from '../connections/dbconn.js';
 import Distribuicao from '../model/dao_distribuicao.js';
+import Vendas from '../model/dao_vendas.js';
+import ItensVendas from '../model/dao_itens_vendas.js';
 import Entidades from '../model/dao_entidades.js';
 import {obterEntidadeNegocio} from '../utils/CheckEntidades.js';
 
@@ -65,8 +67,8 @@ export class ControllerDistribuicao{
                 const diffMs = dtFimDate.getTime() - dtIniDate.getTime();
                 const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-                if (diffDays > 90) {
-                    const error = new Error('Intervalo maximo permitido e de 90 dias.');
+                if (diffDays > 45) {
+                    const error = new Error('Intervalo maximo permitido e de 45 dias.');
                     error.statusCode = 400;
                     throw error;
                 }
@@ -463,5 +465,369 @@ export class ControllerDistribuicao{
 }
 
 export class ControllerVendas {
-    
+
+    static async Listar(req,res) {
+
+        const db = new Database('dbcred');
+
+        const resdata = {
+            err: 0,
+            msg: '',
+            status: 200,
+            data: {
+                vendas: [],
+                entidades: [],
+                paginacao: {
+                    page: 1,
+                    limit: 50,
+                    total: 0,
+                    total_pages: 0
+                }
+            }
+        }
+
+        try {
+            const id_vendedor = Number(req.params.id_vendedor || 0);
+            const entidade_negocio = obterEntidadeNegocio(req);
+            const dt_ini = String(req.query.dt_ini || '').trim();
+            const dt_fim = String(req.query.dt_fim || '').trim();
+            const page = Math.max(1, Number(req.query.page || 1));
+            const limit = Math.min(200, Math.max(1, Number(req.query.limit || 50)));
+            const offset = (page - 1) * limit;
+
+            if (id_vendedor <= 0) {
+                const error = new Error('Vendedor invalido.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (dt_ini && !/^\d{4}-\d{2}-\d{2}$/.test(dt_ini)) {
+                const error = new Error('Data inicial invalida.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (dt_fim && !/^\d{4}-\d{2}-\d{2}$/.test(dt_fim)) {
+                const error = new Error('Data final invalida.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (dt_ini && dt_fim && dt_ini > dt_fim) {
+                const error = new Error('Data inicial nao pode ser maior que data final.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (dt_ini && dt_fim) {
+                const dtIniDate = new Date(`${dt_ini}T00:00:00Z`);
+                const dtFimDate = new Date(`${dt_fim}T00:00:00Z`);
+                const diffMs = dtFimDate.getTime() - dtIniDate.getTime();
+                const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+                if (diffDays > 45) {
+                    const error = new Error('Intervalo maximo permitido e de 45 dias.');
+                    error.statusCode = 400;
+                    throw error;
+                }
+            }
+
+            void await db.Connect();
+
+            const vendas = new Vendas(db.connection, entidade_negocio);
+            const entidades = new Entidades(db.connection,entidade_negocio);
+
+            const whereClause = ['v.id_vendedor = :id_vendedor', 'v.entidade_negocio = :entidade_negocio'];
+            const params = {
+                id_vendedor,
+                entidade_negocio
+            };
+
+            if (dt_ini) {
+                whereClause.push('v.dt_venda >= :dt_ini');
+                params.dt_ini = dt_ini;
+            }
+
+            if (dt_fim) {
+                whereClause.push('v.dt_venda <= :dt_fim');
+                params.dt_fim = dt_fim;
+            }
+
+            let query = `SELECT v.id, v.dt_venda, v.id_vendedor, v.id_cobrador, v.id_rota, v.id_tipo_pag,
+                         v.cpf_cliente, v.marca_venda, v.num_recibo, v.referencia, v.val_tot_venda,
+                         v.situacao, v.dia_pagam, v.melhor_dia
+                         FROM tb_vendas v
+                         WHERE ${whereClause.join(' AND ')}
+                         ORDER BY v.dt_venda DESC, v.id DESC
+                         LIMIT :limit OFFSET :offset`;
+
+            resdata.data.vendas = await vendas.ExecuteQuery(query, { ...params, limit, offset });
+
+            query = `SELECT COUNT(*) AS total
+                     FROM tb_vendas v
+                     WHERE ${whereClause.join(' AND ')}`;
+
+            const countResult = await vendas.ExecuteQuery(query, params);
+            const total = Number(Array.isArray(countResult) && countResult[0] ? countResult[0].total : 0);
+
+            query = `SELECT id,nom_entidade FROM tb_entidades WHERE id = :entidade_negocio`;
+            resdata.data.entidades = await entidades.ExecuteQuery(query, { entidade_negocio });
+            resdata.data.paginacao = {
+                page,
+                limit,
+                total,
+                total_pages: total > 0 ? Math.ceil(total / limit) : 0
+            };
+        } catch (error) {
+            resdata.err = Number(error.statusCode || 500);
+            resdata.msg = error.message;
+            resdata.status = Number(error.statusCode || 500);
+
+            console.log(error.stack);
+        }
+
+        void await db.Close();
+
+        res.status(resdata.status).json(resdata);
+
+    }
+
+    static async Editar(req,res) {
+
+        const db = new Database('dbcred');
+
+        const resdata = {
+            err: 0,
+            msg: '',
+            status: 200,
+            data: {
+                vendas: [],
+                itens:[]
+            }
+        }
+
+        try {
+
+            const id = String(req.params.id);
+            const entidade_negocio = obterEntidadeNegocio(req);
+
+            void await db.Connect();
+
+            const vendas = new Vendas(db.connection,entidade_negocio);
+            const itens = new ItensVendas(db.connection,entidade_negocio);
+
+            resdata.data.vendas = vendas.FindById(id);
+            resdata.data.itens = itens.FindByVenda(id)
+            
+        } catch (error) {
+             
+            void await db.RollBack();
+
+            resdata.err = 500;
+            resdata.msg = error.message;
+            resdata.status = 500;
+
+            console.log(error.stack)
+        }
+
+        void await db.Close();
+
+        res.status(resdata.status).json(resdata);
+
+    }
+
+    static async Salvar(req,res) {
+
+        const db = new Database('dbcred');
+
+        const resdata = {
+            err: 0,
+            msg: '',
+            status: 200,
+            data: {
+                id_venda: '',
+                itens_salvos: 0
+            }
+        }
+
+        try {
+
+            const entidade_negocio = obterEntidadeNegocio(req);
+            const body = req.body || {};
+
+            const id = String(body.id || '').trim();
+            const dt_venda = String(body.dt_venda || '').trim();
+            const id_vendedor = Number(body.id_vendedor || 0);
+            const id_cobrador = Number(body.id_cobrador || 0);
+            const id_rota = Number(body.id_rota || 0);
+            const id_tipo_pag = Number(body.id_tipo_pag || 0);
+            const cpf_cliente = String(body.cpf_cliente || '').replace(/\D/g, '');
+            const marca_venda = Number(body.marca_venda || 0);
+            const num_recibo = Number(body.num_recibo || 0);
+            const referencia = String(body.referencia || '').trim();
+            const val_tot_venda = Number(body.val_tot_venda || 0);
+            const situacao = Number(body.situacao || 0);
+            const dia_pagam = String(body.dia_pagam || '').trim();
+            const melhor_dia = String(body.melhor_dia || '').trim();
+
+            const itens = Array.isArray(body.itens)
+                ? body.itens
+                : Array.isArray(body.itens_venda)
+                    ? body.itens_venda
+                    : Array.isArray(body.produtos)
+                        ? body.produtos
+                        : [];
+
+            if (!dt_venda) {
+                const error = new Error('Data da venda e obrigatoria.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (id_vendedor <= 0) {
+                const error = new Error('Vendedor invalido.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (!Array.isArray(itens) || itens.length === 0) {
+                const error = new Error('Informe ao menos um item da venda.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            void await db.Connect();
+            void await db.Begin();
+
+            const vendas = new Vendas(db.connection, entidade_negocio);
+            if (id) {
+                void await vendas.FindById(id);
+                vendas.id = id;
+            }
+
+            vendas.dt_venda = dt_venda;
+            vendas.id_vendedor = id_vendedor;
+            vendas.id_cobrador = id_cobrador;
+            vendas.id_rota = id_rota;
+            vendas.id_tipo_pag = id_tipo_pag;
+            vendas.cpf_cliente = cpf_cliente;
+            vendas.marca_venda = marca_venda;
+            vendas.num_recibo = num_recibo;
+            vendas.referencia = referencia;
+            vendas.val_tot_venda = val_tot_venda;
+            vendas.situacao = situacao;
+            vendas.dia_pagam = dia_pagam;
+
+            void await vendas.Save();
+
+            const id_venda = String(vendas.id || '').trim();
+
+            if (!id_venda) {
+                throw new Error('Falha ao gerar identificador da venda.');
+            }
+
+            let itens_salvos = 0;
+
+            for (const item of itens) {
+                const itensVendas = new ItensVendas(db.connection, entidade_negocio);
+                const id_produto = Number(item?.id_produto || item?.idProduto || item?.produto_id || 0);
+                const qt_produto = Number(item?.qt_produto || item?.qtProduto || item?.quantidade || item?.qt || 0);
+                const id_item = Number(item?.id || 0);
+
+                if (id_produto <= 0 || qt_produto <= 0) {
+                    const error = new Error('Item da venda invalido. Verifique produto e quantidade.');
+                    error.statusCode = 400;
+                    throw error;
+                }
+
+                if (id_item > 0) {
+                    const rowItem = await itensVendas.FindById(id_item, id_produto);
+
+                    if (!rowItem) {
+                        const error = new Error(`Item da venda nao encontrado para atualizacao (id_item: ${id_item}).`);
+                        error.statusCode = 400;
+                        throw error;
+                    }
+
+                    itensVendas.id = id_item;
+                } else {
+                    void await itensVendas.FindById(0, id_produto);
+                }
+
+                itensVendas.id_produto = id_produto;
+                itensVendas.qt_produto = qt_produto;
+                itensVendas.id_venda = id_venda;
+
+                void await itensVendas.Save();
+                itens_salvos++;
+            }
+
+            void await db.Commit();
+
+            resdata.msg = 'Venda salva com sucesso.';
+            resdata.data.id_venda = id_venda;
+            resdata.data.itens_salvos = itens_salvos;
+
+        } catch (error) {
+
+            void await db.RollBack();
+
+            resdata.err = Number(error.statusCode || 500);
+            resdata.msg = error.message;
+            resdata.status = Number(error.statusCode || 500);
+
+            console.log(error.stack)
+        }
+
+        void await db.Close();
+
+        res.status(resdata.status).json(resdata);
+    }
+
+    static async Excluir(req,res) {
+
+        const db = new Database('dbcred');
+
+        const resdata = {
+            err: 0,
+            msg: '',
+            status: 200,
+            data: []
+        }
+
+        try {
+            const entidade_negocio = obterEntidadeNegocio(req);
+            const id_item = Number(req.body?.id_item || req.params?.id_item || req.query?.id_item || 0);
+            const id_produto = Number(req.body?.id_produto || req.params?.id_produto || req.query?.id_produto || 0);
+
+            if (id_item <= 0 || id_produto <= 0) {
+                const error = new Error('Para excluir item, informe id_item e id_produto.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            void await db.Connect();
+            void await db.Begin();
+
+            const itensVendas = new ItensVendas(db.connection, entidade_negocio);
+
+            void await itensVendas.Excluir(id_item, id_produto);
+            resdata.msg = 'Item de venda excluido com sucesso.';
+
+            void await db.Commit();
+        } catch (error) {
+
+            void await db.RollBack();
+
+            resdata.err = Number(error.statusCode || 500);
+            resdata.msg = error.message;
+            resdata.status = Number(error.statusCode || 500);
+
+            console.log(error.stack)
+        }
+
+        void await db.Close();
+
+        res.status(resdata.status).json(resdata);
+    }
 }
