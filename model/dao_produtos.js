@@ -34,7 +34,7 @@ export default class Produtos {
 
     get found() {return this.#found}
 
-    set id(id) {this.#field.id = id}
+    set id(id) {this.#field.id = Number(id)}
     get id() {return this.#field.id}
 
     set nom_produto(nom_produto) {this.#field.nom_produto = nom_produto}
@@ -46,13 +46,13 @@ export default class Produtos {
     set und_produto(und_produto) {this.#field.und_produto = und_produto}
     get und_produto() {return this.#field.und_produto}
 
-    set prc_vista(prc_vista) {this.#field.prc_vista = prc_vista}
+    set prc_vista(prc_vista) {this.#field.prc_vista = Number(prc_vista).toFixed(2)}
     get prc_vista() {return this.#field.prc_vista}
 
-    set prc_prazo(prc_prazo) {this.#field.prc_prazo = prc_prazo}
+    set prc_prazo(prc_prazo) {this.#field.prc_prazo = Number(prc_prazo).toFixed(2)}
     get prc_prazo() {return this.#field.prc_prazo}
 
-    set ativo(ativo) {this.#field.ativo = ativo}
+    set ativo(ativo) {this.#field.ativo = Number(ativo)}
     get ativo() {return this.#field.ativo}
 
     get entidade_negocio() {return this.#field.entidade_negocio}
@@ -67,7 +67,7 @@ export default class Produtos {
 
     async FindById(id) {
 
-        let query = `SELECT * FROM ${this.#tb_name} WHERE id = :id AND entidade_negocio = :entidade_negocio`;
+        let query = `SELECT * FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio AND id = :id`;
         
         try {
             
@@ -107,7 +107,7 @@ export default class Produtos {
 
                 query = `UPDATE ${this.#tb_name} SET nom_produto = :nom_produto, mar_produto = :mar_produto, und_produto = :und_produto, 
                 prc_vista = :prc_vista, prc_prazo = :prc_prazo, entidade_negocio = :entidade_negocio, ativo = :ativo
-                WHERE id = :id AND entidade_negocio = :entidade_negocio`;
+                WHERE entidade_negocio = :entidade_negocio AND id = :id`;
 
             } else {
 
@@ -129,7 +129,7 @@ export default class Produtos {
 
         try {
             
-            const query = `DELETE FROM ${this.#tb_name} WHERE id = :id AND entidade_negocio= :entidade_negocio`;
+            const query = `DELETE FROM ${this.#tb_name} WHERE entidade_negocio= :entidade_negocio AND id = :id`;
 
             void await this.#conn.query(query,{id,entidade_negocio: this.#field.entidade_negocio});
 

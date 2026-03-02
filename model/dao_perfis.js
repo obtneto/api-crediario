@@ -32,22 +32,22 @@ export default class Perfis {
 
     get found() {return this.#found}
 
-    set id(id) {this.#field.id = id}
+    set id(id) {this.#field.id = Number(id)}
     get id() {return this.#field.id}
 
     set nom_perfil(nom_perfil) {this.#field.nom_perfil = nom_perfil}
     get nom_perfil() {return this.#field.nom_perfil}
 
-    set selecionar(selecionar) {this.#field.selecionar = selecionar}
+    set selecionar(selecionar) {this.#field.selecionar = Number(selecionar)}
     get selecionar() {return this.#field.selecionar}
 
-    set inserir(inserir) {this.#field.inserir = inserir}
+    set inserir(inserir) {this.#field.inserir = Number(inserir)}
     get inserirt() {return this.#field.inserir}
 
-    set atualizar(atualizar) {this.#field.atualizar = atualizar}
+    set atualizar(atualizar) {this.#field.atualizar = Number(atualizar)}
     get atualizar() {return this.#field.atualizar}
 
-    set excluir(excluir) {this.#field.excluir = excluir}
+    set excluir(excluir) {this.#field.excluir = Number(excluir)}
     get excluir() {return this.#field.excluir}
 
     get entidade_negocio() {return this.#field.entidade_negocio}
@@ -65,7 +65,7 @@ export default class Perfis {
     async FindById(id) {
         
         try {
-            const query = `SELECT * FROM ${this.#tb_name} WHERE id = :id AND entidade_negocio = :entidade_negocio`;
+            const query = `SELECT * FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio AND id = :id`;
 
             const [rows] = await this.#conn.query(query,{id,entidade_negocio: this.#entidade_negocio});
 
@@ -95,7 +95,7 @@ export default class Perfis {
 
             if (this.#found) {
                 query = `UPDATE ${this.#tb_name} SET nom_perfil = :nom_perfil, selecionar = :selecionar, inserir = :inserir, atualizar = :atualizar,
-                excluir = :excluir WHERE id = :id AND entidade_negocio = :entidade_negocio`;
+                excluir = :excluir WHERE entidade_negocio = :entidade_negocio id = :id`;
             } else {
                 this.#field.id = await this.#newId();
                 query = `INSERT INTO ${this.#tb_name} SET nom_perfil = :nom_perfil, selecionar = :selecionar, inserir = :inserir, atualizar = :atualizar,
@@ -112,7 +112,7 @@ export default class Perfis {
     async Excluir(id) {
         try {
             
-            const query = `DELETE FROM ${this.#tb_name} WHERE id = :id AND entidade_negocio= :entidade_negocio`;
+            const query = `DELETE FROM ${this.#tb_name} WHERE entidade_negocio= :entidade_negocio AND id = :id`;
 
             void await this.#conn.query(query,{id,entidade_negocio: this.#field.entidade_negocio});
             

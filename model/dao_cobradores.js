@@ -31,20 +31,20 @@ export default class Cobradores {
 
     get found() {return this.#found}
 
-    set id(id) {this.#field.id = id}
+    set id(id) {this.#field.id = Number(id)}
     get id() {return this.#field.id}
 
     set nom_cobrador(nom_cobrador) {this.#field.nom_cobrador = nom_cobrador}
     get nom_cobrador() {return this.#field.nom_cobrador}
 
-    set comissao(comissao) {this.#field.comissao = comissao}
+    set comissao(comissao) {this.#field.comissao = Number(comissao)}
     get comissao() {return this.#field.comissao}
 
     set cel_contato(cel_contato) {this.#field.cel_contato = cel_contato}
     get cel_contato() {return this.#field.cel_contato}
     get entidade_negocio() {return this.#field.entidade_negocio}
 
-    set ativo(ativo) {this.#field.ativo = ativo}
+    set ativo(ativo) {this.#field.ativo = Number(ativo)}
     get ativo() {return this.#field.ativo}
 
     async ExecuteQuery(query) {
@@ -61,7 +61,7 @@ export default class Cobradores {
         
         try {
 
-           const query = `SELECT * FROM ${this.#tb_name} WHERE id = :id AND entidade_negocio = :entidade_negocio`;
+           const query = `SELECT * FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio AND id = :id`;
 
             const [rows] = await this.#conn.query(query,{id,entidade_negocio:this.#entidade_negocio});
 
@@ -90,7 +90,7 @@ export default class Cobradores {
 
             if (this.#found) {
                 query = `UPDATE ${this.#tb_name} SET nom_cobrador = :nom_cobrador, comissao = :comissao, cel_contato = :cel_contato, entidade_negocio = :entidade_negocio, ativo = :ativo
-                WHERE id = :id AND entidade_negocio = :entidade_negocio`;
+                WHERE entidade_negocio = :entidade_negocio AND id = :id`;
             } else {
                 this.#field.id = await this.#newId();
                 query = `INSERT INTO ${this.#tb_name} SET nom_cobrador = :nom_cobrador, comissao = :comissao, cel_contato = :cel_contato, entidade_negocio = :entidade_negocio, ativo = :ativo, id = :id`
@@ -107,7 +107,7 @@ export default class Cobradores {
         
         try {
             
-            const query = `DELETE FROM ${this.#tb_name} WHERE id = :id AND entidade_negocio= :entidade_negocio`;
+            const query = `DELETE FROM ${this.#tb_name} WHERE entidade_negocio= :entidade_negocio AND id = :id`;
 
             void await this.#conn.query(query,{id,entidade_negocio: this.#field.entidade_negocio});
             
@@ -118,6 +118,7 @@ export default class Cobradores {
     }
 
     async #newId() {
+        
         try {
             const query =  `SELECT IFNULL(MAX(id),0) + 1 as newid FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio`;
             const [rows] = await this.#conn.query(query,{entidade_negocio: this.#field.entidade_negocio});

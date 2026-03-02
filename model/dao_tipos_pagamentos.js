@@ -29,13 +29,13 @@ export default class TiposPagamentos {
 
     get found() {return this.#found}
 
-    set id(id) {this.#field.id = id}
+    set id(id) {this.#field.id = Number(id)}
     get id() {return this.#field.id}
 
     set nom_tipo(nom_tipo) {this.#field.nom_tipo = nom_tipo}
     get nom_tipo() {return this.#field.nom_tipo}
 
-    set ativo(ativo) {this.#field.ativo = ativo}
+    set ativo(ativo) {this.#field.ativo = Number(ativo)}
     get ativo() {return this.#field.ativo}
 
     get entidade_negocio() {return this.#field.entidade_negocio}
@@ -59,7 +59,7 @@ export default class TiposPagamentos {
         try {
             
             let query = `SELECT * FROM ${this.#tb_name} 
-            WHERE id = :id AND entidade_negocio = :entidade_negocio `;
+            WHERE entidade_negocio = :entidade_negocio AND id = :id`;
 
             const [rows] = await this.#conn.query(query,{id,entidade_negocio: this.#field.entidade_negocio});
 
@@ -90,7 +90,7 @@ export default class TiposPagamentos {
 
             if (this.#found) {
                 query = `UPDATE ${this.#tb_name} SET nom_tipo = :nom_tipo, ativo = :ativo 
-                WHERE id = :id AND entidade_negocio = :entidade_negocio`;
+                WHERE entidade_negocio = :entidade_negocio AND id = :id`;
             } else {
                 this.#field.id = await this.#newId();
                 query = `INSERT INTO ${this.#tb_name} SET id = :id, nom_tipo = :nom_tipo, ativo = :ativo, 
@@ -109,7 +109,7 @@ export default class TiposPagamentos {
         
         try {
             
-            const query = `DELETE FROM ${this.#tb_name} WHERE id = :id AND entidade_negocio= :entidade_negocio`;
+            const query = `DELETE FROM ${this.#tb_name} WHERE entidade_negocio= :entidade_negocio AND id = :id`;
 
             void  await this.#conn.query(query,{id,entidade_negocio: this.#field.entidade_negocio});
             

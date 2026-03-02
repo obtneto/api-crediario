@@ -29,13 +29,13 @@ export default class Estoque {
 
     get found() {return this.#found}
 
-    set id_produto(id_produto) {this.#field.id_produto = id_produto}
+    set id_produto(id_produto) {this.#field.id_produto = Number(id_produto)}
     get id_produto() {return this.#field.id_produto}
 
-    set qt_reservada(qt_reservada) {this.#field.qt_reservada = qt_reservada}
+    set qt_reservada(qt_reservada) {this.#field.qt_reservada = Number(qt_reservada)}
     get qt_reservada() {return this.#field.qt_reservada}
 
-    set qt_disponivel(qt_disponivel) {this.#field.qt_disponivel = qt_disponivel}
+    set qt_disponivel(qt_disponivel) {this.#field.qt_disponivel = Number(qt_disponivel)}
     get qt_disponivel() {return this.#field.qt_disponivel}
 
     get entidade_negocio() {return this.#field.entidade_negocio}
@@ -58,7 +58,7 @@ export default class Estoque {
         
         try {
 
-            const query = `SELECT * FROM ${this.#tb_name} WHERE id = :id AND id_produto = :id_produto AND entidade_negocio = :entidade_negocio`;
+            const query = `SELECT * FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio AND id_produto = :id_produto`;
 
             const [rows] = await this.#conn.query(query,{id,entidade_negocio:this.#entidade_negocio,id_produto});
 
@@ -86,8 +86,8 @@ export default class Estoque {
             let query = null;
 
             if (this.#found) {
-                query = `UPDATE ${this.#tb_name} SET id_produto = :id_produto, qt_reservada = :qt_reservada, qt_disponivel = :qt_disponivel
-                WHERE id_produto = :id_produto AND entidade_negocio = :entidade_negocio`;
+                query = `UPDATE ${this.#tb_name} SET qt_reservada = :qt_reservada, qt_disponivel = :qt_disponivel
+                WHERE entidade_negocio = :entidade_negocio AND id_produto = :id_produto`;
             } else {
                 //this.#field.id = await this.#newId();
                 query = `INSERT INTO ${this.#tb_name} SET id_produto = :id_produto, qt_reservada = :qt_reservada, qt_disponivel = :qt_disponivel
@@ -107,24 +107,10 @@ export default class Estoque {
 
         try {
             
-            const query = `DELETE FROM ${this.#tb_name} WHERE id_produto = :id_produto AND entidade_negocio= :entidade_negocio`;
+            const query = `DELETE FROM ${this.#tb_name} WHERE entidade_negocio= :entidade_negocio AND id_produto = :id_produto`;
 
             void await this.#conn.query(query,{id,entidade_negocio: this.#field.entidade_negocio,id_produto});
             
-        } catch (error) {
-            throw error;
-        }
-
-    }
-
-    async #newId() {
-
-        try {
-            
-            const query =  `SELECT IFNULL(MAX(id),0) + 1 as newid FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio`;
-            const [rows] = await this.#conn.query(query,{entidade_negocio: this.#field.entidade_negocio});
-
-            return rows.newid;
         } catch (error) {
             throw error;
         }

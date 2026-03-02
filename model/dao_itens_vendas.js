@@ -10,7 +10,7 @@ export default class ItensVendas {
         id_produto: 0,
         id: 0,
         qt_produto: 0,
-        id_venda: null
+        id_venda: ''
     }
 
     constructor(connection, entidade_negocio = 0) {
@@ -39,7 +39,7 @@ export default class ItensVendas {
     set qt_produto(qt_produto) {this.#field.qt_produto = Number(qt_produto)}
     get qt_produto() {return this.#field.qt_produto}
 
-    set id_venda(id_venda) {this.#field.id_venda = id_venda ? String(id_venda) : null}
+    set id_venda(id_venda) {this.#field.id_venda = String(id_venda)}
     get id_venda() {return this.#field.id_venda}
 
     get entidade_negocio() {return this.#field.entidade_negocio}

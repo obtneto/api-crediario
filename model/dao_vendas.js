@@ -70,7 +70,7 @@ export default class Vendas {
     set referencia(referencia) {this.#field.referencia = referencia}
     get referencia() {return this.#field.referencia}
 
-    set val_tot_venda(val_tot_venda) {this.#field.val_tot_venda = Number(val_tot_venda)}
+    set val_tot_venda(val_tot_venda) {this.#field.val_tot_venda = Number(val_tot_venda).toFixed(2)}
     get val_tot_venda() {return this.#field.val_tot_venda}
 
     set situacao(situacao) {this.#field.situacao = situacao}
@@ -99,7 +99,7 @@ export default class Vendas {
 
         try {
 
-            let query = `SELECT * FROM ${this.#tb_name} WHERE id = :id AND entidade_negocio = :entidade_negocio`;
+            let query = `SELECT * FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio AND id = :id`;
 
             const [rows] = await this.#conn.query(query,{id,entidade_negocio: this.#entidade_negocio});
 
@@ -134,7 +134,7 @@ export default class Vendas {
 
         try {
 
-            let query = `SELECT * FROM ${this.#tb_name} WHERE cpf_cliente = :cpf AND entidade_negocio = :entidade_negocio`;
+            let query = `SELECT * FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio AND cpf_cliente = :cpf`;
 
             const [rows] = await this.#conn.query(query,{cpf,entidade_negocio: this.#entidade_negocio});
 
@@ -198,7 +198,7 @@ export default class Vendas {
         
         try {
             
-            const query = `DELETE FROM ${this.#tb_name} WHERE id = :id AND entidade_negocio= :entidade_negocio`;
+            const query = `DELETE FROM ${this.#tb_name} WHERE entidade_negocio= :entidade_negocio AND id = :id`;
 
             void await this.#conn.query(query,{id,entidade_negocio: this.#field.entidade_negocio});
             

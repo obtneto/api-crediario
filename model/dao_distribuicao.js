@@ -39,16 +39,16 @@ export default class Distribuicao {
     set dt_distrib(dt_distrib) {this.#field.dt_distrib = dt_distrib}
     get dt_distrib() {return this.#field.dt_distrib}
 
-    set id_vendedor(id_vendedor) {this.#field.id_vendedor = id_vendedor}
+    set id_vendedor(id_vendedor) {this.#field.id_vendedor = Number(id_vendedor)}
     get id_vendedor() {return this.#field.id_vendedor}
 
-    set id_produto(id_produto) {this.#field.id_produto = id_produto}
+    set id_produto(id_produto) {this.#field.id_produto = Number(id_produto)}
     get id_produto() {return this.#field.id_produto}
 
-    set qt_distrib(qt_distrib) {this.#field.qt_distrib = qt_distrib}
+    set qt_distrib(qt_distrib) {this.#field.qt_distrib = Number(qt_distrib)}
     get qt_distrib() {return this.#field.qt_distrib}
 
-    set qt_retorno(qt_retorno) {this.#field.qt_retorno = qt_retorno}
+    set qt_retorno(qt_retorno) {this.#field.qt_retorno = Number(qt_retorno)}
     get qt_retorno() {return this.#field.qt_retorno}
 
     set dt_retorno(dt_retorno) {this.#field.dt_retorno = dt_retorno}
@@ -102,7 +102,7 @@ export default class Distribuicao {
             if (this.#found) {
                 query = `UPDATE ${this.#tb_name} SET dt_distrib = :dt_distrib, id_vendedor = :id_vendedor,
                 id_produto = :id_produto, qt_distrib = :qt_distrib, qt_retorno = :qt_retorno, dt_retorno = :dt_retorno
-                WHERE id = :id AND entidade_negocio = :entidade_negocio`;
+                WHERE entidade_negocio = :entidade_negocio AND id = :id`;
             } else {
 
                 this.#field.id = await this.#newId();
@@ -122,7 +122,7 @@ export default class Distribuicao {
         
         try {
             
-            const query = `DELETE FROM ${this.#tb_name} WHERE id = :id AND entidade_negocio= :entidade_negocio`;
+            const query = `DELETE FROM ${this.#tb_name} WHERE entidade_negocio= :entidade_negocio AND id = :id`;
 
             void await this.#conn.query(query,{id,entidade_negocio: this.#field.entidade_negocio});
             
