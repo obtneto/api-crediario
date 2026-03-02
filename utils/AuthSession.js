@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 
 const COOKIE_NAME = 'crediario_session';
-const DEFAULT_TTL_SECONDS = 180;
+const DEFAULT_TTL_SECONDS = 1800;
 
 function getSecret() {
     return String(process.env.AUTH_COOKIE_SECRET || 'dev-secret-change-me');
