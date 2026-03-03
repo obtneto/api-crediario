@@ -62,7 +62,7 @@ export default class Vendedores {
 
         try {
 
-            let query = `SELECT * FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio AND id = :id`;
+            const query = `SELECT * FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio AND id = :id`;
 
             const [rows] = await this.#conn.query(query,{id,entidade_negocio: this.#entidade_negocio});
 
