@@ -130,13 +130,14 @@ export default class Vendas {
 
     }
 
-    async FindByCpf(cpf) {
+    async FindByCpf(cpf_cliente,id_venda) {
 
         try {
 
-            let query = `SELECT * FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio AND cpf_cliente = :cpf`;
+            let query = `SELECT * FROM ${this.#tb_name} 
+            WHERE entidade_negocio = :entidade_negocio AND id_venda = :id_venda AND cpf_cliente = :cpf`;
 
-            const [rows] = await this.#conn.query(query,{cpf,entidade_negocio: this.#entidade_negocio});
+            const [rows] = await this.#conn.query(query,{entidade_negocio: this.#entidade_negocio,id_venda,cpf_cliente});
 
             if (rows) {
                 this.#field.id = rows.id;
@@ -213,7 +214,7 @@ export default class Vendas {
         
         try {
             
-            const query_new_id =  `SELECT IFNULL(MAX(id),0) + 1 as newid FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio`;
+            const query_new_id =  `SELECT IFNULL(MAX(id),0) as newid FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio`;
             
             const [rows] = await this.#conn.query(query_new_id,{entidade_negocio: this.#field.entidade_negocio});
 
@@ -224,9 +225,7 @@ export default class Vendas {
             const ano_corrente = rows_check.ano_corrente;
             const ano = new Date(this.#field.dt_venda).getFullYear();
 
-            console.log(String(Number(rows.newid)).substr(8,11))
-
-            let id = ano > ano_corrente ? '1' : String(Number(String(rows.newid).substr(8,11)));
+            let id = ano > ano_corrente ? '1' : String(Number(String(rows.newid).substr(8,11)) + 1);
 
             let x = 1
             let entidade = String(this.#field.entidade_negocio);
@@ -248,8 +247,6 @@ export default class Vendas {
                 
                 x++;
             }
-
-            console.log(String(ano)+entidade+id)
 
             return (String(ano)+entidade+id);
             
