@@ -39,6 +39,7 @@ router.post('/salvar_perfil',ControllerPerfis.Salvar);
 
 /**** Tipos de Pagamentos ****/
 router.get('/listar_tipos_pagamentos/:pesq',ControllerTiposPagamentos.Listar);
+router.get('/listar_tipos_pagamentos_ativos/:pesq',ControllerTiposPagamentos.ListarAtivos);
 router.get('/editar_tipos_pagamentos/:id',ControllerTiposPagamentos.Editar);
 router.get('/excluir_tipos_pagamentos/:id',ControllerTiposPagamentos.Excluir);
 router.post('/salvar_tipos_pagamentos',ControllerTiposPagamentos.Salvar);
@@ -58,6 +59,7 @@ router.post('/salvar_cobradores',ControllerCobradores.Salvar);
 
 /**** Produtos ****/
 router.get('/listar_produtos/:pesq',ControllerProdutos.Listar);
+router.get('/listar_produtos_ativos/:pesq',ControllerProdutos.ListarAtivos);
 router.get('/editar_produtos/:id',ControllerProdutos.Editar);
 router.get('/excluir_produtos/:id',ControllerProdutos.Excluir);
 router.post('/salvar_produtos',ControllerProdutos.Salvar);
