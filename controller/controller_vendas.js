@@ -655,24 +655,16 @@ export class ControllerVendas {
             const entidade_negocio = obterEntidadeNegocio(req);
             const body = req.body || {};
 
-            const id = String(body.id || '').trim();
-            const dt_venda = String(body.dt_venda || '').trim();
-            const id_vendedor = Number(body.id_vendedor || 0);
-            const id_tipo_pag = Number(body.id_tipo_pag || 0);
-            const cpf_cliente = String(body.cpf_cliente || '').replace(/\D/g, '');
-            const marca_venda = Number(body.marca_venda || 0);
-            const referencia = String(body.referencia || '').trim();
-            const val_tot_venda = Number(body.val_tot_venda || 0);
-            const situacao = Number(body.situacao || 0);
-            const dia_pagam = String(body.dia_pagam || '').trim();
+            const id = String(body.id).trim();
 
-            const itens = Array.isArray(body.itens)
-                ? body.itens
-                : Array.isArray(body.itens_venda)
-                    ? body.itens_venda
-                    : Array.isArray(body.produtos)
-                        ? body.produtos
-                        : [];
+            const dt_venda = body.dt_venda;
+            const id_vendedor = Number(body.id_vendedor);
+            const id_tipo_pag = Number(body.id_tipo_pag);
+            const cpf_cliente = String(body.cpf_cliente).replace(/\D/g, '');
+            const referencia = String(body.referencia).trim();
+            const val_tot_venda = Number(body.val_tot_venda);
+            const dia_pagam = String(body.dia_pagam).trim();
+            const itens = body.itens;
 
             if (!dt_venda) {
                 const error = new Error('Data da venda e obrigatoria.');
@@ -680,7 +672,7 @@ export class ControllerVendas {
                 throw error;
             }
 
-            if (id_vendedor <= 0) {
+            if (!id_vendedor || id_vendedor <= 0) {
                 const error = new Error('Vendedor invalido.');
                 error.statusCode = 400;
                 throw error;
@@ -695,98 +687,44 @@ export class ControllerVendas {
             void await db.Connect();
             void await db.Begin();
 
+            const itensVendas = new ItensVendas(db.connection, entidade_negocio);
             const vendas = new Vendas(db.connection, entidade_negocio);
-            if (id) {
-                void await vendas.FindById(id);
-                vendas.id = id;
-            }
 
+            void await vendas.FindById(id);
+            
+            vendas.id = id;
             vendas.dt_venda = dt_venda;
             vendas.id_vendedor = id_vendedor;
             vendas.id_tipo_pag = id_tipo_pag;
             vendas.cpf_cliente = cpf_cliente;
-            vendas.marca_venda = marca_venda;
             vendas.referencia = referencia;
             vendas.val_tot_venda = val_tot_venda;
-            vendas.situacao = situacao;
+            vendas.situacao = 0;
             vendas.dia_pagam = dia_pagam;
 
             void await vendas.Save();
-
-            const id_venda = String(vendas.id || '').trim();
-
-            if (!id_venda) {
-                throw new Error('Falha ao gerar identificador da venda.');
-            }
 
             let itens_salvos = 0;
 
             for (const item of itens) {
 
-                const itensVendas = new ItensVendas(db.connection, entidade_negocio);
-                const id_produto = Number(item?.id_produto || item?.idProduto || item?.produto_id || 0);
-                const qt_produto = Number(item?.qt_produto || item?.qtProduto || item?.quantidade || item?.qt || 0);
-                const id_item = Number(item?.id || 0);
+                console.log(item.id)
 
-                if (id_produto <= 0 || qt_produto <= 0) {
-                    const error = new Error('Item da venda invalido. Verifique produto e quantidade.');
-                    error.statusCode = 400;
-                    throw error;
-                }
+                void await itensVendas.FindById(Number(item.id),vendas.id)
 
-                if (id_item > 0) {
-                    const [rowItem] = await itensVendas.ExecuteQuery(
-                        `SELECT id
-                         FROM tb_itens_vendas
-                         WHERE entidade_negocio = :entidade_negocio
-                         AND id_venda = :id_venda
-                         AND id = :id
-                         LIMIT 1`,
-                        { entidade_negocio, id_venda, id: id_item }
-                    );
-
-                    if (!rowItem) {
-                        const error = new Error(`Item da venda nao encontrado para atualizacao (id_item: ${id_item}).`);
-                        error.statusCode = 400;
-                        throw error;
-                    }
-
-                    itensVendas.id = id_item;
-                } else {
-                    const [itemExistente] = await itensVendas.ExecuteQuery(
-                        `SELECT id, qt_produto
-                         FROM tb_itens_vendas
-                         WHERE entidade_negocio = :entidade_negocio
-                         AND id_venda = :id_venda
-                         AND id_produto = :id_produto
-                         LIMIT 1`,
-                        { entidade_negocio, id_venda, id_produto }
-                    );
-
-                    if (itemExistente) {
-                        void await itensVendas.FindById(Number(itemExistente.id || 0), id_produto);
-                        itensVendas.id = Number(itemExistente.id || 0);
-                        itensVendas.qt_produto = Number(itemExistente.qt_produto || 0) + qt_produto;
-                    } else {
-                        void await itensVendas.FindById(0, id_produto);
-                        itensVendas.qt_produto = qt_produto;
-                    }
-                }
-
-                itensVendas.id_produto = id_produto;
-                if (id_item > 0) {
-                    itensVendas.qt_produto = qt_produto;
-                }
-                itensVendas.id_venda = id_venda;
+                itensVendas.id_produto = Number(item.id_produto);
+                itensVendas.qt_produto = Number(item.qt_produto);
+                itensVendas.id_venda = vendas.id;
 
                 void await itensVendas.Save();
+
                 itens_salvos++;
             }
 
             void await db.Commit();
 
             resdata.msg = 'Venda salva com sucesso.';
-            resdata.data.id_venda = id_venda;
+            resdata.data.id_venda = vendas.id;
             resdata.data.itens_salvos = itens_salvos;
 
         } catch (error) {
@@ -818,7 +756,8 @@ export class ControllerVendas {
 
         try {
             const entidade_negocio = obterEntidadeNegocio(req);
-            const id_item = Number(req.body?.id_item || req.params?.id_item || req.query?.id_item || 0);
+            const id_item = Number(req.params.id_item);
+            const id_venda = String(req.params.id_venda)
 
             if (id_item <= 0 ) {
                 const error = new Error('Para excluir item, informe id_item e id_produto.');
@@ -831,7 +770,8 @@ export class ControllerVendas {
 
             const itensVendas = new ItensVendas(db.connection, entidade_negocio);
 
-            void await itensVendas.Excluir(id_item);
+            void await itensVendas.Excluir(id_venda,id_item);
+            
             resdata.msg = 'Item de venda excluido com sucesso.';
 
             void await db.Commit();

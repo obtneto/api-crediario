@@ -73,6 +73,8 @@ export default class ItensVendas {
                 this.#found = false;
             }
 
+            console.log(this.#found)
+
             return this.#found ? rows : this.#found;
 
         } catch (error) {
@@ -104,8 +106,8 @@ export default class ItensVendas {
             let query = null;
 
             if (this.#found) {
-                query = `UPDATE ${this.#tb_name} SET qt_produto = :qt_produto, id_venda = :id_venda,id_produto = :id_produto 
-                WHERE entidade_negocio = :entidade_negocio AND id = :id`;
+                query = `UPDATE ${this.#tb_name} SET qt_produto = :qt_produto,id_produto = :id_produto 
+                WHERE entidade_negocio = :entidade_negocio AND id_venda = :id_venda AND id = :id`;
             } else {
 
                 this.#field.id = await this.#newId();

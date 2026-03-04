@@ -17,6 +17,6 @@ router.post('/retornar_distrib',ControllerDistribuicao.DevolverProduto)
 router.get('/listar_vendas/:id_vendedor',ControllerVendas.Listar)
 router.get('/editar_venda/:id',ControllerVendas.Editar)
 router.post('/salvar_venda',ControllerVendas.Salvar)
-router.post('/excluir_itens_venda',ControllerVendas.Excluir)
+router.post('/excluir_itens_venda/:id_venda/:id_item',ControllerVendas.Excluir)
 
 export default router
