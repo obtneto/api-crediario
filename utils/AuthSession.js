@@ -4,7 +4,7 @@ const COOKIE_NAME = 'crediario_session';
 const DEFAULT_TTL_SECONDS = 60 * 12;
 
 function getSecret() {
-    return String(process.env.AUTH_COOKIE_SECRET || 'dev-secret-change-me');
+    return String(process.env.AUTH_COOKIE_SECRET || 'Cred3215987%$#@!');
 }
 
 function getTtlSeconds(remember = false) {
