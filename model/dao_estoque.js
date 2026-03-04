@@ -90,8 +90,8 @@ export default class Estoque {
                 WHERE entidade_negocio = :entidade_negocio AND id_produto = :id_produto`;
             } else {
                 //this.#field.id = await this.#newId();
-                query = `INSERT INTO ${this.#tb_name} SET id_produto = :id_produto, qt_reservada = :qt_reservada, qt_disponivel = :qt_disponivel
-                entidade_negocio = :entidade_negocio`
+                query = `INSERT INTO ${this.#tb_name} SET id_produto = :id_produto, qt_reservada = :qt_reservada, 
+                qt_disponivel = :qt_disponivel, entidade_negocio = :entidade_negocio`
             
             }
 

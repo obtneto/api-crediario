@@ -7,6 +7,7 @@ import Cobradores from '../model/dao_cobradores.js';
 import Produtos from '../model/dao_produtos.js';
 import Rotas from '../model/dao_rotas.js';
 import TiposPagamentos from '../model/dao_tipos_pagamentos.js';
+import Estoque from '../model/dao_estoque.js';
 
 import {obterEntidadeNegocio} from '../utils/CheckEntidades.js';
 import {definirSessaoHttpOnly, limparSessaoHttpOnly, obterSessaoHttpOnly, renovarSessaoHttpOnly} from '../utils/AuthSession.js';
@@ -1178,12 +1179,11 @@ export class ControllerProdutos {
 
             void await db.Begin();
 
+            const estoque = new Estoque(db.connection,entidade_negocio);
             const produtos = new Produtos(db.connection, entidade_negocio);
 
             void await produtos.FindById(id);
 
-
-            produtos.id = id;
             produtos.nom_produto = nom_produto;
             produtos.mar_produto = mar_produto;
             produtos.und_produto = und_produto;
@@ -1192,6 +1192,18 @@ export class ControllerProdutos {
             produtos.ativo = ativo;
 
             void await produtos.Save();
+
+            const rows = await estoque.FindById(produtos.id);
+
+            if (!rows) {
+
+                estoque.id_produto = produtos.id;
+                estoque.qt_disponivel = 0;
+                estoque.qt_reservada = 0;
+                
+                void await estoque.Save();
+
+            }
 
             void await db.Commit();
 

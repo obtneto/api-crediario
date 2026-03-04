@@ -10,7 +10,7 @@ export default class EstoqueMov {
         dt_mov: '',
         id_produto: 0,
         tp_mov: '',
-        qt_entrada: 0,
+        qt_mov: 0,
         nr_documento: '',
         descricao: '',
         entidade_negocio: 0
@@ -45,8 +45,8 @@ export default class EstoqueMov {
     set tp_mov(tp_mov) {this.#field.tp_mov = tp_mov}
     get tp_mov() {return this.#field.tp_mov}
 
-    set qt_entrada(qt_entrada) {this.#field.qt_entrada = Number(qt_entrada)}
-    get qt_entrada() {return this.#field.qt_entrada}
+    set qt_mov(qt_mov) {this.#field.qt_mov = Number(qt_mov)}
+    get qt_mov() {return this.#field.qt_mov}
 
     set nr_documento(nr_documento) {this.#field.nr_documento = nr_documento}
     get nr_documento() {return this.#field.nr_documento}
@@ -79,7 +79,7 @@ export default class EstoqueMov {
                 this.#field.dt_mov = rows.dt_mov;
                 this.#field.id_produto = rows.id_produto;
                 this.#field.tp_mov = rows.tp_mov;
-                this.#field.qt_entrada = rows.qt_entrada;
+                this.#field.qt_mov = rows.qt_mov;
                 this.#field.nr_documento = rows.nr_documento;
                 this.#field.descricao = rows.descricao;
                 this.#found = true;
@@ -103,16 +103,18 @@ export default class EstoqueMov {
 
             if (this.#found) {
                 query = `UPDATE ${this.#tb_name} SET id_produto = :id_produto, tp_mov = :tp_mov,
-                qt_entrada = :qt_entrada, nr_documento = :nr_documento, descricao = :descricao
+                qt_mov = :qt_mov, nr_documento = :nr_documento, descricao = :descricao
                 WHERE entidade_negocio = :entidade_negocio AND dt_mov = :dt_mov AND id = :id`;
             } else {
 
                 this.#field.id = await this.#newId(this.#field.dt_mov);
 
                 query = `INSERT INTO ${this.#tb_name} SET id = :id, dt_mov = :dt_mov, id_produto = :id_produto,
-                tp_mov = :tp_mov, qt_entrada = :qt_entrada, nr_documento = :nr_documento,
+                tp_mov = :tp_mov, qt_mov = :qt_mov, nr_documento = :nr_documento,
                 descricao = :descricao, entidade_negocio = :entidade_negocio`;
             }
+
+            console.log(this.#field)
 
             return await this.#conn.query(query,this.#field);
 

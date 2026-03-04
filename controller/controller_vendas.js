@@ -2,6 +2,7 @@ import Database from '../connections/dbconn.js';
 import Distribuicao from '../model/dao_distribuicao.js';
 import Vendas from '../model/dao_vendas.js';
 import Estoque from '../model/dao_estoque.js';
+
 import ItensVendas from '../model/dao_itens_vendas.js';
 import Entidades from '../model/dao_entidades.js';
 import {obterEntidadeNegocio} from '../utils/CheckEntidades.js';
@@ -368,13 +369,19 @@ export class ControllerDistribuicao{
 
         try {
 
-            let {id,dt_distrib,id_vendedor,id_produto,qt_distrib} = req.body;
+            const id = Number(req.body.id);
+            const dt_distrib = new Date(req.body.dt_distrib);
+            const id_vendedor = Number(req.body.id_vendedor);
+            const id_produto = Number(req.body.id_produto);
+            const qt_distrib = Number(req.body.qt_distrib);
+            
             const entidade_negocio = obterEntidadeNegocio(req);
             
             void await db.Connect();
 
             void await db.Begin();
 
+            const estoque = new Estoque(db.connection,entidade_negocio);
             const distrib = new Distribuicao(db.connection,entidade_negocio);
 
             void await distrib.FindById(id);
@@ -387,14 +394,27 @@ export class ControllerDistribuicao{
 
             void await distrib.Save();
 
+            void await estoque.FindById(id_produto);
+
+            if (estoque.qt_disponivel < qt_distrib) {
+                throw Error('Quantidade a ser distribuida não pode ser maior que saldo do estoque.')
+            }
+
+            estoque.qt_disponivel -= qt_distrib;
+            estoque.qt_reservada += qt_distrib;
+
+            void await estoque.Save();
+
             void await db.Commit();
+
+            resdata.msg = 'Distribuida com sucesso.';
 
         } catch (error) {
             
             void await db.RollBack();
 
             resdata.err = 500;
-            resdata.msg = error.stack;
+            resdata.msg = error.message;
             resdata.status = 500;
 
             console.log(error.stack)
@@ -466,15 +486,16 @@ export class ControllerDistribuicao{
 
         try {
 
-            const id = req.body.id;
-            const qt_retorno = req.body.qt_retorno;
-            const dt_retorno = req.body.dt_retorno;
+            const id = Number(req.body.id);
+            const qt_retorno = Number(req.body.qt_retorno);
+            const dt_retorno = new Date(req.body.dt_retorno);
             const entidade_negocio = obterEntidadeNegocio(req)
 
             void await db.Connect();
 
             void await db.Begin();
 
+            const estoque = new Estoque(db.connection,entidade_negocio);
             const distrib = new Distribuicao(db.connection,entidade_negocio);
 
             const rows =  await distrib.FindById(id);
@@ -486,6 +507,13 @@ export class ControllerDistribuicao{
             distrib.qt_distrib -= qt_retorno;
 
             void await distrib.Save();
+
+            void await estoque.FindById(distrib.id_produto);
+
+            estoque.qt_disponivel = Number(estoque.qt_disponivel) + Number(qt_retorno);
+            estoque.qt_reservada = Number(estoque.qt_reservada) - Number(qt_retorno);
+
+            void await estoque.Save();
 
             void await db.Commit()
 

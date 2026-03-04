@@ -112,7 +112,10 @@ export default class Distribuicao {
                 entidade_negocio = :entidade_negocio, id = :id`;
             }
 
+            console.log(this.#field)
+
             return await this.#conn.query(query,this.#field);
+            
         } catch (error) {
             throw error;
         }
