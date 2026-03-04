@@ -553,10 +553,10 @@ export class ControllerVendas {
                 params.dt_fim = dt_fim;
             }
 
-            let query = `SELECT v.id, v.dt_venda, v.id_vendedor, v.id_cobrador, v.id_rota, v.id_tipo_pag,
-                         v.cpf_cliente, v.marca_venda, v.num_recibo, v.referencia, v.val_tot_venda,
-                         v.situacao, v.dia_pagam, v.melhor_dia
+            let query = `SELECT v.id, v.dt_venda, v.id_vendedor,v.cpf_cliente, c.nom_cliente,t.nom_tipo, v.val_tot_venda
                          FROM tb_vendas v
+                         LEFT JOIN tb_clientes c ON c.cpf_cliente = v.cpf_cliente
+                         LEFT JOIN tb_tipos_pagamentos t ON t.entidade_negocio = v.entidade_negocio AND t.id = v.id_tipo_pag
                          WHERE ${whereClause.join(' AND ')}
                          ORDER BY v.dt_venda DESC, v.id DESC
                          LIMIT :limit OFFSET :offset`;
@@ -616,8 +616,8 @@ export class ControllerVendas {
             const vendas = new Vendas(db.connection,entidade_negocio);
             const itens = new ItensVendas(db.connection,entidade_negocio);
 
-            resdata.data.vendas = vendas.FindById(id);
-            resdata.data.itens = itens.FindByVenda(id)
+            resdata.data.vendas = await vendas.FindById(id);
+            resdata.data.itens = await itens.FindByVenda(id);
             
         } catch (error) {
              
@@ -658,17 +658,13 @@ export class ControllerVendas {
             const id = String(body.id || '').trim();
             const dt_venda = String(body.dt_venda || '').trim();
             const id_vendedor = Number(body.id_vendedor || 0);
-            const id_cobrador = Number(body.id_cobrador || 0);
-            const id_rota = Number(body.id_rota || 0);
             const id_tipo_pag = Number(body.id_tipo_pag || 0);
             const cpf_cliente = String(body.cpf_cliente || '').replace(/\D/g, '');
             const marca_venda = Number(body.marca_venda || 0);
-            const num_recibo = Number(body.num_recibo || 0);
             const referencia = String(body.referencia || '').trim();
             const val_tot_venda = Number(body.val_tot_venda || 0);
             const situacao = Number(body.situacao || 0);
             const dia_pagam = String(body.dia_pagam || '').trim();
-            const melhor_dia = String(body.melhor_dia || '').trim();
 
             const itens = Array.isArray(body.itens)
                 ? body.itens
@@ -707,12 +703,9 @@ export class ControllerVendas {
 
             vendas.dt_venda = dt_venda;
             vendas.id_vendedor = id_vendedor;
-            vendas.id_cobrador = id_cobrador;
-            vendas.id_rota = id_rota;
             vendas.id_tipo_pag = id_tipo_pag;
             vendas.cpf_cliente = cpf_cliente;
             vendas.marca_venda = marca_venda;
-            vendas.num_recibo = num_recibo;
             vendas.referencia = referencia;
             vendas.val_tot_venda = val_tot_venda;
             vendas.situacao = situacao;
@@ -729,6 +722,7 @@ export class ControllerVendas {
             let itens_salvos = 0;
 
             for (const item of itens) {
+
                 const itensVendas = new ItensVendas(db.connection, entidade_negocio);
                 const id_produto = Number(item?.id_produto || item?.idProduto || item?.produto_id || 0);
                 const qt_produto = Number(item?.qt_produto || item?.qtProduto || item?.quantidade || item?.qt || 0);
@@ -741,7 +735,15 @@ export class ControllerVendas {
                 }
 
                 if (id_item > 0) {
-                    const rowItem = await itensVendas.FindById(id_item, id_produto);
+                    const [rowItem] = await itensVendas.ExecuteQuery(
+                        `SELECT id
+                         FROM tb_itens_vendas
+                         WHERE entidade_negocio = :entidade_negocio
+                         AND id_venda = :id_venda
+                         AND id = :id
+                         LIMIT 1`,
+                        { entidade_negocio, id_venda, id: id_item }
+                    );
 
                     if (!rowItem) {
                         const error = new Error(`Item da venda nao encontrado para atualizacao (id_item: ${id_item}).`);
@@ -751,11 +753,30 @@ export class ControllerVendas {
 
                     itensVendas.id = id_item;
                 } else {
-                    void await itensVendas.FindById(0, id_produto);
+                    const [itemExistente] = await itensVendas.ExecuteQuery(
+                        `SELECT id, qt_produto
+                         FROM tb_itens_vendas
+                         WHERE entidade_negocio = :entidade_negocio
+                         AND id_venda = :id_venda
+                         AND id_produto = :id_produto
+                         LIMIT 1`,
+                        { entidade_negocio, id_venda, id_produto }
+                    );
+
+                    if (itemExistente) {
+                        void await itensVendas.FindById(Number(itemExistente.id || 0), id_produto);
+                        itensVendas.id = Number(itemExistente.id || 0);
+                        itensVendas.qt_produto = Number(itemExistente.qt_produto || 0) + qt_produto;
+                    } else {
+                        void await itensVendas.FindById(0, id_produto);
+                        itensVendas.qt_produto = qt_produto;
+                    }
                 }
 
                 itensVendas.id_produto = id_produto;
-                itensVendas.qt_produto = qt_produto;
+                if (id_item > 0) {
+                    itensVendas.qt_produto = qt_produto;
+                }
                 itensVendas.id_venda = id_venda;
 
                 void await itensVendas.Save();
@@ -798,9 +819,8 @@ export class ControllerVendas {
         try {
             const entidade_negocio = obterEntidadeNegocio(req);
             const id_item = Number(req.body?.id_item || req.params?.id_item || req.query?.id_item || 0);
-            const id_produto = Number(req.body?.id_produto || req.params?.id_produto || req.query?.id_produto || 0);
 
-            if (id_item <= 0 || id_produto <= 0) {
+            if (id_item <= 0 ) {
                 const error = new Error('Para excluir item, informe id_item e id_produto.');
                 error.statusCode = 400;
                 throw error;
@@ -811,7 +831,7 @@ export class ControllerVendas {
 
             const itensVendas = new ItensVendas(db.connection, entidade_negocio);
 
-            void await itensVendas.Excluir(id_item, id_produto);
+            void await itensVendas.Excluir(id_item);
             resdata.msg = 'Item de venda excluido com sucesso.';
 
             void await db.Commit();

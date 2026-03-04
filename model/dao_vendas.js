@@ -9,12 +9,12 @@ export default class Vendas {
         id: '0',
         dt_venda: '',
         id_vendedor: 0,
-        id_cobrador:0,
-        id_rota: 0,
+        id_cobrador:null,
+        id_rota: null,
         id_tipo_pag: 0,
         cpf_cliente: '',
         marca_venda: 0,
-        num_recibo: 0,
+        num_recibo: null,
         referencia: '',
         val_tot_venda: 0,
         situacao: 0,
@@ -170,6 +170,8 @@ export default class Vendas {
 
         try {
 
+            console.log(this.#field)
+
             let query = null;
 
             if (this.#found) {
@@ -177,7 +179,7 @@ export default class Vendas {
                 id_cobrador = :id_cobrador, id_rota = :id_rota, id_tipo_pag = :id_tipo_pag, cpf_cliente = :cpf_cliente,
                 marca_venda = :marca_venda, num_recibo = :num_recibo, referencia = :referencia, val_tot_venda = :val_tot_venda,
                 situacao = :situacao, dia_pagam = :dia_pagam, melhor_dia = :melhor_dia
-                WHERE entidade_negocio = :entidade_negocio, id = :id`;
+                WHERE entidade_negocio = :entidade_negocio AND id = :id`;
             } else {
 
                 this.#field.id = await this.#newId();
@@ -222,7 +224,9 @@ export default class Vendas {
             const ano_corrente = rows_check.ano_corrente;
             const ano = new Date(this.#field.dt_venda).getFullYear();
 
-            const id = ano > ano_corrente ? '1' : String(rows.newid);
+            console.log(String(Number(rows.newid)).substr(8,11))
+
+            let id = ano > ano_corrente ? '1' : String(Number(String(rows.newid).substr(8,11)));
 
             let x = 1
             let entidade = String(this.#field.entidade_negocio);
@@ -238,13 +242,14 @@ export default class Vendas {
 
             while (x <= String(id).length) {
 
-                if (x == 1) {id = '0000' + id; break}
-                if (x == 2) {id = '000' + id; break}
-                if (x == 3) {id = '00' + id; break}
-                if (x == 4) {id = '0' + id; break}
+                if (x == 1) {id = '000' + id; break}
+                if (x == 2) {id = '00' + id; break}
+                if (x == 3) {id = '0' + id; break}
                 
                 x++;
             }
+
+            console.log(String(ano)+entidade+id)
 
             return (String(ano)+entidade+id);
             
