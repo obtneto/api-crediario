@@ -54,13 +54,13 @@ export default class Estoque {
 
     }
 
-    async FindById(id,id_produto) {
+    async FindById(id_produto) {
         
         try {
 
             const query = `SELECT * FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio AND id_produto = :id_produto`;
 
-            const [rows] = await this.#conn.query(query,{id,entidade_negocio:this.#entidade_negocio,id_produto});
+            const [rows] = await this.#conn.query(query,{entidade_negocio:this.#entidade_negocio,id_produto});
 
             if (rows) {
                 this.#field.id_produto = rows.id_produto;
@@ -103,13 +103,13 @@ export default class Estoque {
 
     }
 
-    async Excluir(id,id_produto) {
+    async Excluir(id_produto) {
 
         try {
             
             const query = `DELETE FROM ${this.#tb_name} WHERE entidade_negocio= :entidade_negocio AND id_produto = :id_produto`;
 
-            void await this.#conn.query(query,{id,entidade_negocio: this.#field.entidade_negocio,id_produto});
+            void await this.#conn.query(query,{entidade_negocio: this.#field.entidade_negocio,id_produto});
             
         } catch (error) {
             throw error;

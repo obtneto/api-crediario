@@ -1,6 +1,7 @@
 import Database from '../connections/dbconn.js';
 import Distribuicao from '../model/dao_distribuicao.js';
 import Vendas from '../model/dao_vendas.js';
+import Estoque from '../model/dao_estoque.js';
 import ItensVendas from '../model/dao_itens_vendas.js';
 import Entidades from '../model/dao_entidades.js';
 import {obterEntidadeNegocio} from '../utils/CheckEntidades.js';
@@ -261,6 +262,51 @@ export class ControllerDistribuicao{
             resdata.err = Number(error.statusCode || 500);
             resdata.msg = error.message;
             resdata.status = Number(error.statusCode || 500);
+
+            console.log(error.stack)
+        }
+
+        void await db.Close();
+
+        res.status(resdata.status).json(resdata);
+
+    }
+
+    static async ListarDistruicaoComSaldo(req,res) {
+
+        const db = new Database('dbcred');
+
+        const resdata = {
+            err: 0,
+            msg: '',
+            status: 200,
+            data: []
+        }
+
+        try {
+
+            void await db.Connect();
+
+            const id_vendedor = req.params.id_vendedor;
+            const entidade_negocio = obterEntidadeNegocio(req);
+
+            const distrib = new Distribuicao(db.connection,entidade_negocio)
+
+            const query = `SELECT d.id_produto, p.nom_produto, p.mar_produto,p.und_produto, e.qt_reservada as saldo  FROM tb_distribuicao d
+            LEFT JOIN tb_produtos p ON p.entidade_negocio = d.entidade_negocio AND p.id = d.id_produto 
+            LEFT JOIN tb_estoque e ON e.entidade_negocio = d.entidade_negocio AND e.id_produto = d.id_produto
+            WHERE d.entidade_negocio = :entidade_negocio AND d.id_vendedor = :id_vendedor AND e.qt_reservada > 0 AND p.ativo = 1 `;
+
+            const rows = await distrib.ExecuteQuery(query,{entidade_negocio,id_vendedor});
+
+            resdata.data = rows;
+
+
+        } catch (error) {
+            
+            resdata.err = 500;
+            resdata.msg = error.message;
+            resdata.status = 500;
 
             console.log(error.stack)
         }
@@ -687,6 +733,7 @@ export class ControllerVendas {
             void await db.Connect();
             void await db.Begin();
 
+            const estoque = new Estoque(db.connection,entidade_negocio);
             const itensVendas = new ItensVendas(db.connection, entidade_negocio);
             const vendas = new Vendas(db.connection, entidade_negocio);
 
@@ -717,6 +764,16 @@ export class ControllerVendas {
                 itensVendas.id_venda = vendas.id;
 
                 void await itensVendas.Save();
+
+                const rows = await estoque.FindById(item.id_produto);
+
+                if (!rows) throw Error('Produto não encontrado no estoque.');
+
+                if (estoque.qt_reservada < item.qt_produto) throw Error('Não exite estoque suficiente para esse produto.')
+
+                estoque.qt_reservada = Number(estoque.qt_reservada) - Number(item.qt_produto);
+
+                void await estoque.Save();
 
                 itens_salvos++;
             }

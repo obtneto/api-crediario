@@ -8,6 +8,7 @@ router.use(criarMiddlewareSessao());
 /**** Distribioções ****/
 router.get('/listar_distrib/:id_vendedor/',ControllerDistribuicao.Listar);
 router.get('/listar_distrib_produto/:id_vendedor/:nom_produto',ControllerDistribuicao.ListarPorProduto);
+router.get('/listar_distrib_com_saldo/:id_vendedor',ControllerDistribuicao.ListarDistruicaoComSaldo)
 router.get('/editar_distrib/:id',ControllerDistribuicao.Editar);
 router.get('/excluir_distrib/:id',ControllerDistribuicao.Excluir);
 router.post('/salvar_distrib',ControllerDistribuicao.Salvar);
