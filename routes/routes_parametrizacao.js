@@ -66,6 +66,7 @@ router.post('/salvar_produtos',ControllerProdutos.Salvar);
 
 /**** Rotas ****/
 router.get('/listar_rotas/:pesq',ControllerRotas.Listar);
+router.get('/listar_rotas_ativas/:pesq',ControllerRotas.ListarAtivas);
 router.get('/editar_rota/:id',ControllerRotas.Editar);
 router.get('/excluir_rota/:id',ControllerRotas.Excluir);
 router.post('/salvar_rota',ControllerRotas.Salvar);

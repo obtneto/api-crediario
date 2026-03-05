@@ -16,6 +16,7 @@ router.post('/retornar_distrib',ControllerDistribuicao.DevolverProduto)
 
 /******* Vendas *******/
 router.get('/listar_vendas/:id_vendedor',ControllerVendas.Listar)
+router.get('/destinar_venda/:id_vendedor/:com_rota_cobranca',ControllerVendas.DestinarVendas)
 router.get('/editar_venda/:id',ControllerVendas.Editar)
 router.post('/salvar_venda',ControllerVendas.Salvar)
 router.post('/excluir_itens_venda/:id_venda/:id_item',ControllerVendas.Excluir)

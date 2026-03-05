@@ -625,10 +625,9 @@ export class ControllerVendas {
                 params.dt_fim = dt_fim;
             }
 
-            let query = `SELECT v.id, v.dt_venda, v.id_vendedor,v.cpf_cliente, c.nom_cliente,t.nom_tipo, v.val_tot_venda
+            let query = `SELECT v.id, v.dt_venda, c.nom_cliente, c.end_cliente, c.bai_cliente, c.cid_cliente, c.uf_cliente, v.val_tot_venda
                          FROM tb_vendas v
                          LEFT JOIN tb_clientes c ON c.cpf_cliente = v.cpf_cliente
-                         LEFT JOIN tb_tipos_pagamentos t ON t.entidade_negocio = v.entidade_negocio AND t.id = v.id_tipo_pag
                          WHERE ${whereClause.join(' AND ')}
                          ORDER BY v.dt_venda DESC, v.id DESC
                          LIMIT :limit OFFSET :offset`;
@@ -901,4 +900,93 @@ export class ControllerVendas {
 
         res.status(resdata.status).json(resdata);
     }
+
+     static async DestinarVendas(req,res) {
+
+        const db = new Database('dbcred');
+
+        const resdata = {
+            err: 0,
+            msg: '',
+            status: 200,
+            data: {
+                vendas: [],
+                entidades: [],
+                paginacao: {
+                    page: 1,
+                    limit: 50,
+                    total: 0,
+                    total_pages: 0
+                }
+            }
+        }
+
+        try {
+            const id_vendedor = Number(req.params.id_vendedor || 0);
+            const com_rota_cobranca = Number(req.params.com_rota_cobranca || 0);
+            const entidade_negocio = obterEntidadeNegocio(req);
+            const page = Math.max(1, Number(req.query.page || 1));
+            const limit = Math.min(200, Math.max(1, Number(req.query.limit || 50)));
+            const offset = (page - 1) * limit;
+
+            if (id_vendedor <= 0) {
+                const error = new Error('Vendedor invalido.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            void await db.Connect();
+
+            const vendas = new Vendas(db.connection, entidade_negocio);
+            const entidades = new Entidades(db.connection,entidade_negocio);
+
+            const whereClause = ['v.id_vendedor = :id_vendedor', 'v.entidade_negocio = :entidade_negocio'];
+            const params = {
+                id_vendedor,
+                entidade_negocio
+            };
+
+            whereClause.push(com_rota_cobranca === 1 ? 'v.id_rota IS NULL' : 'v.id_cobrador IS NULL');
+
+            let query = `SELECT v.id, v.dt_venda, c.nom_cliente,c.end_cliente,c.bai_cliente,c.cid_cliente,c.uf_cliente, v.val_tot_venda
+                         FROM tb_vendas v
+                         LEFT JOIN tb_clientes c ON c.cpf_cliente = v.cpf_cliente
+                         WHERE ${whereClause.join(' AND ')}
+                         ORDER BY v.dt_venda DESC, v.id DESC
+                         LIMIT :limit OFFSET :offset`;
+
+            resdata.data.vendas = await vendas.ExecuteQuery(query, { ...params, limit, offset });
+
+            query = `SELECT COUNT(*) AS total
+                     FROM tb_vendas v
+                     WHERE ${whereClause.join(' AND ')}`;
+
+            const countResult = await vendas.ExecuteQuery(query, params);
+            const total = Number(Array.isArray(countResult) && countResult[0] ? countResult[0].total : 0);
+
+            query = `SELECT id,nom_entidade FROM tb_entidades WHERE id = :entidade_negocio`;
+
+            resdata.data.entidades = await entidades.ExecuteQuery(query, { entidade_negocio });
+
+            resdata.data.paginacao = {
+                page,
+                limit,
+                total,
+                total_pages: total > 0 ? Math.ceil(total / limit) : 0
+            };
+
+        } catch (error) {
+            resdata.err = Number(error.statusCode || 500);
+            resdata.msg = error.message;
+            resdata.status = Number(error.statusCode || 500);
+
+            console.log(error.stack);
+        }
+
+        void await db.Close();
+
+        res.status(resdata.status).json(resdata);
+
+    }
+
 }

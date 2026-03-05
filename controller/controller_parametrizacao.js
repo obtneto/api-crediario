@@ -1326,6 +1326,55 @@ export class ControllerRotas{
 
     }
 
+    static async ListarAtivas(req,res) {
+
+        const db = new Database('dbcred');
+
+        const resdata = {
+            err: 0,
+            msg: '',
+            status: 200,
+            data: {
+                rotas: [],
+                entidades: []
+            }
+        }
+
+        try {
+            
+            const pesq =  req.params.pesq;
+            const entidade_negocio = obterEntidadeNegocio(req);
+            
+            void await db.Connect();
+
+            const rotas = new Rotas(db.connection, obterEntidadeNegocio(req));
+            const entidades = new Entidades(db.connection, obterEntidadeNegocio(req));
+
+            let query = null;
+
+            query = `SELECT * FROM tb_rotas WHERE entidade_negocio = ${entidade_negocio} `;
+
+            if (pesq != "*") {
+                query += ` AND nom_rota LIKE '%${pesq}% AND ativo = 1`
+            }
+
+            resdata.data.rotas  = await rotas.ExecuteQuery(query);
+            resdata.data.entidades = await entidades.ExecuteQuery(`SELECT id,nom_entidade FROM tb_entidades WHERE id = ${entidade_negocio}`)
+
+        } catch (error) {
+            resdata.err = 500;
+            resdata.msg = error.message;
+            resdata.status = 500;
+
+            console.log(error.stack)
+        }
+
+        void await db.Close();
+
+        res.status(resdata.status).json(resdata);
+
+    }
+
     static async Editar(req,res) {
 
         const db = new Database('dbcred');
