@@ -1,6 +1,9 @@
 node_modules
 .env
 dist
+temp
+tmp
+backup
 .sql
 logs
 coverage

@@ -867,15 +867,22 @@ export class ControllerVendas {
 
             void await itensVendas.FindById(id_item,id_venda)
 
-            void await estoque.FindById(itensVendas.id_produto);
+            if (itensVendas.found) {
 
-            estoque.qt_reservada = parseFloat(estoque.qt_reservada) + Number(itensVendas.qt_produto);
+                void await estoque.FindById(itensVendas.id_produto);
 
-            void await estoque.Save()
+                estoque.qt_reservada = parseFloat(estoque.qt_reservada) + Number(itensVendas.qt_produto);
 
-            void await itensVendas.Excluir(id_venda,id_item);
-            
-            resdata.msg = 'Item de venda excluido com sucesso.';
+                void await estoque.Save()
+
+                void await itensVendas.Excluir();
+                
+                resdata.msg = 'Item de venda excluido com sucesso.';
+
+            }
+            else {
+                resdata.msg = 'Item de venda não encontrado.';
+            }
 
             void await db.Commit();
             

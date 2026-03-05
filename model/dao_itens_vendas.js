@@ -123,14 +123,18 @@ export default class ItensVendas {
         }
     }
 
-    async Excluir(id_venda,id) {
+    async Excluir() {
 
         try {
 
             const query = `DELETE FROM ${this.#tb_name}
             WHERE entidade_negocio = :entidade_negocio AND id_venda = :id_venda AND id = :id`;
 
-            void await this.#conn.query(query,{id,entidade_negocio: this.#field.entidade_negocio,id_venda});
+            void await this.#conn.query(query,{
+                id:this.#field.id,
+                entidade_negocio: this.#field.entidade_negocio,
+                id_venda:this.#field.id_venda
+            });
 
         } catch (error) {
             throw error;
