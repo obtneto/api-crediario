@@ -171,8 +171,6 @@ export default class Vendas {
 
         try {
 
-            console.log(this.#field)
-
             let query = null;
 
             if (this.#found) {

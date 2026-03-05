@@ -292,10 +292,9 @@ export class ControllerDistribuicao{
 
             const distrib = new Distribuicao(db.connection,entidade_negocio)
 
-            const query = `SELECT d.id_produto, p.nom_produto, p.mar_produto,p.und_produto, e.qt_reservada as saldo  FROM tb_distribuicao d
+            const query = `SELECT d.id_produto, p.nom_produto, p.mar_produto,p.und_produto, d.qt_distrib as saldo  FROM tb_distribuicao d
             LEFT JOIN tb_produtos p ON p.entidade_negocio = d.entidade_negocio AND p.id = d.id_produto 
-            LEFT JOIN tb_estoque e ON e.entidade_negocio = d.entidade_negocio AND e.id_produto = d.id_produto
-            WHERE d.entidade_negocio = :entidade_negocio AND d.id_vendedor = :id_vendedor AND e.qt_reservada > 0 AND p.ativo = 1 `;
+            WHERE d.entidade_negocio = :entidade_negocio AND d.id_vendedor = :id_vendedor AND p.ativo = 1 AND d.qt_distrib > 0 `;
 
             const rows = await distrib.ExecuteQuery(query,{entidade_negocio,id_vendedor});
 
@@ -793,17 +792,23 @@ export class ControllerVendas {
 
                 void await itensVendas.Save();
 
-                const rows = await estoque.FindById(item.id_produto);
+                void await estoque.FindById(item.id_produto);
 
-                if (!rows) throw Error('Produto não encontrado no estoque.');
+                if (!estoque.found) throw Error('Produto não encontrado no estoque.');
 
-                if (!itensVendas.found && estoque.qt_reservada < item.qt_produto) throw Error('Não exite estoque suficiente para esse produto.')
+                if (!itensVendas.found) {
+                    if (estoque.qt_reservada < item.qt_produto) throw Error('Não exite estoque suficiente para esse produto.');
+                }
+                else {
+                    if(estoque.qt_reservada < ((qt_produto_antes - itensVendas.qt_produto) * -1)) throw Error('Não exite estoque suficiente para esse produto.');
+                }
 
                 if (!itensVendas.found) {
                     estoque.qt_reservada = Number(estoque.qt_reservada) - Number(item.qt_produto);
                 } else {
                     estoque.qt_reservada = Number(estoque.qt_reservada) + (qt_produto_antes - itensVendas.qt_produto)
                 }
+
                 void await estoque.Save();
 
                 itens_salvos++;
@@ -843,6 +848,7 @@ export class ControllerVendas {
         }
 
         try {
+
             const entidade_negocio = obterEntidadeNegocio(req);
             const id_item = Number(req.params.id_item);
             const id_venda = String(req.params.id_venda)
@@ -858,6 +864,8 @@ export class ControllerVendas {
 
             const itensVendas = new ItensVendas(db.connection, entidade_negocio);
             const estoque = new Estoque(db.connection, entidade_negocio);
+
+            void await itensVendas.FindById(id_item,id_venda)
 
             void await estoque.FindById(itensVendas.id_produto);
 
