@@ -2,7 +2,6 @@ import Database from '../connections/dbconn.js';
 import Distribuicao from '../model/dao_distribuicao.js';
 import Vendas from '../model/dao_vendas.js';
 import Estoque from '../model/dao_estoque.js';
-
 import ItensVendas from '../model/dao_itens_vendas.js';
 import Entidades from '../model/dao_entidades.js';
 import {obterEntidadeNegocio} from '../utils/CheckEntidades.js';
@@ -400,8 +399,8 @@ export class ControllerDistribuicao{
                 throw Error('Quantidade a ser distribuida não pode ser maior que saldo do estoque.')
             }
 
-            estoque.qt_disponivel -= qt_distrib;
-            estoque.qt_reservada += qt_distrib;
+            estoque.qt_disponivel = parseFloat(estoque.qt_disponivel) - qt_distrib;
+            estoque.qt_reservada = parseFloat(estoque.qt_reservada) + qt_distrib;
 
             void await estoque.Save();
 
@@ -503,15 +502,15 @@ export class ControllerDistribuicao{
             if (!rows) throw new Error("ID da distribuição não encontrada.");
 
             distrib.dt_retorno = dt_retorno;
-            distrib.qt_retorno += qt_retorno;
-            distrib.qt_distrib -= qt_retorno;
+            distrib.qt_retorno = Number(distrib.qt_retorno) +  Number(qt_retorno);
+            distrib.qt_distrib = Number(distrib.qt_distrib) - Number(qt_retorno);
 
             void await distrib.Save();
 
             void await estoque.FindById(distrib.id_produto);
 
-            estoque.qt_disponivel = Number(estoque.qt_disponivel) + Number(qt_retorno);
-            estoque.qt_reservada = Number(estoque.qt_reservada) - Number(qt_retorno);
+            estoque.qt_disponivel =  parseFloat(estoque.qt_disponivel) + Number(qt_retorno);
+            estoque.qt_reservada = parseFloat(estoque.qt_reservada) - Number(qt_retorno);
 
             void await estoque.Save();
 
@@ -780,12 +779,13 @@ export class ControllerVendas {
             void await vendas.Save();
 
             let itens_salvos = 0;
+            let qt_produto_antes = 0;
 
             for (const item of itens) {
 
-                console.log(item.id)
-
                 void await itensVendas.FindById(Number(item.id),vendas.id)
+
+                if (itensVendas.found) qt_produto_antes = itensVendas.qt_produto;
 
                 itensVendas.id_produto = Number(item.id_produto);
                 itensVendas.qt_produto = Number(item.qt_produto);
@@ -797,10 +797,13 @@ export class ControllerVendas {
 
                 if (!rows) throw Error('Produto não encontrado no estoque.');
 
-                if (estoque.qt_reservada < item.qt_produto) throw Error('Não exite estoque suficiente para esse produto.')
+                if (!itensVendas.found && estoque.qt_reservada < item.qt_produto) throw Error('Não exite estoque suficiente para esse produto.')
 
-                estoque.qt_reservada = Number(estoque.qt_reservada) - Number(item.qt_produto);
-
+                if (!itensVendas.found) {
+                    estoque.qt_reservada = Number(estoque.qt_reservada) - Number(item.qt_produto);
+                } else {
+                    estoque.qt_reservada = Number(estoque.qt_reservada) + (qt_produto_antes - itensVendas.qt_produto)
+                }
                 void await estoque.Save();
 
                 itens_salvos++;
@@ -854,12 +857,20 @@ export class ControllerVendas {
             void await db.Begin();
 
             const itensVendas = new ItensVendas(db.connection, entidade_negocio);
+            const estoque = new Estoque(db.connection, entidade_negocio);
+
+            void await estoque.FindById(itensVendas.id_produto);
+
+            estoque.qt_reservada = parseFloat(estoque.qt_reservada) + Number(itensVendas.qt_produto);
+
+            void await estoque.Save()
 
             void await itensVendas.Excluir(id_venda,id_item);
             
             resdata.msg = 'Item de venda excluido com sucesso.';
 
             void await db.Commit();
+            
         } catch (error) {
 
             void await db.RollBack();
