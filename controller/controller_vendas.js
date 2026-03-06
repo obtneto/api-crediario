@@ -927,7 +927,7 @@ export class ControllerVendas {
 
                 estoque.qt_disponivel = parseFloat(estoque.qt_disponivel) + Number(itensVendas.qt_produto);
 
-                void await estoque.Save()
+                void await estoque.Save();
 
                 void await itensVendas.Excluir();
                 
@@ -948,7 +948,7 @@ export class ControllerVendas {
             resdata.msg = error.message;
             resdata.status = Number(error.statusCode || 500);
 
-            console.log(error.stack)
+            console.log(error.stack);
         }
 
         void await db.Close();
