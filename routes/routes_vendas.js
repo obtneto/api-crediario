@@ -3,6 +3,7 @@ import { ControllerDistribuicao, ControllerVendas } from '../controller/controll
 import {criarMiddlewareSessao} from '../utils/RouteSessionMiddleware.js';
 
 const router = Router();
+
 router.use(criarMiddlewareSessao());
 
 /**** Distribioções ****/

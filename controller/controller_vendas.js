@@ -2,6 +2,7 @@ import Database from '../connections/dbconn.js';
 import Distribuicao from '../model/dao_distribuicao.js';
 import Vendas from '../model/dao_vendas.js';
 import Estoque from '../model/dao_estoque.js';
+import Estoque_Mov from '../model/dao_estoque_mov.js';
 import ItensVendas from '../model/dao_itens_vendas.js';
 import Entidades from '../model/dao_entidades.js';
 import {obterEntidadeNegocio} from '../utils/CheckEntidades.js';
@@ -728,6 +729,9 @@ export class ControllerVendas {
 
             const id = String(body.id).trim();
 
+            /***************************************************
+             * Validações dos campos da venda
+             ***********************/
             const dt_venda = body.dt_venda;
             const id_vendedor = Number(body.id_vendedor);
             const id_tipo_pag = Number(body.id_tipo_pag);
@@ -758,10 +762,15 @@ export class ControllerVendas {
             void await db.Connect();
             void await db.Begin();
 
+            const estoque_mov = new Estoque_Mov(db.connection, entidade_negocio);
             const estoque = new Estoque(db.connection,entidade_negocio);
             const itensVendas = new ItensVendas(db.connection, entidade_negocio);
             const vendas = new Vendas(db.connection, entidade_negocio);
 
+            /**************************************************************************
+             * Salva a venda para obter o ID, caso seja uma nova venda (id vazio ou 0). 
+             * Se for uma edição, o ID já existe e a função Save irá atualizar o registro.
+             ****************/
             void await vendas.FindById(id);
             
             vendas.id = id;
@@ -776,8 +785,12 @@ export class ControllerVendas {
 
             void await vendas.Save();
 
+            /***************************************************************************
+             * Salva os itens da venda e atualiza o estoque reservado.
+             *****************/
             let itens_salvos = 0;
             let qt_produto_antes = 0;
+            let qt_produto_atual = 0;
 
             for (const item of itens) {
 
@@ -797,9 +810,11 @@ export class ControllerVendas {
 
                 if (!itensVendas.found) {
                     if (estoque.qt_reservada < item.qt_produto) throw Error('Não exite estoque suficiente para esse produto.');
+                    qt_produto_atual = item.qt_produto;
                 }
                 else {
                     if(estoque.qt_reservada < ((qt_produto_antes - itensVendas.qt_produto) * -1)) throw Error('Não exite estoque suficiente para esse produto.');
+                    qt_produto_atual = ((qt_produto_antes - itensVendas.qt_produto) * -1);
                 }
 
                 if (!itensVendas.found) {
@@ -809,6 +824,21 @@ export class ControllerVendas {
                 }
 
                 void await estoque.Save();
+
+
+                /******************************************************
+                * Registra a movimentação de estoque referente a venda.
+                ********************/
+                void await estoque_mov.FindById(0, new Date());
+
+                estoque_mov.dt_mov = new Date();
+                estoque_mov.id_produto = item.id_produto;
+                estoque_mov.qt_mov = qt_produto_atual;
+                estoque_mov.tp_mov = (qt_produto_antes - itensVendas.qt_produto) < 0 ? 'VENDA' : 'DEVOL';
+                estoque_mov.nr_documento = String(vendas.id);
+                estoque_mov.descricao = `Movimentação de estoque referente a venda ID ${vendas.id}`;
+
+                void await estoque_mov.Save();
 
                 itens_salvos++;
             }
@@ -848,9 +878,12 @@ export class ControllerVendas {
 
         try {
 
+            /*******************************************************************
+             * Validações dos campos necessários para exclusão do item da venda.
+             *****/
             const entidade_negocio = obterEntidadeNegocio(req);
             const id_item = Number(req.params.id_item);
-            const id_venda = String(req.params.id_venda)
+            const id_venda = String(req.params.id_venda);
 
             if (id_item <= 0 ) {
                 const error = new Error('Para excluir item, informe id_item e id_produto.');
@@ -862,15 +895,37 @@ export class ControllerVendas {
             void await db.Begin();
 
             const itensVendas = new ItensVendas(db.connection, entidade_negocio);
+            const estoque_mov = new Estoque_Mov(db.connection, entidade_negocio);
             const estoque = new Estoque(db.connection, entidade_negocio);
 
+            /*****************************************************************
+             * Ao excluir um item da venda, o sistema irá registrar uma 
+             * movimentação de estoque do tipo DEVOLUÇÃO,
+             * para que o estoque seja atualizado corretamente, aumentando 
+             * a quantidade disponível do produto.
+             *******/
             void await itensVendas.FindById(id_item,id_venda)
 
             if (itensVendas.found) {
 
+                void await estoque_mov.FindById(0, new Date());
+
+                estoque_mov.dt_mov = new Date();
+                estoque_mov.id_produto = itensVendas.id_produto;
+                estoque_mov.qt_mov = itensVendas.qt_produto;
+                estoque_mov.tp_mov = 'DEVOL';
+                estoque_mov.nr_documento = String(id_venda);
+                estoque_mov.descricao = `Devolução de produto referente a exclusão de item da venda ID ${id_venda}`;
+                
+                void await estoque_mov.Save();
+
+                /**************************************************************************
+                 * Ao excluir um item da venda, o sistema irá atualizar o estoque reservado, 
+                 * diminuindo a quantidade reservada do produto.
+                 **************************/
                 void await estoque.FindById(itensVendas.id_produto);
 
-                estoque.qt_reservada = parseFloat(estoque.qt_reservada) + Number(itensVendas.qt_produto);
+                estoque.qt_disponivel = parseFloat(estoque.qt_disponivel) + Number(itensVendas.qt_produto);
 
                 void await estoque.Save()
 
