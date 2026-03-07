@@ -8,7 +8,7 @@ import route_clientes from './routes/routes_clientes.js';
 import {config} from 'dotenv';
 import helmet from 'helmet';
 
-config({quiet:true,path:'../.env'});
+//config({quiet:true,path:'../.env'});
 
 /*const options = {
     cert: fs.readFileSync('certicate/icpbrasilv5.crt')

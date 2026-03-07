@@ -18,6 +18,7 @@ export default class Database {
 
         if (this.#conn) return;
 
+
         this.#conn = await createConnection({
             host: process.env.DB_HOST,
             user:  process.env.DB_USER, 

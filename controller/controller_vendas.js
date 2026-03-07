@@ -983,15 +983,45 @@ export class ControllerVendas {
         }
 
         try {
-            const id_vendedor = Number(req.params.id_vendedor || 0);
             const com_rota_cobranca = Number(req.params.com_rota_cobranca || 0);
             const entidade_negocio = obterEntidadeNegocio(req);
+            const dt_ini = String(req.query.dt_ini || '').trim();
+            const dt_fim = String(req.query.dt_fim || '').trim();
             const page = Math.max(1, Number(req.query.page || 1));
             const limit = Math.min(200, Math.max(1, Number(req.query.limit || 50)));
             const offset = (page - 1) * limit;
 
-            if (id_vendedor <= 0) {
-                const error = new Error('Vendedor invalido.');
+            if (!dt_ini || !dt_fim) {
+                const error = new Error('Informe data inicial e data final.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(dt_ini)) {
+                const error = new Error('Data inicial invalida.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(dt_fim)) {
+                const error = new Error('Data final invalida.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (dt_ini > dt_fim) {
+                const error = new Error('Data inicial nao pode ser maior que data final.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            const dtIniDate = new Date(`${dt_ini}T00:00:00Z`);
+            const dtFimDate = new Date(`${dt_fim}T00:00:00Z`);
+            const diffMs = dtFimDate.getTime() - dtIniDate.getTime();
+            const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+            if (diffDays >= 45) {
+                const error = new Error('Intervalo deve ser inferior a 45 dias.');
                 error.statusCode = 400;
                 throw error;
             }
@@ -1001,17 +1031,22 @@ export class ControllerVendas {
             const vendas = new Vendas(db.connection, entidade_negocio);
             const entidades = new Entidades(db.connection,entidade_negocio);
 
-            const whereClause = ['v.id_vendedor = :id_vendedor', 'v.entidade_negocio = :entidade_negocio'];
+            const whereClause = ['v.entidade_negocio = :entidade_negocio'];
             const params = {
-                id_vendedor,
-                entidade_negocio
+                entidade_negocio,
+                dt_ini,
+                dt_fim
             };
 
+            whereClause.push('v.dt_venda >= :dt_ini');
+            whereClause.push('v.dt_venda <= :dt_fim');
             whereClause.push(com_rota_cobranca === 1 ? 'v.id_rota IS NULL' : 'v.id_cobrador IS NULL');
 
-            let query = `SELECT v.id, v.dt_venda, c.nom_cliente,c.end_cliente,c.bai_cliente,c.cid_cliente,c.uf_cliente, v.val_tot_venda
+            let query = `SELECT v.id, v.dt_venda, c.nom_cliente,c.end_cliente,c.bai_cliente,c.cid_cliente,c.uf_cliente,
+                                v.val_tot_venda, vd.nom_vendedor
                          FROM tb_vendas v
                          LEFT JOIN tb_clientes c ON c.cpf_cliente = v.cpf_cliente
+                         LEFT JOIN tb_vendedores vd ON vd.id = v.id_vendedor AND vd.entidade_negocio = v.entidade_negocio
                          WHERE ${whereClause.join(' AND ')}
                          ORDER BY v.dt_venda DESC, v.id DESC
                          LIMIT :limit OFFSET :offset`;
