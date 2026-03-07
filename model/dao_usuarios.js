@@ -48,7 +48,6 @@ export default class Usuarios {
 
     set senha(senha) {this.#field.senha = senha}
     get senha() {return this.#field.senha}
-    get entidade_negocio() {return this.#field.entidade_negocio}
 
     set id_perfil(id_perfil) {this.#field.id_perfil = Number(id_perfil)}
     get id_perfil() {return this.#field.id_perfil}
@@ -58,6 +57,8 @@ export default class Usuarios {
 
     set iniciais(iniciais) {this.#field.iniciais = iniciais}
     get iniciais() {return this.#field.iniciais}
+
+    get entidade_negocio() {return this.#field.entidade_negocio}
 
     async ExecuteQuery(query, params = {}) {
         try {
@@ -76,7 +77,7 @@ export default class Usuarios {
             
             let query = `SELECT * FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio AND usuario = :usuario`;
             
-            const [rows] = await this.#conn.query(query,{usuario,entidade_negocio: this.#entidade_negocio});
+            const [rows] = await this.#conn.query(query,{entidade_negocio: this.#entidade_negocio,usuario});
 
             if (rows) {
                 this.#field.id = rows.id;
@@ -106,7 +107,9 @@ export default class Usuarios {
             
             let query = `SELECT * FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio AND id = :id`;
             
-            const [rows] = await this.#conn.query(query,({entidade_negocio:this.#entidade_negocio},id));
+            console.log(this.#entidade_negocio)
+
+            const [rows] = await this.#conn.query(query,({entidade_negocio:this.#entidade_negocio,id}));
 
             if (rows) {
                 this.#field.id = rows.id;

@@ -1,6 +1,7 @@
 import Database from '../connections/dbconn.js';
 import Estoque from '../model/dao_estoque.js';
 import Estoque_mov from '../model/dao_estoque_mov.js';
+import GravarLog from '../utils/GravarLog.js';
 import {obterEntidadeNegocio} from '../utils/CheckEntidades.js';
 
 export class ControllerEstoque {
@@ -43,9 +44,13 @@ export class ControllerEstoque {
             resdata.data.estoque = rows;
 
         } catch (error) {
+
             resdata.err = 500;
             resdata.msg = error.message;
             resdata.status = 500;
+
+            GravarLog.Gravar('ControllerEstoque.Listar', error.stack);
+            
         }
 
         void await db.Close();
@@ -79,9 +84,12 @@ export class ControllerEstoque {
 
 
         } catch (error) {
+
             resdata.err = 500;
             resdata.msg = error.message;
             resdata.status = 500;
+
+            GravarLog.Gravar('ControllerEstoque.Editar', error.stack);
         }
 
         void await db.Close();
@@ -129,6 +137,8 @@ export class ControllerEstoque {
             resdata.msg = error.message;
             resdata.status = 500;
 
+            GravarLog.Gravar('ControllerEstoque.Salvar', error.stack);
+
         }
 
         void await db.Close();
@@ -171,6 +181,8 @@ export class ControllerEstoque {
             resdata.err = 500;
             resdata.msg = error.message;
             resdata.status = 500;
+
+            GravarLog.Gravar('ControllerEstoque.Excluir', error.stack);
 
         }
 
@@ -238,7 +250,7 @@ export class ControllerEstoqMov {
             resdata.msg = error.message;
             resdata.status = 500;
 
-            console.log(error.stack)
+            GravarLog.Gravar('ControllerEstoqueMov.Salvar', error.stack);
         }
 
         void await db.Close();

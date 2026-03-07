@@ -1,5 +1,6 @@
 import Database from '../connections/dbconn.js';
 import Clientes from '../model/dao_clientes.js';
+import GravarLog from '../utils/GravarLog.js'; 
 
 export class ControllerClientes {
 
@@ -65,7 +66,7 @@ export class ControllerClientes {
             resdata.msg = error.message;
             resdata.status = Number(error.statusCode || 500);
 
-            console.log(error.stack);
+            GravarLog(`Erro ao listar clientes: ${error.message}`);
         }
 
         void await db.Close();
@@ -103,7 +104,7 @@ export class ControllerClientes {
             resdata.msg = error.message;
             resdata.status = Number(error.statusCode || 500);
 
-            console.log(error.stack);
+            GravarLog(`Erro ao editar cliente: ${error.message}`);
         }
 
         void await db.Close();
@@ -180,7 +181,7 @@ export class ControllerClientes {
             resdata.msg = error.message;
             resdata.status = Number(error.statusCode || 500);
 
-            console.log(error.stack);
+            GravarLog(`Erro ao salvar cliente: ${error.message}`);
         }
 
         void await db.Close();

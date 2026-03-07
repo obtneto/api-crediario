@@ -8,7 +8,7 @@ import Produtos from '../model/dao_produtos.js';
 import Rotas from '../model/dao_rotas.js';
 import TiposPagamentos from '../model/dao_tipos_pagamentos.js';
 import Estoque from '../model/dao_estoque.js';
-
+import GravarLog from '../utils/GravarLog.js';
 import {obterEntidadeNegocio} from '../utils/CheckEntidades.js';
 import {definirSessaoHttpOnly, limparSessaoHttpOnly, obterSessaoHttpOnly, renovarSessaoHttpOnly} from '../utils/AuthSession.js';
 
@@ -63,9 +63,12 @@ export class ControllerAuth {
             };
 
         } catch (error) {
+
             resdata.err = Number(error.statusCode || 500);
             resdata.msg = error.message;
             resdata.status = Number(error.statusCode || 500);
+
+            GravarLog('ControllerAuth.IniciarSessao', error.stack);
         }
 
         void await db.Close();
@@ -161,7 +164,7 @@ export class ControllerUsuarios{
             const entidades = new Entidades(db.connection, entidade);
             const perfis = new Perfis(db.connection, entidade);
 
-            query = `SELECT id,nom_entidade,nom_responsavel,num_cnpj,cel_contato FROM tb_entidades WHERE id = ${entidade}`;
+            query = `SELECT id,nom_entidade FROM tb_entidades WHERE id = ${entidade}`;
 
             resdata.data.entidades = await entidades.ExecuteQuery(query);
 
@@ -169,13 +172,17 @@ export class ControllerUsuarios{
             if (!Array.isArray(perfisRows) || perfisRows.length === 0) {
                 perfisRows = await perfis.ExecuteQuery("SELECT id,nom_perfil FROM tb_perfis");
             }
+
             resdata.data.perfis = perfisRows;
 
 
         } catch (error) {
+
             resdata.err = 500;
             resdata.msg = error.message;
             resdata.status = 500;
+
+            GravarLog('ControllerUsuarios.Listar', error.stack);
         }
 
         void await db.Close();
@@ -208,9 +215,12 @@ export class ControllerUsuarios{
 
 
         } catch (error) {
+
             resdata.err = 500;
             resdata.msg = error.message;
             resdata.status = 500;
+
+            GravarLog('ControllerUsuarios.Editar', error.stack);    
         }
 
         void await db.Close();
@@ -241,18 +251,8 @@ export class ControllerUsuarios{
 
             const usuarios = new Usuarios(db.connection, entidade);
 
-            void await usuarios.FindById(id);
-
-
-            const [exist_usuario] = await usuarios.FindByUser(usuario);
+            void await usuarios.FindByUser(usuario);
             
-            if (!usuarios.found && exist_usuario) {
-                throw new Error('Usuario já existente.')
-            }  
-            else {
-                reset_password = 1;
-            }
-
             usuarios.id = id;
             usuarios.usuario = usuario;
             usuarios.nom_completo = nom_completo;
@@ -278,7 +278,7 @@ export class ControllerUsuarios{
             resdata.msg = error.message;
             resdata.status = 500;
 
-            console.log(error.stack)
+            GravarLog('ControllerUsuarios.Salvar', error.stack);
 
         }
 
@@ -323,6 +323,8 @@ export class ControllerUsuarios{
             resdata.msg = error.message;
             resdata.status = 500;
 
+            GravarLog('ControllerUsuarios.Excluir', error.stack);
+
         }
 
         void await db.Close();
@@ -363,9 +365,12 @@ export class ControllerEntidades{
             resdata.data = await entidades.ExecuteQuery(query, params);
 
         } catch (error) {
+
             resdata.err = 500;
             resdata.msg = error.message;
             resdata.status = 500;
+
+            GravarLog('ControllerEntidades.Listar', error.stack);
         }
 
         void await db.Close();
@@ -415,6 +420,8 @@ export class ControllerEntidades{
             resdata.msg = error.message;
             resdata.status = 500;
 
+            GravarLog('ControllerEntidades.Salvar', error.stack);
+
         }
 
         void await db.Close();
@@ -461,9 +468,13 @@ export class ControllerPerfis{
             resdata.data.perfis = rows;
 
         } catch (error) {
+
             resdata.err = 500;
             resdata.msg = error.message;
             resdata.status = 500;
+
+            GravarLog('ControllerPerfis.Listar', error.stack);
+
         }
 
         void await db.Close();
@@ -496,9 +507,13 @@ export class ControllerPerfis{
 
 
         } catch (error) {
+
             resdata.err = 500;
             resdata.msg = error.message;
             resdata.status = 500;
+
+            GravarLog('ControllerPerfis.Editar', error.stack);
+
         }
 
         void await db.Close();
@@ -550,6 +565,8 @@ export class ControllerPerfis{
             resdata.msg = error.message;
             resdata.status = 500;
 
+            GravarLog('ControllerPerfis.Salvar', error.stack);
+
         }
 
         void await db.Close();
@@ -591,6 +608,8 @@ export class ControllerPerfis{
             resdata.err = 500;
             resdata.msg = error.message;
             resdata.status = 500;
+
+            GravarLog('ControllerPerfis.Excluir', error.stack);
 
         }
 
@@ -643,7 +662,7 @@ export class ControllerVendedores{
             resdata.msg = error.message;
             resdata.status = 500;
 
-            console.log(error.stack)
+            GravarLog('ControllerVendedores.Listar', error.stack);
         }
 
         void await db.Close();
@@ -692,7 +711,7 @@ export class ControllerVendedores{
             resdata.msg = error.message;
             resdata.status = 500;
 
-            console.log(error.stack)
+            GravarLog('ControllerVendedores.Listar', error.stack);
         }
 
         void await db.Close();
@@ -723,12 +742,13 @@ export class ControllerVendedores{
 
             resdata.data = await vendedores.FindById(id);
 
-
-
         } catch (error) {
+
             resdata.err = 500;
             resdata.msg = error.message;
             resdata.status = 500;
+
+            GravarLog('ControllerVendedores.Editar', error.stack);
         }
 
         void await db.Close();
@@ -780,7 +800,7 @@ export class ControllerVendedores{
             resdata.msg = error.stack;
             resdata.status = 500;
 
-            console.log(error.stack)
+            GravarLog('ControllerVendedores.Salvar', error.stack);
 
         }
 
@@ -826,6 +846,8 @@ export class ControllerVendedores{
             resdata.err = 500;
             resdata.msg = error.message;
             resdata.status = 500;
+
+            GravarLog('ControllerVendedores.Excluir', error.stack);
 
         }
 
@@ -1313,11 +1335,12 @@ export class ControllerRotas{
             resdata.data.entidades =await entidades.ExecuteQuery(`SELECT id,nom_entidade FROM tb_entidades WHERE id = ${entidade_negocio}`)
 
         } catch (error) {
+
             resdata.err = 500;
             resdata.msg = error.message;
             resdata.status = 500;
 
-            console.log(error.stack)
+            GravarLog('ControllerRotas.Listar', error.stack);
         }
 
         void await db.Close();
@@ -1362,11 +1385,12 @@ export class ControllerRotas{
             resdata.data.entidades = await entidades.ExecuteQuery(`SELECT id,nom_entidade FROM tb_entidades WHERE id = ${entidade_negocio}`)
 
         } catch (error) {
+
             resdata.err = 500;
             resdata.msg = error.message;
             resdata.status = 500;
 
-            console.log(error.stack)
+            GravarLog('ControllerRotas.ListarAtivas', error.stack)
         }
 
         void await db.Close();
@@ -1404,7 +1428,7 @@ export class ControllerRotas{
             resdata.msg = error.message;
             resdata.status = 500;
 
-            console.log(error.stack)
+            GravarLog('ControllerRotas.Editar', error.stack);
         }
 
         void await db.Close();
@@ -1454,7 +1478,7 @@ export class ControllerRotas{
             resdata.msg = error.stack;
             resdata.status = 500;
 
-            console.log(error.stack)
+            GravarLog('ControllerRotas.Salvar', error.stack);
 
         }
 
@@ -1498,7 +1522,7 @@ export class ControllerRotas{
             resdata.msg = error.message;
             resdata.status = 500;
 
-            console.log(error.stack)
+            GravarLog('ControllerRotas.Excluir', error.stack);
         }
 
         void await db.Close();
@@ -1543,9 +1567,12 @@ export class ControllerTiposPagamentos{
             resdata.data.tipos = rows;
 
         } catch (error) {
+
             resdata.err = 500;
             resdata.msg = error.message;
             resdata.status = 500;
+
+            GravarLog('ControllerTiposPagamentos.Listar', error.stack);
         }
 
         void await db.Close();
@@ -1587,9 +1614,12 @@ export class ControllerTiposPagamentos{
             resdata.data.tipos = rows;
 
         } catch (error) {
+
             resdata.err = 500;
             resdata.msg = error.message;
             resdata.status = 500;
+
+            GravarLog('ControllerTiposPagamentos.ListarAtivos', error.stack);
         }
 
         void await db.Close();
@@ -1622,9 +1652,12 @@ export class ControllerTiposPagamentos{
 
 
         } catch (error) {
+
             resdata.err = 500;
             resdata.msg = error.message;
             resdata.status = 500;
+
+            GravarLog('ControllerTiposPagamentos.Editar', error.stack);
         }
 
         void await db.Close();
@@ -1674,6 +1707,8 @@ export class ControllerTiposPagamentos{
             resdata.msg = error.message;
             resdata.status = 500;
 
+            GravarLog('ControllerTiposPagamentos.Salvar', error.stack);
+
         }
 
         void await db.Close();
@@ -1719,6 +1754,8 @@ export class ControllerTiposPagamentos{
             resdata.err = 500;
             resdata.msg = error.message;
             resdata.status = 500;
+
+            GravarLog('ControllerTiposPagamentos.Excluir', error.stack);
 
         }
 

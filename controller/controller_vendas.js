@@ -5,6 +5,9 @@ import Estoque from '../model/dao_estoque.js';
 import Estoque_Mov from '../model/dao_estoque_mov.js';
 import ItensVendas from '../model/dao_itens_vendas.js';
 import Entidades from '../model/dao_entidades.js';
+import Cobradores from '../model/dao_cobradores.js';
+import Rotas from '../model/dao_rotas.js';
+import GravarLog from '../utils/GravarLog.js';
 import {obterEntidadeNegocio} from '../utils/CheckEntidades.js';
 
 export class ControllerDistribuicao{
@@ -126,11 +129,12 @@ export class ControllerDistribuicao{
             };
 
         } catch (error) {
+
             resdata.err = Number(error.statusCode || 500);
             resdata.msg = error.message;
             resdata.status = Number(error.statusCode || 500);
 
-            console.log(error.stack)
+            GravarLog('ControllerDistribuicao.Listar', error.stack);
         }
 
         void await db.Close();
@@ -260,11 +264,12 @@ export class ControllerDistribuicao{
             };
 
         } catch (error) {
+
             resdata.err = Number(error.statusCode || 500);
             resdata.msg = error.message;
             resdata.status = Number(error.statusCode || 500);
 
-            console.log(error.stack)
+            GravarLog('ControllerDistribuicao.ListarPorProduto', error.stack);
         }
 
         void await db.Close();
@@ -308,7 +313,7 @@ export class ControllerDistribuicao{
             resdata.msg = error.message;
             resdata.status = 500;
 
-            console.log(error.stack)
+            GravarLog('ControllerDistribuicao.ListarDistruicaoComSaldo', error.stack);
         }
 
         void await db.Close();
@@ -346,7 +351,7 @@ export class ControllerDistribuicao{
             resdata.msg = error.message;
             resdata.status = 500;
 
-            console.log(error.stack)
+            GravarLog('ControllerDistribuicao.Editar', error.stack);
         }
 
         void await db.Close();
@@ -416,7 +421,7 @@ export class ControllerDistribuicao{
             resdata.msg = error.message;
             resdata.status = 500;
 
-            console.log(error.stack)
+            GravarLog('ControllerDistribuicao.Salvar', error.stack);
 
         }
 
@@ -463,7 +468,7 @@ export class ControllerDistribuicao{
             resdata.msg = error.message;
             resdata.status = 500;
 
-            console.log(error.stack)
+            GravarLog('ControllerDistribuicao.Excluir', error.stack);
         }
 
         void await db.Close();
@@ -527,7 +532,7 @@ export class ControllerDistribuicao{
             resdata.msg = error.message;
             resdata.status = 500;
 
-            console.log(error.stack)
+            GravarLog('ControllerDistribuicao.DevolverProduto', error.stack);
         }
 
         void await db.Close();
@@ -535,6 +540,7 @@ export class ControllerDistribuicao{
         res.status(resdata.status).json(resdata);
         
     }
+    
 }
 
 export class ControllerVendas {
@@ -655,7 +661,7 @@ export class ControllerVendas {
             resdata.msg = error.message;
             resdata.status = Number(error.statusCode || 500);
 
-            console.log(error.stack);
+            GravarLog('ControllerVendas.Listar', error.stack);
         }
 
         void await db.Close();
@@ -699,7 +705,7 @@ export class ControllerVendas {
             resdata.msg = error.message;
             resdata.status = 500;
 
-            console.log(error.stack)
+            GravarLog('ControllerVendas.Editar', error.stack);
         }
 
         void await db.Close();
@@ -857,7 +863,7 @@ export class ControllerVendas {
             resdata.msg = error.message;
             resdata.status = Number(error.statusCode || 500);
 
-            console.log(error.stack)
+            GravarLog('ControllerVendas.Salvar', error.stack);
         }
 
         void await db.Close();
@@ -948,7 +954,7 @@ export class ControllerVendas {
             resdata.msg = error.message;
             resdata.status = Number(error.statusCode || 500);
 
-            console.log(error.stack);
+            GravarLog('ControllerVendas.Excluir', error.stack);
         }
 
         void await db.Close();
@@ -956,7 +962,7 @@ export class ControllerVendas {
         res.status(resdata.status).json(resdata);
     }
 
-     static async DestinarVendas(req,res) {
+     static async ListarVendasDestinar(req,res) {
 
         const db = new Database('dbcred');
 
@@ -1035,7 +1041,7 @@ export class ControllerVendas {
             resdata.msg = error.message;
             resdata.status = Number(error.statusCode || 500);
 
-            console.log(error.stack);
+            GravarLog('ControllerVendas.DestinarVendas', error.stack);
         }
 
         void await db.Close();
@@ -1044,4 +1050,109 @@ export class ControllerVendas {
 
     }
 
+    static async DestinarVendas(req,res) {
+
+        const db = new Database('dbcred');
+
+        const resdata = {
+            err: 0,
+            msg: '',
+            status: 200,
+            data: []
+        }
+
+        try {
+
+            void await db.Connect();
+
+            const entidade_negocio = obterEntidadeNegocio(req);
+            const listaRecebida = Array.isArray(req.body?.lista) ? req.body.lista : [];
+            const lista = Array.from(new Set(
+                listaRecebida
+                    .map((item) => Number(typeof item === 'object' && item !== null ? item.id_venda : item))
+                    .filter((id_venda) => id_venda > 0)
+            ));
+
+            const entidades = new Entidades(db.connection,entidade_negocio);
+
+            void await entidades.FindById(Number(entidade_negocio));
+
+            if (!entidades.found) {
+                const error = new Error('Entidade de negocio nao encontrada.');
+                error.statusCode = 404;
+                throw error;
+            }
+
+            if (lista.length === 0) {
+                const error = new Error('Informe a lista de vendas selecionadas.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            const com_rota_cobranca = Number(entidades.com_rota_cobranca || 0);
+            const destinoCampo = com_rota_cobranca === 1 ? 'id_rota' : 'id_cobrador';
+            const destinoId = Number(req.body?.[destinoCampo] || req.body?.id_destino || 0);
+
+            if (destinoId <= 0) {
+                const error = new Error(`Informe um ${com_rota_cobranca === 1 ? 'id_rota' : 'id_cobrador'} valido.`);
+                error.statusCode = 400;
+                throw error;
+            }
+
+            const destino = com_rota_cobranca === 1
+                ? new Rotas(db.connection, entidade_negocio)
+                : new Cobradores(db.connection, entidade_negocio);
+
+            void await destino.FindById(destinoId);
+
+            if (!destino.found || Number(destino.ativo || 0) !== 1) {
+                const error = new Error(`${com_rota_cobranca === 1 ? 'Rota' : 'Cobrador'} nao encontrado ou inativo.`);
+                error.statusCode = 404;
+                throw error;
+            }
+
+            void await db.Begin();
+
+            const vendas = new Vendas(db.connection, entidade_negocio);
+
+            for (const id_venda of lista) {
+
+                void await vendas.FindById(id_venda);
+
+                if (!vendas.found) {
+                    const error = new Error(`Venda ${id_venda} nao encontrada.`);
+                    error.statusCode = 404;
+                    throw error;
+                }
+
+                if (com_rota_cobranca === 1) {
+                    vendas.id_rota = destinoId;
+                } else {
+                    vendas.id_cobrador = destinoId;
+                }
+
+                void await vendas.Save();
+            }
+
+            void await db.Commit();
+
+            resdata.msg = `${lista.length} venda(s) destinada(s) com sucesso.`;
+
+        }
+        catch (error) {
+
+            void await db.RollBack();
+
+            resdata.err = Number(error.statusCode || 500);  
+            resdata.msg = error.message;
+            resdata.status = Number(error.statusCode || 500);
+
+            GravarLog('ControllerVendas.DestinarVendas', error.stack);
+        }
+
+        void await db.Close();
+
+        res.status(resdata.status).json(resdata);
+
+    }
 }

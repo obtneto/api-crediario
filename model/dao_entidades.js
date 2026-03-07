@@ -5,10 +5,11 @@ export default class Entidades {
 
     #field = {
         id: 0,
-        nom_negocio: '',
+        nom_entidade: '',
         nom_responsavel: '',
         num_cnpj: '',
-        cel_contato: ''
+        cel_contato: '',
+        com_rota_cobranca: 0
     }
 
     constructor(connection) {
@@ -18,10 +19,16 @@ export default class Entidades {
         this.#conn = connection;
     }
 
+    get found() {return this.#found}
+
+    set id(id) {this.#field.id = Number(id)}
     get id() {return this.#field.id}
 
-    set nom_negocio(nom_negocio) {this.#field.nom_negocio = nom_negocio}
-    get nom_negocio() {return this.#field.nom_negocio}
+    set nom_entidade(nom_entidade) {this.#field.nom_entidade = nom_entidade}
+    get nom_entidade() {return this.#field.nom_entidade}
+
+    set nom_negocio(nom_negocio) {this.#field.nom_entidade = nom_negocio}
+    get nom_negocio() {return this.#field.nom_entidade}
 
     set nom_responsavel(nom_responsavel) {this.#field.nom_responsavel = nom_responsavel}
     get nom_responsavel() {return this.#field.nom_responsavel}
@@ -31,6 +38,9 @@ export default class Entidades {
 
     set cel_contato(cel_contato) {this.#field.cel_contato = cel_contato}
     get cel_contato() {return this.#field.cel_contato}
+
+    set com_rota_cobranca(com_rota_cobranca) {this.#field.com_rota_cobranca = com_rota_cobranca}
+    get com_rota_cobranca() {return this.#field.com_rota_cobranca}
 
     async ExecuteQuery(query, params = {}) {
         try {
@@ -44,16 +54,19 @@ export default class Entidades {
 
     async FindById(id) {
         try {
-            const query = "SELECT id FROM tb_entidades WHERE id = :id";
+            const query = `SELECT id, nom_entidade, nom_responsavel, num_cnpj, cel_contato, com_rota_cobranca
+                           FROM tb_entidades
+                           WHERE id = :id`;
 
             const [rows] = await this.#conn.query(query,{id});
 
             if (rows) {
                 this.#field.id = rows.id;
-                this.#field.nom_negocio = rows.nom_negocio;
+                this.#field.nom_entidade = rows.nom_entidade;
                 this.#field.nom_responsavel = rows.nom_responsavel;
                 this.#field.num_cnpj = rows.num_cnpj;
                 this.#field.cel_contato = rows.cel_contato;
+                this.#field.com_rota_cobranca = rows.com_rota_cobranca;
                 this.#found = true;
             } else {
                 this.#found = false;
@@ -71,9 +84,15 @@ export default class Entidades {
             let query = null;
 
             if (this.#found) {
-                query = "UPDATE tb_usuarios SET nom_completo = : nom_completo, email = :email, senha = :senha WHERE id = :id";
+                query = `UPDATE tb_entidades SET 
+                nom_entidade = :nom_entidade, nom_responsavel = :nom_responsavel, 
+                num_cnpj = :num_cnpj, cel_contato = :cel_contato, com_rota_cobranca = :com_rota_cobranca 
+                WHERE id = :id`;
             } else {
-                query = "INSERT INTO tb_usuarios SET nom_completo = : nom_completo, email = :email, senha = :senha, id = :id"
+                query = `INSERT INTO tb_entidades SET 
+                nom_entidade = :nom_entidade, nom_responsavel = :nom_responsavel, 
+                num_cnpj = :num_cnpj, cel_contato = :cel_contato, 
+                com_rota_cobranca = :com_rota_cobranca, id = :id`
             }
 
             const [rows] = await this.#conn.query(query,this.#field);
@@ -87,7 +106,7 @@ export default class Entidades {
 
     async newId() {
         try {
-            const query =  `SELECT IFNULL(MAX(id),0) + 1 as newid FROM tb_usuario`;
+            const query =  `SELECT IFNULL(MAX(id),0) + 1 as newid FROM tb_entidades`;
             const [rows] = await this.#conn.query(query);
 
             return rows.newid;
@@ -98,4 +117,3 @@ export default class Entidades {
     }
 
 }
-
