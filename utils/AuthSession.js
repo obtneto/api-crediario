@@ -2,6 +2,7 @@ import jwt from 'jsonwebtoken';
 import crypto from 'node:crypto';
 
 const COOKIE_NAME = 'crediario_token';
+const RESPONSE_TOKEN_HEADER = 'x-crediario-token';
 const DEFAULT_TTL_SECONDS = 60 * 12;
 const TOKEN_VERSION = 2;
 const IV_LENGTH = 12;
@@ -168,6 +169,7 @@ export function obterSessaoBearer(req) {
 function escreverSessaoHttpOnly(res, sessionData = {}) {
     const { token, ttlMs, payload } = signToken(sessionData);
 
+    res.setHeader(RESPONSE_TOKEN_HEADER, token);
     res.cookie(COOKIE_NAME, token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',

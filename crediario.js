@@ -54,7 +54,8 @@ app.use(
         },
         credentials: true,
         methods: ['POST','GET','OPTIONS'], // metodos permitidos
-        allowedHeaders: ['Content-Type','Authorization','x-entidade-negocio'] // headers permitidos
+        allowedHeaders: ['Content-Type','Authorization','x-entidade-negocio'], // headers permitidos
+        exposedHeaders: ['x-crediario-token']
     })
 ); 
 

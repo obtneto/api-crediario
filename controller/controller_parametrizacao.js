@@ -598,12 +598,6 @@ export class ControllerUsuarios{
 
             const usuarioExistente = Boolean(usuarios.found);
 
-            if (!usuarioExistente && !passwordNormalizado && !reset_password) {
-                const error = new Error('Informe uma senha para o novo usuario.');
-                error.statusCode = 400;
-                throw error;
-            }
-            
             usuarios.id = id;
             usuarios.usuario = usuario;
             usuarios.nom_completo = nom_completo;
