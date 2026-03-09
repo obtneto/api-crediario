@@ -1,93 +1,172 @@
-import crypto from 'crypto';
+import jwt from 'jsonwebtoken';
+import crypto from 'node:crypto';
 
-const COOKIE_NAME = 'crediario_session';
+const COOKIE_NAME = 'crediario_token';
 const DEFAULT_TTL_SECONDS = 60 * 12;
+const TOKEN_VERSION = 2;
+const IV_LENGTH = 12;
 
 function getSecret() {
-    return String(process.env.AUTH_COOKIE_SECRET || 'Cred3215987%$#@!');
+    return String(process.env.AUTH_JWT_SECRET || process.env.AUTH_COOKIE_SECRET || 'Cred3215987%$#@!');
 }
 
-function getTtlSeconds(remember = false) {
-    const envName = remember ? 'AUTH_SESSION_REMEMBER_TIMEOUT_SECONDS' : 'AUTH_SESSION_TIMEOUT_SECONDS';
-    const envValue = Number(process.env[envName]);
+function getEncryptionKey() {
+    return crypto.createHash('sha256').update(getSecret()).digest();
+}
+
+function getTtlSeconds() {
+    const envValue = Number(process.env.AUTH_SESSION_TIMEOUT_SECONDS);
+
     if (Number.isFinite(envValue) && envValue > 0) {
         return Math.floor(envValue);
     }
+
     return DEFAULT_TTL_SECONDS;
-}
-
-function base64UrlEncode(value) {
-    return Buffer.from(value, 'utf8').toString('base64url');
-}
-
-function base64UrlDecode(value) {
-    return Buffer.from(value, 'base64url').toString('utf8');
-}
-
-function sign(payloadBase64) {
-    return crypto.createHmac('sha256', getSecret()).update(payloadBase64).digest('base64url');
 }
 
 function parseCookieHeader(cookieHeader = '') {
     return cookieHeader.split(';').reduce((acc, item) => {
         const [key, ...rest] = item.trim().split('=');
-        if (!key) return acc;
+
+        if (!key) {
+            return acc;
+        }
+
         acc[key] = rest.join('=');
         return acc;
     }, {});
 }
 
-function safeEqual(a, b) {
-    const left = Buffer.from(String(a || ''), 'utf8');
-    const right = Buffer.from(String(b || ''), 'utf8');
-    if (left.length !== right.length) return false;
-    return crypto.timingSafeEqual(left, right);
-}
-
-function buildToken(payload) {
-    const payloadBase64 = base64UrlEncode(JSON.stringify(payload));
-    const signature = sign(payloadBase64);
-    return `${payloadBase64}.${signature}`;
-}
-
-function readToken(req) {
+function readCookieToken(req) {
     const cookies = parseCookieHeader(req.headers?.cookie || '');
-    return cookies[COOKIE_NAME] || '';
+    return String(cookies[COOKIE_NAME] || '');
 }
 
-export function obterSessaoHttpOnly(req) {
+function readBearerToken(req) {
+    const authorization = String(req.headers?.authorization || '').trim();
+
+    if (!authorization.toLowerCase().startsWith('bearer ')) {
+        return '';
+    }
+
+    return authorization.slice(7).trim();
+}
+
+function getTokenFromRequest(req) {
+    return {
+        bearerToken: readBearerToken(req),
+        cookieToken: readCookieToken(req)
+    };
+}
+
+function verifyToken(token = '') {
+    if (!token) {
+        return null;
+    }
+
     try {
-        const token = readToken(req);
-        if (!token || !token.includes('.')) return null;
+        const decoded = jwt.verify(token, getSecret());
 
-        const [payloadBase64, signature] = token.split('.');
-        if (!safeEqual(sign(payloadBase64), signature)) return null;
+        if (decoded?.v === TOKEN_VERSION && decoded?.d) {
+            return decryptPayload(String(decoded.d || ''));
+        }
 
-        const payload = JSON.parse(base64UrlDecode(payloadBase64));
-        const exp = Number(payload?.exp || 0);
-
-        // Sessao sem exp valida e considerada invalida.
-        if (!Number.isFinite(exp) || exp <= 0) return null;
-        if (exp && Date.now() > exp) return null;
-
-        return payload;
+        // Compatibilidade com tokens antigos cujo payload era legível.
+        return decoded;
     } catch (error) {
         return null;
     }
 }
 
-function escreverSessaoHttpOnly(res, sessionData, remember = false) {
-    const ttlMs = getTtlSeconds(remember) * 1000;
-    const payload = {
+function buildPayload(sessionData = {}) {
+    const perfil = sessionData?.perfil || {};
+
+    return {
         user: String(sessionData?.user || ''),
+        firstname: String(sessionData?.firstname || ''),
+        fullname: String(sessionData?.fullname || ''),
+        type_perfil: Number(sessionData?.type_perfil || 0),
         entidade_negocio: Number(sessionData?.entidade_negocio || 0),
         name_entidade: String(sessionData?.name_entidade || ''),
-        remember: Boolean(remember),
-        iat: Date.now(),
-        exp: Date.now() + ttlMs
+        com_rota_cobranca: Number(sessionData?.com_rota_cobranca || 0),
+        perfil: {
+            selecionar: Number(perfil?.selecionar || 0),
+            inserir: Number(perfil?.inserir || 0),
+            atualizar: Number(perfil?.atualizar || 0),
+            excluir: Number(perfil?.excluir || 0)
+        },
+        reset_password: Number(sessionData?.reset_password || 0)
     };
+}
 
-    const token = buildToken(payload);
+function encryptPayload(payload = {}) {
+    const iv = crypto.randomBytes(IV_LENGTH);
+    const cipher = crypto.createCipheriv('aes-256-gcm', getEncryptionKey(), iv);
+    const serialized = JSON.stringify(payload);
+
+    let encrypted = cipher.update(serialized, 'utf8', 'base64url');
+    encrypted += cipher.final('base64url');
+
+    const tag = cipher.getAuthTag().toString('base64url');
+    const ivEncoded = iv.toString('base64url');
+
+    return `${ivEncoded}.${tag}.${encrypted}`;
+}
+
+function decryptPayload(value = '') {
+    try {
+        const [ivEncoded, tagEncoded, encrypted] = String(value || '').split('.');
+
+        if (!ivEncoded || !tagEncoded || !encrypted) {
+            return null;
+        }
+
+        const iv = Buffer.from(ivEncoded, 'base64url');
+        const tag = Buffer.from(tagEncoded, 'base64url');
+        const decipher = crypto.createDecipheriv('aes-256-gcm', getEncryptionKey(), iv);
+
+        decipher.setAuthTag(tag);
+
+        let decrypted = decipher.update(encrypted, 'base64url', 'utf8');
+        decrypted += decipher.final('utf8');
+
+        return JSON.parse(decrypted);
+    } catch (error) {
+        return null;
+    }
+}
+
+function signToken(sessionData = {}) {
+    const ttlSeconds = getTtlSeconds();
+    const payload = buildPayload(sessionData);
+    const encryptedPayload = encryptPayload(payload);
+
+    const token = jwt.sign({
+        v: TOKEN_VERSION,
+        d: encryptedPayload
+    }, getSecret(), {
+        expiresIn: `${ttlSeconds}s`
+    });
+
+    return {
+        token,
+        ttlMs: ttlSeconds * 1000,
+        payload
+    };
+}
+
+export function obterSessaoHttpOnly(req) {
+    const { cookieToken } = getTokenFromRequest(req);
+    return verifyToken(cookieToken);
+}
+
+export function obterSessaoBearer(req) {
+    const { bearerToken } = getTokenFromRequest(req);
+    return verifyToken(bearerToken);
+}
+
+function escreverSessaoHttpOnly(res, sessionData = {}) {
+    const { token, ttlMs, payload } = signToken(sessionData);
 
     res.cookie(COOKIE_NAME, token, {
         httpOnly: true,
@@ -96,15 +175,23 @@ function escreverSessaoHttpOnly(res, sessionData, remember = false) {
         path: '/',
         maxAge: ttlMs
     });
+
+    return {
+        token,
+        payload
+    };
 }
 
-export function definirSessaoHttpOnly(res, sessionData, remember = false) {
-    escreverSessaoHttpOnly(res, sessionData, remember);
+export function definirSessaoHttpOnly(res, sessionData = {}) {
+    return escreverSessaoHttpOnly(res, sessionData);
 }
 
-export function renovarSessaoHttpOnly(res, sessaoAtual) {
-    if (!sessaoAtual) return;
-    escreverSessaoHttpOnly(res, sessaoAtual, Boolean(sessaoAtual?.remember));
+export function renovarSessaoHttpOnly(res, sessaoAtual = {}) {
+    if (!sessaoAtual) {
+        return null;
+    }
+
+    return escreverSessaoHttpOnly(res, sessaoAtual);
 }
 
 export function limparSessaoHttpOnly(res) {
@@ -113,5 +200,14 @@ export function limparSessaoHttpOnly(res) {
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
         path: '/'
+    });
+
+    res.cookie(COOKIE_NAME, '', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        expires: new Date(0),
+        maxAge: 0
     });
 }

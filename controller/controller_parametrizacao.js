@@ -11,6 +11,80 @@ import Estoque from '../model/dao_estoque.js';
 import GravarLog from '../utils/GravarLog.js';
 import {obterEntidadeNegocio} from '../utils/CheckEntidades.js';
 import {definirSessaoHttpOnly, limparSessaoHttpOnly, obterSessaoHttpOnly, renovarSessaoHttpOnly} from '../utils/AuthSession.js';
+import {criptografarSenha, senhaPrecisaUpgrade, SENHA_RESET_PADRAO, validarSenha} from '../utils/Criptografia.js';
+
+const PASSWORD_REGEX = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=\S{8,}).+$/;
+
+function getPrimeiroNome(nomeCompleto = '') {
+    const nome = String(nomeCompleto || '').trim();
+    return nome ? nome.split(' ')[0] : '';
+}
+
+function normalizarPerfilAcesso(usuario = {}) {
+    const typePerfil = Number(usuario?.perfil_id || 0);
+    const isAdmin = typePerfil === 0 || typePerfil === 1;
+
+    return {
+        type_perfil: typePerfil,
+        perfil: {
+            selecionar: isAdmin ? 1 : Number(usuario?.selecionar || 0),
+            inserir: isAdmin ? 1 : Number(usuario?.inserir || 0),
+            atualizar: isAdmin ? 1 : Number(usuario?.atualizar || 0),
+            excluir: isAdmin ? 1 : Number(usuario?.excluir || 0)
+        }
+    };
+}
+
+function montarRespostaAutenticacao(usuario = {}, entidade = {}) {
+    const fullname = String(usuario?.nom_completo || usuario?.usuario || '').trim();
+    const {type_perfil, perfil} = normalizarPerfilAcesso(usuario);
+
+    return {
+        authenticated: true,
+        user: String(usuario?.usuario || ''),
+        firstname: getPrimeiroNome(fullname),
+        fullname,
+        type_perfil,
+        entidade: Number(entidade?.id || entidade?.entidade_negocio || 0),
+        entidade_negocio: Number(entidade?.id || entidade?.entidade_negocio || 0),
+        name_entidade: String(entidade?.nom_entidade || entidade?.name_entidade || ''),
+        com_rota_cobranca: Number(entidade?.com_rota_cobranca || 0),
+        perfil,
+        reset_password: Number(usuario?.reset_password || 0)
+    };
+}
+
+async function buscarUsuarioAutenticacao(usuarios, entidade_negocio, user) {
+    const query = `SELECT u.id, u.usuario, u.nom_completo, u.senha, u.reset_password, u.iniciais,
+        COALESCE(p.id, 0) AS perfil_id,
+        COALESCE(p.selecionar, 0) AS selecionar,
+        COALESCE(p.inserir, 0) AS inserir,
+        COALESCE(p.atualizar, 0) AS atualizar,
+        COALESCE(p.excluir, 0) AS excluir
+        FROM tb_usuarios u
+        LEFT JOIN tb_perfis p ON p.id = u.id_perfil AND p.entidade_negocio = u.entidade_negocio
+        WHERE u.usuario = :user AND u.entidade_negocio = :entidade_negocio`;
+
+    const [usuario] = await usuarios.ExecuteQuery(query, {
+        user,
+        entidade_negocio
+    });
+
+    return usuario || null;
+}
+
+async function buscarEntidadeAuth(entidades, entidade_negocio) {
+    const [entidade] = await entidades.ExecuteQuery(
+        `SELECT id, nom_entidade, com_rota_cobranca FROM tb_entidades WHERE id = :id`,
+        {id: entidade_negocio}
+    );
+
+    return entidade || null;
+}
+
+function validarFormatoSenha(password = '') {
+    return PASSWORD_REGEX.test(String(password || '').trim());
+}
 
 export class ControllerAuth {
 
@@ -28,7 +102,7 @@ export class ControllerAuth {
         try {
             const entidade_negocio = Number(req.body?.entidade_negocio || 0);
             const user = String(req.body?.user || '').trim();
-            const remember = req.body?.remember === true;
+            const password = String(req.body?.password || '').trim();
 
             if (entidade_negocio <= 0) {
                 const error = new Error('Entidade de negocio invalida.');
@@ -36,13 +110,24 @@ export class ControllerAuth {
                 throw error;
             }
 
+            if (!user) {
+                const error = new Error('Informe o usuario.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (!password) {
+                const error = new Error('Informe a senha.');
+                error.statusCode = 400;
+                throw error;
+            }
+
             void await db.Connect();
 
             const entidades = new Entidades(db.connection);
-            const [entidade] = await entidades.ExecuteQuery(
-                `SELECT id, nom_entidade FROM tb_entidades WHERE id = :id`,
-                {id: entidade_negocio}
-            );
+            const usuarios = new Usuarios(db.connection, entidade_negocio);
+
+            const entidade = await buscarEntidadeAuth(entidades, entidade_negocio);
 
             if (!entidade) {
                 const error = new Error('Entidade de negocio nao encontrada.');
@@ -50,16 +135,53 @@ export class ControllerAuth {
                 throw error;
             }
 
-            definirSessaoHttpOnly(res, {
-                user: user || 'usuario',
-                entidade_negocio,
-                name_entidade: entidade.nom_entidade
-            }, remember);
 
+            const usuario = await buscarUsuarioAutenticacao(usuarios, entidade_negocio, user);
+
+            if (!usuario) {
+                const error = new Error('Usuario ou senha invalidos.');
+                error.statusCode = 401;
+                throw error;
+            }
+
+            const senhaResetada = Number(usuario.reset_password || 0) === 1;
+            let senhaValida = false;
+
+            if (senhaResetada) {
+                senhaValida = password === SENHA_RESET_PADRAO;
+            } else {
+                senhaValida = await validarSenha(password, usuario.senha);
+            }
+
+            if (!senhaValida) {
+                const error = new Error('Usuario ou senha invalidos.');
+                error.statusCode = 401;
+                throw error;
+            }
+
+            if (senhaPrecisaUpgrade(usuario.senha)) {
+                try {
+                    void await usuarios.FindByUser(user);
+                    usuarios.senha = await criptografarSenha(password);
+                    void await usuarios.Save();
+                    usuario.senha = usuarios.senha;
+                } catch (upgradeError) {
+                    GravarLog('ControllerAuth.IniciarSessao.UpgradeSenha', upgradeError.stack);
+                }
+            }
+
+            const sessao = montarRespostaAutenticacao(usuario, entidade);
+            const sessaoPersistida = definirSessaoHttpOnly(res, {
+                ...sessao,
+                entidade_negocio
+            });
+
+            resdata.msg = senhaResetada
+                ? 'Senha resetada identificada. Informe uma nova senha para continuar.'
+                : 'Sessao iniciada com sucesso.';
             resdata.data = {
-                user: user || 'usuario',
-                entidade: entidade_negocio,
-                name_entidade: entidade.nom_entidade
+                ...sessao,
+                token: String(sessaoPersistida?.token || '')
             };
 
         } catch (error) {
@@ -95,13 +217,27 @@ export class ControllerAuth {
             return res.status(resdata.status).json(resdata);
         }
 
-        renovarSessaoHttpOnly(res, sessao);
+        const sessaoRenovada = renovarSessaoHttpOnly(res, sessao);
+        const payload = sessaoRenovada?.payload || sessao;
 
         resdata.data = {
             authenticated: true,
-            user: String(sessao.user || ''),
-            entidade: Number(sessao.entidade_negocio || 0),
-            name_entidade: String(sessao.name_entidade || '')
+            user: String(payload.user || ''),
+            firstname: String(payload.firstname || ''),
+            fullname: String(payload.fullname || payload.user || ''),
+            type_perfil: Number(payload.type_perfil || 0),
+            entidade: Number(payload.entidade_negocio || 0),
+            entidade_negocio: Number(payload.entidade_negocio || 0),
+            name_entidade: String(payload.name_entidade || ''),
+            com_rota_cobranca: Number(payload.com_rota_cobranca || 0),
+            perfil: {
+                selecionar: Number(payload?.perfil?.selecionar || 0),
+                inserir: Number(payload?.perfil?.inserir || 0),
+                atualizar: Number(payload?.perfil?.atualizar || 0),
+                excluir: Number(payload?.perfil?.excluir || 0)
+            },
+            token: String(sessaoRenovada?.token || ''),
+            reset_password: Number(payload.reset_password || 0)
         };
 
         return res.status(resdata.status).json(resdata);
@@ -117,6 +253,204 @@ export class ControllerAuth {
         };
 
         limparSessaoHttpOnly(res);
+
+        return res.status(resdata.status).json(resdata);
+    }
+
+    static async SolicitarResetSenhaPublica(req, res) {
+
+        const db = new Database('dbcred');
+
+        const resdata = {
+            err: 0,
+            msg: '',
+            status: 200,
+            data: {}
+        };
+
+        try {
+            const entidade_negocio = Number(req.body?.entidade_negocio || 0);
+            const user = String(req.body?.user || '').trim();
+
+            if (entidade_negocio <= 0) {
+                const error = new Error('Entidade de negocio invalida.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (!user) {
+                const error = new Error('Informe o usuario para resetar a senha.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            void await db.Connect();
+            void await db.Begin();
+
+            const entidades = new Entidades(db.connection);
+            const entidade = await buscarEntidadeAuth(entidades, entidade_negocio);
+
+            if (!entidade) {
+                const error = new Error('Entidade de negocio nao encontrada.');
+                error.statusCode = 404;
+                throw error;
+            }
+
+            const usuarios = new Usuarios(db.connection, entidade_negocio);
+            const usuario = await buscarUsuarioAutenticacao(usuarios, entidade_negocio, user);
+
+            if (!usuario) {
+                const error = new Error('Usuario nao encontrado.');
+                error.statusCode = 404;
+                throw error;
+            }
+
+            void await usuarios.FindByUser(user);
+            usuarios.senha = await criptografarSenha(SENHA_RESET_PADRAO);
+            usuarios.reset_password = 1;
+
+            void await usuarios.Save();
+            void await db.Commit();
+
+            resdata.msg = `Senha resetada para ${SENHA_RESET_PADRAO}. Faça login e altere-a em seguida.`;
+            resdata.data = {
+                user,
+                entidade: entidade_negocio,
+                name_entidade: entidade.nom_entidade,
+                reset_password: 1
+            };
+
+        } catch (error) {
+            void await db.RollBack();
+
+            resdata.err = Number(error.statusCode || 500);
+            resdata.msg = error.message;
+            resdata.status = Number(error.statusCode || 500);
+
+            GravarLog('ControllerAuth.SolicitarResetSenhaPublica', error.stack);
+        }
+
+        void await db.Close();
+
+        return res.status(resdata.status).json(resdata);
+    }
+
+    static async AlterarSenha(req, res) {
+
+        const db = new Database('dbcred');
+
+        const resdata = {
+            err: 0,
+            msg: '',
+            status: 200,
+            data: {}
+        };
+
+        try {
+            const entidade_negocio = obterEntidadeNegocio(req);
+            const user = String(req.auth?.user || '').trim();
+            const current_password = String(req.body?.current_password || '').trim();
+            const new_password = String(req.body?.new_password || '').trim();
+            const confirm_password = String(req.body?.confirm_password || '').trim();
+
+            if (!user || entidade_negocio <= 0) {
+                const error = new Error('Sessao invalida.');
+                error.statusCode = 401;
+                throw error;
+            }
+
+            if (!current_password) {
+                const error = new Error('Informe a senha atual.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (!new_password) {
+                const error = new Error('Informe a nova senha.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (!validarFormatoSenha(new_password)) {
+                const error = new Error('A nova senha precisa ter no mínimo 8 caracteres, com letra maiúscula, minúscula e número.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (new_password !== confirm_password) {
+                const error = new Error('A confirmação da nova senha não confere.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (new_password === current_password) {
+                const error = new Error('A nova senha deve ser diferente da senha atual.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            void await db.Connect();
+            void await db.Begin();
+
+            const entidades = new Entidades(db.connection);
+            const entidade = await buscarEntidadeAuth(entidades, entidade_negocio);
+
+            if (!entidade) {
+                const error = new Error('Entidade de negocio nao encontrada.');
+                error.statusCode = 404;
+                throw error;
+            }
+
+            const usuarios = new Usuarios(db.connection, entidade_negocio);
+            const usuario = await buscarUsuarioAutenticacao(usuarios, entidade_negocio, user);
+
+            if (!usuario) {
+                const error = new Error('Usuario nao encontrado.');
+                error.statusCode = 404;
+                throw error;
+            }
+
+            const senhaResetada = Number(usuario.reset_password || 0) === 1;
+            const senhaAtualValida = senhaResetada
+                ? current_password === SENHA_RESET_PADRAO
+                : await validarSenha(current_password, usuario.senha);
+
+            if (!senhaAtualValida) {
+                const error = new Error(senhaResetada ? 'Senha atual invalida. Use a senha padrao definida no reset.' : 'Senha atual invalida.');
+                error.statusCode = 401;
+                throw error;
+            }
+
+            void await usuarios.FindByUser(user);
+            usuarios.senha = await criptografarSenha(new_password);
+            usuarios.reset_password = 0;
+
+            void await usuarios.Save();
+            void await db.Commit();
+
+            const sessao = montarRespostaAutenticacao({...usuario, reset_password: 0}, entidade);
+            const sessaoPersistida = definirSessaoHttpOnly(res, {
+                ...sessao,
+                entidade_negocio
+            });
+
+            resdata.msg = 'Senha alterada com sucesso.';
+            resdata.data = {
+                ...sessao,
+                token: String(sessaoPersistida?.token || '')
+            };
+
+        } catch (error) {
+            void await db.RollBack();
+
+            resdata.err = Number(error.statusCode || 500);
+            resdata.msg = error.message;
+            resdata.status = Number(error.statusCode || 500);
+
+            GravarLog('ControllerAuth.AlterarSenha', error.stack);
+        }
+
+        void await db.Close();
 
         return res.status(resdata.status).json(resdata);
     }
@@ -211,7 +545,15 @@ export class ControllerUsuarios{
 
             const usuario = new Usuarios(db.connection, entidade);
 
-            resdata.data = await usuario.FindById(id);
+            const usuarioRow = await usuario.FindById(id);
+
+            if (usuarioRow) {
+                const {senha, ...usuarioSemSenha} = usuarioRow;
+                resdata.data = {
+                    ...usuarioSemSenha,
+                    password: ''
+                };
+            }
 
 
         } catch (error) {
@@ -242,8 +584,9 @@ export class ControllerUsuarios{
 
         try {
 
-            let {id,usuario,nom_completo,email,id_perfil,reset_password} = req.body;
+            let {id,usuario,nom_completo,email,id_perfil,reset_password,password} = req.body;
             const entidade = obterEntidadeNegocio(req);
+            const passwordNormalizado = String(password || '').trim();
             
             void await db.Connect();
 
@@ -252,13 +595,29 @@ export class ControllerUsuarios{
             const usuarios = new Usuarios(db.connection, entidade);
 
             void await usuarios.FindByUser(usuario);
+
+            const usuarioExistente = Boolean(usuarios.found);
+
+            if (!usuarioExistente && !passwordNormalizado && !reset_password) {
+                const error = new Error('Informe uma senha para o novo usuario.');
+                error.statusCode = 400;
+                throw error;
+            }
             
             usuarios.id = id;
             usuarios.usuario = usuario;
             usuarios.nom_completo = nom_completo;
             usuarios.email = email;
             usuarios.id_perfil = id_perfil;
-            usuarios.reset_password = reset_password;
+            usuarios.reset_password = reset_password ? 1 : 0;
+
+            if (reset_password) {
+                usuarios.senha = await criptografarSenha(SENHA_RESET_PADRAO);
+            } else if (passwordNormalizado) {
+                usuarios.senha = await criptografarSenha(passwordNormalizado);
+            } else if (!usuarioExistente) {
+                usuarios.senha = await criptografarSenha(String(usuario || '').trim());
+            }
 
             const ini = nom_completo.split(' ');
 
@@ -269,14 +628,15 @@ export class ControllerUsuarios{
             void await usuarios.Save();
 
             void await db.Commit();
+            resdata.msg = 'Usuario salvo com sucesso.';
 
         } catch (error) {
             
             void await db.RollBack();
 
-            resdata.err = 500;
+            resdata.err = Number(error.statusCode || 500);
             resdata.msg = error.message;
-            resdata.status = 500;
+            resdata.status = Number(error.statusCode || 500);
 
             GravarLog('ControllerUsuarios.Salvar', error.stack);
 

@@ -21,6 +21,7 @@ router.use(criarMiddlewareSessao());
 router.post('/auth/session',ControllerAuth.IniciarSessao);
 router.get('/auth/session',ControllerAuth.SessaoAtual);
 router.post('/auth/logout',ControllerAuth.EncerrarSessao);
+router.post('/auth/change-password',ControllerAuth.AlterarSenha);
 router.get('/listar_entidades_publico',ControllerEntidades.Listar);
 router.get('/listar_entidades',ControllerEntidades.Listar);
 
