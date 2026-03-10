@@ -10,7 +10,7 @@ export default function GravarLog(mensagem) {
 
     const logMessage = `[${data} ${hora}] ${mensagem}\n\n`;
 
-    fs.appendFile('../Logs/logs.txt', logMessage, (err) => {
+    fs.appendFile('./Logs/logs.txt', logMessage, (err) => {
         if (err) {
             throw err;
         }

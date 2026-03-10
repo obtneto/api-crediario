@@ -12,6 +12,7 @@ import GravarLog from '../utils/GravarLog.js';
 import {obterEntidadeNegocio} from '../utils/CheckEntidades.js';
 import {definirSessaoHttpOnly, limparSessaoHttpOnly, obterSessaoHttpOnly, renovarSessaoHttpOnly} from '../utils/AuthSession.js';
 import {criptografarSenha, senhaPrecisaUpgrade, SENHA_RESET_PADRAO, validarSenha} from '../utils/Criptografia.js';
+import {desencriptar} from '../utils/DecriptPayload.js';
 
 const PASSWORD_REGEX = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=\S{8,}).+$/;
 
@@ -102,7 +103,7 @@ export class ControllerAuth {
         try {
             const entidade_negocio = Number(req.body?.entidade_negocio || 0);
             const user = String(req.body?.user || '').trim();
-            const password = String(req.body?.password || '').trim();
+            const password = desencriptar(String(req.body?.password || '').trim());
 
             if (entidade_negocio <= 0) {
                 const error = new Error('Entidade de negocio invalida.');
@@ -134,7 +135,6 @@ export class ControllerAuth {
                 error.statusCode = 404;
                 throw error;
             }
-
 
             const usuario = await buscarUsuarioAutenticacao(usuarios, entidade_negocio, user);
 

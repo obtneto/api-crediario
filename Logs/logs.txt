@@ -1,0 +1,28 @@
+[10/03/2026 07:23:46] ControllerAuth.IniciarSessao
+
+[10/03/2026 07:24:47] ControllerAuth.IniciarSessao
+
+[10/03/2026 07:36:33] ControllerEntidades.Listar
+
+[10/03/2026 07:36:33] ControllerEntidades.Listar
+
+[10/03/2026 07:36:58] ControllerEntidades.Listar
+
+[10/03/2026 07:36:58] ControllerEntidades.Listar
+
+[10/03/2026 07:38:07] ControllerEntidades.Listar
+
+[10/03/2026 07:38:07] ControllerEntidades.Listar
+
+[10/03/2026 07:38:42] ControllerEntidades.Listar
+
+[10/03/2026 07:38:42] ControllerEntidades.Listar
+
+[10/03/2026 07:39:14] ControllerEntidades.Listar
+
+[10/03/2026 07:39:14] ControllerEntidades.Listar
+
+[10/03/2026 07:39:28] ControllerEntidades.Listar
+
+[10/03/2026 07:39:28] ControllerEntidades.Listar
+
