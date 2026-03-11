@@ -1,4 +1,4 @@
-export function FormatDateTime(data,locales = 'pt-BR',timezone = 'America/Maceio') {
+export function FormatDateTime(data,locales = 'pt-BR',timezone = 'UTC') {
 
     const date = new Date(data);
 
@@ -16,7 +16,7 @@ export function FormatDateTime(data,locales = 'pt-BR',timezone = 'America/Maceio
     
 }
 
-export function FormatDate(data,locales = 'pt-BR',timezone = 'America/Maceio') {
+export function FormatDate(data,locales = 'pt-BR',timezone = 'UTC') {
 
     const date = new Date(data);
 
@@ -31,7 +31,7 @@ export function FormatDate(data,locales = 'pt-BR',timezone = 'America/Maceio') {
     
 }
 
-export function FormatTime(hora,locales = 'pt-BR',timezone = 'America/Maceio') {
+export function FormatTime(hora,locales = 'pt-BR',timezone = 'UTC') {
 
     const hora  = new Date(hora);
 

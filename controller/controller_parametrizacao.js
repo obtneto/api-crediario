@@ -1263,6 +1263,55 @@ export class ControllerCobradores{
 
     }
 
+    static async ListarAtivos(req,res) {
+
+        const db = new Database('dbcred');
+
+        const resdata = {
+            err: 0,
+            msg: '',
+            status: 200,
+            data: {
+                cobradores: [],
+                entidades: []
+            }
+        }
+
+        try {
+            
+            const pesq =  req.params.pesq;
+            const entidade_negocio = obterEntidadeNegocio(req);
+            
+            void await db.Connect();
+
+            const cobradores = new Cobradores(db.connection, entidade_negocio);
+            const entidades = new Entidades(db.connection, entidade_negocio);
+
+            let query = null;
+
+            query = `SELECT * FROM tb_cobradores WHERE entidade_negocio = ${entidade_negocio} AND ativo = 1 `;
+
+            if (pesq != "*") {
+                query += ` AND nom_cobrador LIKE '%${pesq}%'`
+            }
+
+            resdata.data.cobradores  = await cobradores.ExecuteQuery(query);
+            resdata.data.entidades = await entidades.ExecuteQuery(`SELECT id,nom_entidade FROM tb_entidades WHERE id = ${entidade_negocio}`)
+
+        } catch (error) {
+            resdata.err = 500;
+            resdata.msg = error.message;
+            resdata.status = 500;
+
+            console.log(error.stack)
+        }
+
+        void await db.Close();
+
+        res.status(resdata.status).json(resdata);
+
+    }
+
     static async Editar(req,res) {
 
         const db = new Database('dbcred');

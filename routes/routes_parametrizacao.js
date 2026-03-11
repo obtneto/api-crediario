@@ -54,6 +54,7 @@ router.post('/salvar_vendedores',ControllerVendedores.Salvar);
 
 /**** Cobradores ****/
 router.get('/listar_cobradores/:pesq',ControllerCobradores.Listar);
+router.get('/listar_cobradores_ativos/:pesq',ControllerCobradores.ListarAtivos);
 router.get('/editar_cobradores/:id',ControllerCobradores.Editar);
 router.get('/excluir_cobradores/:id',ControllerCobradores.Excluir);
 router.post('/salvar_cobradores',ControllerCobradores.Salvar);

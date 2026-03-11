@@ -2,7 +2,8 @@ import Database from '../connections/dbconn.js';
 import GravarLog from '../utils/GravarLog.js';
 import {obterEntidadeNegocio} from '../utils/CheckEntidades.js';
 import Entidades from '../model/dao_entidades.js';
-import Vendas from '../model/dao_vendas.js';    
+import Vendas from '../model/dao_vendas.js';
+import Pagamentos from '../model/dao_pagamentos.js';  
 
 export class ControllerCobranca {
 
@@ -86,16 +87,20 @@ export class ControllerCobranca {
             const cobrancas = new Vendas(db.connection, entidade_negocio);
             const entidades = new Entidades(db.connection);
 
-            let query = `SELECT v.id, v.dt_venda, c.cpf_cliente, c.nom_cliente, c.end_cliente, c.bai_cliente, c.cid_cliente, c.uf_cliente,
-                                v.val_tot_venda
-                         FROM tb_vendas v
-                         LEFT JOIN tb_clientes c ON c.cpf_cliente = v.cpf_cliente
-                         WHERE v.dt_venda >= :dt_ini
-                           AND v.dt_venda <= :dt_fim
-                           AND v.${fieldname} = :id_filter
-                           AND v.entidade_negocio = :entidade_negocio
-                         ORDER BY v.dt_venda DESC, v.id DESC
-                         LIMIT :limit OFFSET :offset`;
+            let query = `SELECT v.id, v.dt_venda, c.cpf_cliente, c.nom_cliente, c.end_cliente, c.bai_cliente, 
+            c.cid_cliente, c.uf_cliente, v.val_tot_venda, COALESCE(SUM(p.vl_pagamento), 0) AS val_total_pago,
+            GREATEST(v.val_tot_venda - COALESCE(SUM(p.vl_pagamento), 0), 0) AS saldo_pagar
+            FROM tb_vendas v
+            LEFT JOIN tb_clientes c ON c.cpf_cliente = v.cpf_cliente
+            LEFT JOIN tb_pagamentos p ON p.entidade_negocio = v.entidade_negocio AND p.id_venda = v.id
+            WHERE v.dt_venda >= :dt_ini
+            AND v.dt_venda <= :dt_fim
+            AND v.${fieldname} = :id_filter
+            AND v.entidade_negocio = :entidade_negocio
+            GROUP BY v.id, v.dt_venda, c.cpf_cliente, c.nom_cliente, c.end_cliente, c.bai_cliente, 
+            c.cid_cliente, c.uf_cliente, v.val_tot_venda
+            ORDER BY v.dt_venda DESC, v.id DESC
+            LIMIT :limit OFFSET :offset`;
 
             resdata.data.cobrancas = await cobrancas.ExecuteQuery(query,{
                 dt_ini,
@@ -146,5 +151,144 @@ export class ControllerCobranca {
 
         res.status(resdata.status).json(resdata);
 
+    }
+
+    static async ListarPagamentos(req,res) {
+        
+        const db = new Database('dbcred'); 
+
+        const resdata = {
+            err: 0,
+            status: 200,
+            msg: '',
+            data: {
+                pagamentos: []
+            }
+        }
+
+        try {
+            
+            const entidade_negocio = obterEntidadeNegocio(req);
+            const id_venda = Number(req.params.id_venda || 0);
+
+            if (!id_venda || id_venda <= 0) {
+                const error = new Error('ID da venda invalido.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            void await db.Connect();
+
+            const pagamentos = new Pagamentos(db.connection, entidade_negocio);
+
+            const query = `SELECT tb_pagamentos.id, tb_pagamentos.dt_pagamento, tb_cobradores.nom_cobrador, tb_pagamentos.vl_pagamento
+            FROM tb_pagamentos 
+            LEFT JOIN tb_cobradores ON tb_cobradores.id = tb_pagamentos.id_cobrador AND tb_cobradores.entidade_negocio = tb_pagamentos.entidade_negocio
+            WHERE tb_pagamentos.entidade_negocio = :entidade_negocio AND tb_pagamentos.id_venda = :id_venda 
+            ORDER BY tb_pagamentos.dt_pagamento DESC, tb_pagamentos.id DESC`;
+
+            resdata.data.pagamentos = await pagamentos.ExecuteQuery(query, { entidade_negocio, id_venda });
+
+        } catch (error) {
+            
+            resdata.err = Number(error.statusCode || 500);
+            resdata.msg = error.message;
+            resdata.status = Number(error.statusCode || 500);
+
+            GravarLog('ControllerCobranca.ListarPagamentos', error.stack);
+        }
+
+        void await db.Close();
+
+        res.status(resdata.status).json(resdata);
+    }
+
+    static async SalvarPagamento(req,res) {
+        
+        const db = new Database('dbcred'); 
+        let transacaoConcluida = false;
+
+        const resdata = {
+            err: 0,
+            status: 200,
+            msg: '',
+            data: {
+                id_venda: 0,
+                id_pagamento: 0,
+                saldo_pagar: 0
+            }
+        }
+
+        try {
+            
+            const entidade_negocio = obterEntidadeNegocio(req);
+            const body = req.body || {};
+            
+            const id_venda = String(body.id_venda);
+            const dt_pagamento = String(body.dt_pagamento || '').trim();
+            const vl_pagamento = parseFloat(body.vl_pagamento || 0);
+            const id_cobrador = Number(body.id_cobrador || 0);
+
+            if (id_venda <= 0) {
+                const error = new Error('ID da venda invalido.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(dt_pagamento)) {
+                const error = new Error('Data do pagamento invalida.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            void await db.Connect();
+            void await db.Begin();
+
+            const pagamentos = new Pagamentos(db.connection, entidade_negocio);
+
+            const quety = `SELECT val_tot_venda, (val_tot_venda - SUM(COALESCE(vl_pagamento, 0))) AS saldo_pagar 
+            FROM tb_vendas 
+            LEFT JOIN tb_pagamentos ON tb_pagamentos.entidade_negocio = tb_vendas.entidade_negocio AND tb_pagamentos.id_venda = tb_vendas.id 
+            WHERE tb_vendas.entidade_negocio = :entidade_negocio AND tb_vendas.id = :id_venda 
+            GROUP BY val_tot_venda`
+
+            const [rows] = await pagamentos.ExecuteQuery(quety, { entidade_negocio, id_venda });
+
+            if (vl_pagamento > parseFloat(rows.saldo_pagar)) {
+                const error = new Error('Valor do pagamento nao pode ser maior que o saldo a pagar.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            void await pagamentos.FindById(id_venda, 0);
+
+            pagamentos.id_venda = id_venda;
+            pagamentos.dt_pagamento = dt_pagamento;
+            pagamentos.vl_pagamento = vl_pagamento
+            pagamentos.id_cobrador = id_cobrador;
+
+            void await pagamentos.Save();
+            void await db.Commit();
+           
+            resdata.msg = 'Pagamento registrado com sucesso.';
+            resdata.data.id_venda = id_venda;
+            resdata.data.id_pagamento = pagamentos.id;
+            resdata.data.saldo_pagar = parseFloat(rows.saldo_pagar);
+
+        } catch (error) {
+
+            resdata.err = Number(error.statusCode || 500);
+            resdata.msg = error.message;
+            resdata.status = Number(error.statusCode || 500);
+
+            if (error.err == 500) {
+                GravarLog('ControllerCobranca.SalvarPagamento', error.stack);
+            }
+
+        }
+
+        void await db.Close();
+
+        res.status(resdata.status).json(resdata);
     }
 }

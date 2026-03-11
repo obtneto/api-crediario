@@ -6,6 +6,8 @@ const router = Router();
 
 router.use(criarMiddlewareSessao());
 
-router.get('/listar_cobrancas/:id/:com_rota_cobranca',ControllerCobranca.ListarCobrancas)
+router.get('/listar_cobrancas/:id/:com_rota_cobranca',ControllerCobranca.ListarCobrancas);
+router.get('/listar_pagamentos/:id_venda',ControllerCobranca.ListarPagamentos);
+router.post('/salvar_pagamento',ControllerCobranca.SalvarPagamento);
 
-export default router
+export default router;

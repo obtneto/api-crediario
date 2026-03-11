@@ -380,7 +380,7 @@ export class ControllerDistribuicao{
             const qt_distrib = Number(req.body.qt_distrib);
             
             const entidade_negocio = obterEntidadeNegocio(req);
-            
+
             void await db.Connect();
 
             void await db.Begin();
