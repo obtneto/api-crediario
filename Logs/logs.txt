@@ -52,3 +52,5 @@
 
 [11/03/2026 17:47:39] ControllerCobranca.SalvarPagamento
 
+[12/03/2026 11:18:36] ControllerAuth.IniciarSessao
+

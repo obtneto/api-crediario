@@ -1778,10 +1778,10 @@ export class ControllerRotas{
 
             let query = null;
 
-            query = `SELECT * FROM tb_rotas WHERE entidade_negocio = ${entidade_negocio} `;
+            query = `SELECT * FROM tb_rotas WHERE entidade_negocio = ${entidade_negocio} AND ativo = 1 `;
 
             if (pesq != "*") {
-                query += ` AND nom_rota LIKE '%${pesq}% AND ativo = 1`
+                query += ` AND nom_rota LIKE '%${pesq}%'`
             }
 
             resdata.data.rotas  = await rotas.ExecuteQuery(query);
