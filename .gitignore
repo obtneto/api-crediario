@@ -1,12 +1,14 @@
 node_modules
 *.cjs
-.env
+*.env
+*.txt
 dist
 temp
 tmp
 backup
 .sql
 logs
+Logs
 coverage
 .DS_Store
 .vscode

@@ -95,7 +95,7 @@ export default class Perfis {
 
             if (this.#found) {
                 query = `UPDATE ${this.#tb_name} SET nom_perfil = :nom_perfil, selecionar = :selecionar, inserir = :inserir, atualizar = :atualizar,
-                excluir = :excluir WHERE entidade_negocio = :entidade_negocio id = :id`;
+                excluir = :excluir WHERE entidade_negocio = :entidade_negocio AND id = :id`;
             } else {
                 this.#field.id = await this.#newId();
                 query = `INSERT INTO ${this.#tb_name} SET nom_perfil = :nom_perfil, selecionar = :selecionar, inserir = :inserir, atualizar = :atualizar,

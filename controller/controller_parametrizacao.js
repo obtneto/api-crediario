@@ -37,6 +37,7 @@ function normalizarPerfilAcesso(usuario = {}) {
 }
 
 function montarRespostaAutenticacao(usuario = {}, entidade = {}) {
+
     const fullname = String(usuario?.nom_completo || usuario?.usuario || '').trim();
     const {type_perfil, perfil} = normalizarPerfilAcesso(usuario);
 
@@ -56,6 +57,7 @@ function montarRespostaAutenticacao(usuario = {}, entidade = {}) {
 }
 
 async function buscarUsuarioAutenticacao(usuarios, entidade_negocio, user) {
+
     const query = `SELECT u.id, u.usuario, u.nom_completo, u.senha, u.reset_password, u.iniciais,
         COALESCE(p.id, 0) AS perfil_id,
         COALESCE(p.selecionar, 0) AS selecionar,
@@ -75,6 +77,7 @@ async function buscarUsuarioAutenticacao(usuarios, entidade_negocio, user) {
 }
 
 async function buscarEntidadeAuth(entidades, entidade_negocio) {
+    
     const [entidade] = await entidades.ExecuteQuery(
         `SELECT id, nom_entidade, com_rota_cobranca FROM tb_entidades WHERE id = :id`,
         {id: entidade_negocio}
@@ -101,6 +104,7 @@ export class ControllerAuth {
         };
 
         try {
+
             const entidade_negocio = Number(req.body?.entidade_negocio || 0);
             const user = String(req.body?.user || '').trim();
             const password = desencriptar(String(req.body?.password || '').trim());

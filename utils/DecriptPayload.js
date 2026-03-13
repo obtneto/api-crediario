@@ -1,6 +1,6 @@
 import CryptoJS from 'crypto-js';
 
-const SECRET_KEY = "Cred3215987%$#@!"; // Chave secreta para criptografia (deve ser mantida em segredo e segura)
+const SECRET_KEY = process.env.SECRET_KEY || "Cred3215987%$#@!"; // Chave secreta para criptografia (deve ser mantida em segredo e segura)
 
 // Encriptar
 export function encriptar(texto) {
