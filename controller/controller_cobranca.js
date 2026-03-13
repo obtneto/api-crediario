@@ -291,4 +291,65 @@ export class ControllerCobranca {
 
         res.status(resdata.status).json(resdata);
     }
+
+    static async ExcluirPagamento(req,res) {
+        
+        const db = new Database('dbcred'); 
+    
+        const resdata = {
+            err: 0,
+            status: 200,
+            msg: '',
+            data: []
+        }
+
+        try {
+            
+            const entidade_negocio = obterEntidadeNegocio(req);
+            const id_pagamento = Number(req.params.id_pagamento || 0);
+            const id_venda = String(req.params.id_venda || 0);
+
+            if (id_pagamento <= 0 || !id_venda) {
+                const error = new Error('ID do pagamento ou ID da venda invalido.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            void await db.Connect();
+            void await db.Begin();
+
+            const pagamentos = new Pagamentos(db.connection, entidade_negocio);
+
+            void await pagamentos.FindById(id_venda, id_pagamento);
+
+            if (!pagamentos.found) {
+                const error = new Error('Pagamento nao encontrado.');
+                error.statusCode = 404;
+                throw error;
+            }
+
+            void await pagamentos.Excluir();
+
+            void await db.Commit();
+            
+            resdata.msg = 'Pagamento excluido com sucesso.';
+            
+        } catch (error) {
+
+            void await db.RollBack();
+                
+            resdata.err = Number(error.statusCode || 500);
+            resdata.msg = error.message;
+            resdata.status = Number(error.statusCode || 500);
+
+            if (resdata.status === 500) {
+                GravarLog('ControllerCobranca.ExcluirPagamento', error.stack);
+            }
+
+        }
+
+        void await db.Close();
+
+        res.status(resdata.status).json(resdata);
+    }
 }
