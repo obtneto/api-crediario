@@ -1,3 +1,11 @@
 [12/03/2026 23:53:40] ControllerAuth.IniciarSessao: Error: Usuario ou senha invalidos.
     at IniciarSessao (file:///home/ovidio.neto/Crediario/backend/controller/controller_parametrizacao.js:161:31)
 
+[16/03/2026 22:59:08] ControllerAuth.IniciarSessao: Error: Usuario ou senha invalidos.
+    at IniciarSessao (file:///home/ovidio.neto/Crediario/backend/controller/controller_parametrizacao.js:146:31)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+
+[16/03/2026 22:59:09] ControllerAuth.IniciarSessao: Error: Usuario ou senha invalidos.
+    at IniciarSessao (file:///home/ovidio.neto/Crediario/backend/controller/controller_parametrizacao.js:146:31)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+
