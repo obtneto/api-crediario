@@ -3,7 +3,8 @@ import GravarLog from '../utils/GravarLog.js';
 import {obterEntidadeNegocio} from '../utils/CheckEntidades.js';
 import Entidades from '../model/dao_entidades.js';
 import Vendas from '../model/dao_vendas.js';
-import Pagamentos from '../model/dao_pagamentos.js';  
+import Pagamentos from '../model/dao_pagamentos.js';
+import Adiantamentos from '../model/dao_adiantamentos.js';
 
 export class ControllerCobranca {
 
@@ -351,5 +352,113 @@ export class ControllerCobranca {
         void await db.Close();
 
         res.status(resdata.status).json(resdata);
+    }
+
+    static async ListarAdiantamentosAtivos(req,res) {
+        
+        const db = new Database('dbcred'); 
+
+        const resdata = {
+            err: 0,
+            status: 200,
+            msg: '',
+            data: {
+                adiantamentos: []
+            }
+        }
+
+        try {
+            
+            const entidade_negocio = obterEntidadeNegocio(req);
+            const id_vendedor = Number(req.params.id_vendedor || 0);
+
+            if (!id_vendedor || id_vendedor <= 0) {
+                const error = new Error('ID do vendedor invalido.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            void await db.Connect();
+
+            const adiantamentos = new Adiantamentos(db.connection, entidade_negocio);
+
+            const query = `SELECT id, dt_adiantamento, vl_adiantamento FROM tb_adiantamentos 
+            WHERE entidade_negocio = :entidade_negocio AND id_vendedor = :id_vendedor AND num_recibo IS NOT NULL
+            ORDER BY dt_adiantamento DESC, id DESC`;
+
+            resdata.data.adiantamentos = await adiantamentos.ExecuteQuery(query, { entidade_negocio, id_vendedor });
+
+        } catch (error) {
+            
+            resdata.err = Number(error.statusCode || 500);
+            resdata.msg = error.message;
+            resdata.status = Number(error.statusCode || 500);
+
+            if (resdata.status === 500) {
+                GravarLog('ControllerCobranca.ListarAdiantamentos', error.stack);
+            }
+        }
+
+        void await db.Close();
+
+        res.status(resdata.status).json(resdata);
+    }
+    
+    static async Editar(req,res) {
+
+        const db = new Database('dbcred');
+
+        const resdata = {
+            err: 0,
+            status: 200,
+            msg: '',
+            data: []
+        }
+
+        try {
+            
+            const entidade_negocio = obterEntidadeNegocio(req);
+            const id_vendedor = Number(req.params.id_vendedor  || 0);
+            const id_adiantamento = Number(req.params.id_adiantamento || 0);
+
+            if (id_vendedor <= 0 || id_adiantamento <= 0) {
+                const error = new Error('ID do vendedor ou ID do adiantamento invalido.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            void await db.Connect();
+
+            const adiantamentos = new Adiantamentos(db.connection, entidade_negocio);
+
+            void await adiantamentos.FindById(id_adiantamento, id_vendedor);
+
+            if (!adiantamentos.found) {
+                const error = new Error('Adiantamento nao encontrado.');
+                error.statusCode = 404;
+                throw error;
+            }
+
+            resdata.data = {
+                id: adiantamentos.id,
+                dt_adiantamento: adiantamentos.dt_adiant,
+                vl_adiantamento: adiantamentos.vl_adiant
+            }
+
+        } catch (error) {
+
+            resdata.err = Number(error.statusCode || 500);
+            resdata.msg = error.message;
+            resdata.status = Number(error.statusCode || 500);
+
+            if (resdata.status === 500) {
+                GravarLog('ControllerCobranca.Editar', error.stack);
+            }
+            
+        }
+
+        void await db.Close();
+
+        res.status(resdata.status).json(resdata);   
     }
 }

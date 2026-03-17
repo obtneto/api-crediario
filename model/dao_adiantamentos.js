@@ -1,4 +1,4 @@
-export default class Perfis {
+export default class Adiantamentos {
 
     #conn = null;
     #found = null;
