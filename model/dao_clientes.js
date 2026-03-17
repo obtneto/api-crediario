@@ -29,7 +29,7 @@ export default class Clientes {
     get found() {return this.#found}
 
     set id(id) {this.#field.id = Number(id)}
-    get id() {return this.#field.id}
+    get id() {return Number(this.#field.id)}
 
     set cpf_cliente(cpf_cliente) {this.#field.cpf_cliente = cpf_cliente}
     get cpf_cliente() {return this.#field.cpf_cliente}
@@ -84,18 +84,18 @@ export default class Clientes {
             const [rows] = await this.#conn.query(query,{id});
 
             if (rows) {
-                this.#field.id = rows.id;
-                this.#field.cpf_cliente = rows.cpf_cliente;
-                this.#field.nom_cliente = rows.nom_cliente;
-                this.#field.cel_cliente = rows.cel_cliente;
-                this.#field.end_cliente = rows.end_cliente;
-                this.#field.num_cliente = rows.num_cliente;
-                this.#field.bai_cliente = rows.bai_cliente;
-                this.#field.cid_cliente = rows.cid_cliente;
-                this.#field.uf_cliente = rows.uf_cliente;
-                this.#field.cep_cliente = rows.cep_cliente;
-                this.#field.lat_cliente = rows.lat_cliente;
-                this.#field.lon_cliente = rows.lon_cliente;
+                this.id = rows.id;
+                this.cpf_cliente = rows.cpf_cliente;
+                this.nom_cliente = rows.nom_cliente;
+                this.cel_cliente = rows.cel_cliente;
+                this.end_cliente = rows.end_cliente;
+                this.num_cliente = rows.num_cliente;
+                this.bai_cliente = rows.bai_cliente;
+                this.cid_cliente = rows.cid_cliente;
+                this.uf_cliente = rows.uf_cliente;
+                this.cep_cliente = rows.cep_cliente;
+                this.lat_cliente = rows.lat_cliente;
+                this.lon_cliente = rows.lon_cliente;
                 this.#found = true;
             } else {
                 this.#found = false;
@@ -118,18 +118,18 @@ export default class Clientes {
             const [rows] = await this.#conn.query(query,{cpf});
 
             if (rows) {
-                this.#field.id = rows.id;
-                this.#field.cpf_cliente = rows.cpf_cliente;
-                this.#field.nom_cliente = rows.nom_cliente;
-                this.#field.cel_cliente = rows.cel_cliente;
-                this.#field.end_cliente = rows.end_cliente;
-                this.#field.num_cliente = rows.num_cliente;
-                this.#field.bai_cliente = rows.bai_cliente;
-                this.#field.cid_cliente = rows.cid_cliente;
-                this.#field.uf_cliente = rows.uf_cliente;
-                this.#field.cep_cliente = rows.cep_cliente;
-                this.#field.lat_cliente = rows.lat_cliente;
-                this.#field.lon_cliente = rows.lon_cliente;
+                this.id = rows.id;
+                this.cpf_cliente = rows.cpf_cliente;
+                this.nom_cliente = rows.nom_cliente;
+                this.cel_cliente = rows.cel_cliente;
+                this.end_cliente = rows.end_cliente;
+                this.num_cliente = rows.num_cliente;
+                this.bai_cliente = rows.bai_cliente;
+                this.cid_cliente = rows.cid_cliente;
+                this.uf_cliente = rows.uf_cliente;
+                this.cep_cliente = rows.cep_cliente;
+                this.lat_cliente = rows.lat_cliente;
+                this.lon_cliente = rows.lon_cliente;
                 this.#found = true;
             } else {
                 this.#found = false;
@@ -157,7 +157,7 @@ export default class Clientes {
                 WHERE id = :id`;
             } else {
 
-                this.#field.id = await this.#newId();
+                this.id = await this.#newId();
 
                 query = `INSERT INTO ${this.#tb_name} SET cpf_cliente = :cpf_cliente, nom_cliente = :nom_cliente,
                 cel_cliente = :cel_cliente, end_cliente = :end_cliente, num_cliente = :num_cliente, bai_cliente = :bai_cliente,

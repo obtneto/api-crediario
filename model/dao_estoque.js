@@ -30,13 +30,13 @@ export default class Estoque {
     get found() {return this.#found}
 
     set id_produto(id_produto) {this.#field.id_produto = Number(id_produto)}
-    get id_produto() {return this.#field.id_produto}
+    get id_produto() {return Number(this.#field.id_produto)}
 
     set qt_reservada(qt_reservada) {this.#field.qt_reservada = Number(qt_reservada)}
-    get qt_reservada() {return this.#field.qt_reservada}
+    get qt_reservada() {return Number(this.#field.qt_reservada)}
 
     set qt_disponivel(qt_disponivel) {this.#field.qt_disponivel = Number(qt_disponivel)}
-    get qt_disponivel() {return this.#field.qt_disponivel}
+    get qt_disponivel() {return Number(this.#field.qt_disponivel)}
 
     get entidade_negocio() {return this.#field.entidade_negocio}
 
@@ -63,16 +63,16 @@ export default class Estoque {
             const [rows] = await this.#conn.query(query,{entidade_negocio:this.#entidade_negocio,id_produto});
 
             if (rows) {
-                this.#field.id_produto = rows.id_produto;
-                this.#field.qt_reservada = rows.qt_reservada;
-                this.#field.qt_disponivel = rows.qt_disponivel;
-                
+                this.id_produto = Number(rows.id_produto);
+                this.qt_reservada = Number(rows.qt_reservada);
+                this.qt_disponivel = Number(rows.qt_disponivel);
+
                 this.#found = true;
             } else {
                 this.#found = false;
             }
 
-            return this.#found ? rows : this.#found;
+            return this.#found ? this.#field : this.#found;
         } catch (error) {
             throw error;
         }
@@ -103,13 +103,17 @@ export default class Estoque {
 
     }
 
-    async Excluir(id_produto) {
+    async Excluir() {
 
         try {
             
-            const query = `DELETE FROM ${this.#tb_name} WHERE entidade_negocio= :entidade_negocio AND id_produto = :id_produto`;
+            const query = `DELETE FROM ${this.#tb_name} 
+            WHERE entidade_negocio= :entidade_negocio AND id_produto = :id_produto`;
 
-            void await this.#conn.query(query,{entidade_negocio: this.#field.entidade_negocio,id_produto});
+            void await this.#conn.query(query,{
+                entidade_negocio: this.#field.entidade_negocio,
+                id_produto: this.#field.id_produto
+            });
             
         } catch (error) {
             throw error;

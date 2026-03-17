@@ -34,22 +34,22 @@ export default class Distribuicao {
     get found() {return this.#found}
 
     set id(id) {this.#field.id = Number(id)}
-    get id() {return this.#field.id}
+    get id() {return Number(this.#field.id)}
 
     set dt_distrib(dt_distrib) {this.#field.dt_distrib = dt_distrib}
     get dt_distrib() {return this.#field.dt_distrib}
 
     set id_vendedor(id_vendedor) {this.#field.id_vendedor = Number(id_vendedor)}
-    get id_vendedor() {return this.#field.id_vendedor}
+    get id_vendedor() {return Number(this.#field.id_vendedor)}
 
     set id_produto(id_produto) {this.#field.id_produto = Number(id_produto)}
-    get id_produto() {return this.#field.id_produto}
+    get id_produto() {return Number(this.#field.id_produto)}
 
     set qt_distrib(qt_distrib) {this.#field.qt_distrib = Number(qt_distrib)}
-    get qt_distrib() {return this.#field.qt_distrib}
+    get qt_distrib() {return Number(this.#field.qt_distrib)}
 
     set qt_retorno(qt_retorno) {this.#field.qt_retorno = Number(qt_retorno)}
-    get qt_retorno() {return this.#field.qt_retorno}
+    get qt_retorno() {return Number(this.#field.qt_retorno)}
 
     set dt_retorno(dt_retorno) {this.#field.dt_retorno = dt_retorno}
     get dt_retorno() {return this.#field.dt_retorno}
@@ -75,19 +75,19 @@ export default class Distribuicao {
             const [rows] = await this.#conn.query(query,{id,entidade_negocio:this.#entidade_negocio});
 
             if (rows) {
-                this.#field.id = rows.id;
-                this.#field.dt_distrib = rows.dt_distrib;
-                this.#field.id_vendedor = rows.id_vendedor;
-                this.#field.id_produto = rows.id_produto;
-                this.#field.qt_distrib = rows.qt_distrib;
-                this.#field.dt_retorno = rows.dt_retorno;
-                this.#field.qt_retorno = rows.qt_retorno;
+                this.id = rows.id;
+                this.dt_distrib = rows.dt_distrib;
+                this.id_vendedor = rows.id_vendedor;
+                this.id_produto = rows.id_produto;
+                this.qt_distrib = rows.qt_distrib;
+                this.dt_retorno = rows.dt_retorno;
+                this.qt_retorno = rows.qt_retorno;
                 this.#found = true;
             } else {
                 this.#found = false;
             }
 
-            return this.#found ? rows : this.#found;
+            return this.#found ? this.#field : this.#found;
         } catch (error) {
             throw error;
         }
@@ -105,7 +105,7 @@ export default class Distribuicao {
                 WHERE entidade_negocio = :entidade_negocio AND id = :id`;
             } else {
 
-                this.#field.id = await this.#newId();
+                this.id = await this.#newId();
 
                 query = `INSERT INTO ${this.#tb_name} SET dt_distrib = :dt_distrib, id_vendedor = :id_vendedor,
                 id_produto = :id_produto,qt_distrib = :qt_distrib,qt_retorno = :qt_retorno, dt_retorno = :qt_retorno,

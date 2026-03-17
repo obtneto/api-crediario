@@ -22,7 +22,7 @@ export default class Entidades {
     get found() {return this.#found}
 
     set id(id) {this.#field.id = Number(id)}
-    get id() {return this.#field.id}
+    get id() {return Number(this.#field.id)}
 
     set nom_entidade(nom_entidade) {this.#field.nom_entidade = nom_entidade}
     get nom_entidade() {return this.#field.nom_entidade}
@@ -61,18 +61,18 @@ export default class Entidades {
             const [rows] = await this.#conn.query(query,{id});
 
             if (rows) {
-                this.#field.id = rows.id;
-                this.#field.nom_entidade = rows.nom_entidade;
-                this.#field.nom_responsavel = rows.nom_responsavel;
-                this.#field.num_cnpj = rows.num_cnpj;
-                this.#field.cel_contato = rows.cel_contato;
-                this.#field.com_rota_cobranca = rows.com_rota_cobranca;
+                this.id = rows.id;
+                this.nom_entidade = rows.nom_entidade;
+                this.nom_responsavel = rows.nom_responsavel;
+                this.num_cnpj = rows.num_cnpj;
+                this.cel_contato = rows.cel_contato;
+                this.com_rota_cobranca = rows.com_rota_cobranca;
                 this.#found = true;
             } else {
                 this.#found = false;
             }
 
-            return this.#found ? rows : this.#found;
+            return this.#found ? this.#field : this.#found;
         } catch (error) {
             throw error;
         }

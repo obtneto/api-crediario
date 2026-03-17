@@ -34,19 +34,19 @@ export default class EstoqueMov {
     get found() {return this.#found}
 
     set id(id) {this.#field.id = Number(id)}
-    get id() {return this.#field.id}
+    get id() {return Number(this.#field.id)}
 
     set dt_mov(dt_mov) {this.#field.dt_mov = dt_mov}
     get dt_mov() {return this.#field.dt_mov}
 
     set id_produto(id_produto) {this.#field.id_produto = Number(id_produto)}
-    get id_produto() {return this.#field.id_produto}
+    get id_produto() {return Number(this.#field.id_produto)}
 
     set tp_mov(tp_mov) {this.#field.tp_mov = tp_mov}
     get tp_mov() {return this.#field.tp_mov}
 
     set qt_mov(qt_mov) {this.#field.qt_mov = Number(qt_mov)}
-    get qt_mov() {return this.#field.qt_mov}
+    get qt_mov() {return Number(this.#field.qt_mov)}
 
     set nr_documento(nr_documento) {this.#field.nr_documento = nr_documento}
     get nr_documento() {return this.#field.nr_documento}
@@ -75,19 +75,19 @@ export default class EstoqueMov {
             const [rows] = await this.#conn.query(query,{id,dt_mov,entidade_negocio: this.#entidade_negocio});
 
             if (rows) {
-                this.#field.id = rows.id;
-                this.#field.dt_mov = rows.dt_mov;
-                this.#field.id_produto = rows.id_produto;
-                this.#field.tp_mov = rows.tp_mov;
-                this.#field.qt_mov = rows.qt_mov;
-                this.#field.nr_documento = rows.nr_documento;
-                this.#field.descricao = rows.descricao;
+                this.id = Number(rows.id)    ;
+                this.dt_mov = rows.dt_mov;
+                this.id_produto = Number(rows.id_produto);
+                this.tp_mov = rows.tp_mov;
+                this.qt_mov = Number(rows.qt_mov)    ;
+                this.nr_documento = rows.nr_documento;
+                this.descricao = rows.descricao;
                 this.#found = true;
             } else {
                 this.#found = false;
             }
 
-            return this.#found ? rows : this.#found;
+            return this.#found ? this.#field : this.#found;
 
         } catch (error) {
             throw error;
@@ -107,14 +107,12 @@ export default class EstoqueMov {
                 WHERE entidade_negocio = :entidade_negocio AND dt_mov = :dt_mov AND id = :id`;
             } else {
 
-                this.#field.id = await this.#newId(this.#field.dt_mov);
+                this.id = await this.#newId(this.#field.dt_mov);
 
                 query = `INSERT INTO ${this.#tb_name} SET id = :id, dt_mov = :dt_mov, id_produto = :id_produto,
                 tp_mov = :tp_mov, qt_mov = :qt_mov, nr_documento = :nr_documento,
                 descricao = :descricao, entidade_negocio = :entidade_negocio`;
             }
-
-            console.log(this.#field)
 
             return await this.#conn.query(query,this.#field);
 

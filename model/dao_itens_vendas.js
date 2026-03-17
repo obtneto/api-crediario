@@ -31,13 +31,13 @@ export default class ItensVendas {
     get found() {return this.#found}
 
     set id_produto(id_produto) {this.#field.id_produto = Number(id_produto)}
-    get id_produto() {return this.#field.id_produto}
+    get id_produto() {return Number(this.#field.id_produto)}
 
     set id(id) {this.#field.id = Number(id)}
-    get id() {return this.#field.id}
+    get id() {return Number(this.#field.id)}
 
     set qt_produto(qt_produto) {this.#field.qt_produto = Number(qt_produto)}
-    get qt_produto() {return this.#field.qt_produto}
+    get qt_produto() {return Number(this.#field.qt_produto)}
 
     set id_venda(id_venda) {this.#field.id_venda = String(id_venda)}
     get id_venda() {return this.#field.id_venda}
@@ -63,19 +63,16 @@ export default class ItensVendas {
             const [rows] = await this.#conn.query(query,{id,id_venda,entidade_negocio: this.#entidade_negocio});
 
             if (rows) {
-                this.#field.entidade_negocio = rows.entidade_negocio;
-                this.#field.id_produto = rows.id_produto;
-                this.#field.id = rows.id;
-                this.#field.qt_produto = rows.qt_produto;
-                this.#field.id_venda = rows.id_venda;
+                this.id_produto = Number(rows.id_produto);
+                this.id = Number(rows.id);
+                this.qt_produto = Number(rows.qt_produto);
+                this.id_venda = String(rows.id_venda);
                 this.#found = true;
             } else {
                 this.#found = false;
             }
 
-            console.log(this.#found)
-
-            return this.#found ? rows : this.#found;
+            return this.#found ? this.#field : this.#found;
 
         } catch (error) {
             throw error;
@@ -110,7 +107,7 @@ export default class ItensVendas {
                 WHERE entidade_negocio = :entidade_negocio AND id_venda = :id_venda AND id = :id`;
             } else {
 
-                this.#field.id = await this.#newId();
+                this.id = await this.#newId();
 
                 query = `INSERT INTO ${this.#tb_name} SET entidade_negocio = :entidade_negocio, id_produto = :id_produto,
                 id = :id, qt_produto = :qt_produto, id_venda = :id_venda`;
@@ -150,7 +147,7 @@ export default class ItensVendas {
 
             const [rows] = await this.#conn.query(query,{entidade_negocio: this.#field.entidade_negocio,id_venda: this.#field.id_venda});
 
-            return rows.newid;
+            return Number(rows.newid);
 
         } catch (error) {
             throw error;

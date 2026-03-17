@@ -34,22 +34,22 @@ export default class Devolucoes{
     get id() {return this.#fields.id}
 
     set id_venda(id_venda) {this.#fields.id_venda = String(id_venda)}
-    get id_venda() {return this.#fields.id_venda}
+    get id_venda() {return String(this.#fields.id_venda)}
 
     set id_produto(id_produto) {this.#fields.id_produto = Number(id_produto)}
-    get id_produto() {return this.#fields.id_produto}
+    get id_produto() {return Number(this.#fields.id_produto)}
 
     set dt_devolucao(dt_devolucao) {this.#fields.dt_devolucao = dt_devolucao}
     get dt_devolucao() {return this.#fields.dt_devolucao}
 
     set qt_devolucao(qt_devolucao) {this.#fields.qt_devolucao = Number(qt_devolucao)}
-    get qt_devolucao() {return this.#fields.qt_devolucao}
+    get qt_devolucao() {return Number(this.#fields.qt_devolucao)}
 
-    set vl_unit_devo(vl_unit_devo) {this.#fields.vl_unit_devo = Number(vl_unit_devo).toFixed(2)}
-    get vl_unit_devo() {return this.#fields.vl_unit_devo}
+    set vl_unit_devo(vl_unit_devo) {this.#fields.vl_unit_devo = parseFloat(vl_unit_devo)}
+    get vl_unit_devo() {return parseFloat(this.#fields.vl_unit_devo)}
 
-    set vl_tot_devo(vl_tot_devo) {this.#fields.vl_tot_devo = Number(vl_tot_devo).toFixed(2)}
-    get vl_tot_devo() {return this.#fields.vl_tot_devo}
+    set vl_tot_devo(vl_tot_devo) {this.#fields.vl_tot_devo = parseFloat(vl_tot_devo)}
+    get vl_tot_devo() {return parseFloat(this.#fields.vl_tot_devo)}
 
     get entidade_negocio() {return this.#fields.entidade_negocio}
 
@@ -76,20 +76,20 @@ export default class Devolucoes{
             const rows = await this.#conn.query(query,{entidade_negocio: this.#fields.entidade_negocio,id});
 
             if (rows[0]) {
-                this.#fields.id = rows[0].id;
-                this.#fields.id_venda = rows[0].id_venda;
-                this.#fields.id_produto = rows[0].id_produto;
-                this.#fields.dt_devolucao = rows[0].dt_devolucao;
-                this.#fields.qt_devolucao = rows[0].qt_devolucao;
-                this.#fields.vl_unit_devo = rows[0].vl_tot_devo;
-                this.#fields.vl_tot_devo = rows[0].vl_tot_devo;
+                this.id = rows[0].id;
+                this.id_venda = rows[0].id_venda;
+                this.id_produto = rows[0].id_produto;
+                this.dt_devolucao = rows[0].dt_devolucao;
+                this.qt_devolucao = rows[0].qt_devolucao;
+                this.vl_unit_devo = rows[0].vl_tot_devo;
+                this.vl_tot_devo = rows[0].vl_tot_devo;
                 this.#found = true;
             }
             else {
                 this.#found = false;
             }
 
-            return this.#found ? rows : this.#found;
+            return this.#found ? this.#fields : this.#found;
             
         } catch (error) {
             throw error;
@@ -110,7 +110,7 @@ export default class Devolucoes{
                 WHERE entidade_negocio = :entidade_negocio AND id = :id`;
             } else {
                 
-                this.#fields.id = await this.#newId();
+                this.id = await this.#newId();
 
                 query = `INSERT INTO ${this.#tb_name} SET id_produto = :id_produto, dt_devoluao = :dt_devoluao, 
                 qt_devolucao = :qt_devolucao, vl_tot_devo = :vl_tot_devo, vl_tot_devo = :vl_tot_devo, id_venda = :id_venda,  
@@ -143,7 +143,7 @@ export default class Devolucoes{
             const query =  `SELECT IFNULL(MAX(id),0) + 1 as newid FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio`;
             const [rows] = await this.#conn.query(query,{entidade_negocio: this.#fields.entidade_negocio});
 
-            return rows.newid;
+            return Number(rows.newid);
 
         } catch (error) {
             throw error;

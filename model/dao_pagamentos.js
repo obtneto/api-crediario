@@ -32,21 +32,21 @@ export default class Perfis {
     get found() {return this.#found}
 
     set id(id) {this.#field.id = Number(id)}
-    get id() {return this.#field.id}
+    get id() {return Number(this.#field.id)}
 
-    set id_venda(id_venda) {this.#field.id_venda = id_venda}
-    get id_venda() {return this.#field.id_venda}
+    set id_venda(id_venda) {this.#field.id_venda = String(id_venda)}
+    get id_venda() {return String(this.#field.id_venda)}
 
-    set dt_pagamento(dt_pagamento) {this.#field.dt_pagamento = dt_pagamento}
-    get dt_pagamento() {return this.#field.dt_pagamento}
+    set dt_pagamento(dt_pagamento) {this.#field.dt_pagamento = String(dt_pagamento)}
+    get dt_pagamento() {return String(this.#field.dt_pagamento)}
 
-    set vl_pagamento(vl_pagamento) {this.#field.vl_pagamento = Number(vl_pagamento)}
-    get vl_pagamento() {return this.#field.vl_pagamento}
+    set vl_pagamento(vl_pagamento) {this.#field.vl_pagamento = parseFloat(vl_pagamento)}
+    get vl_pagamento() {return parseFloat(this.#field.vl_pagamento)}
 
     set id_cobrador(id_cobrador) {this.#field.id_cobrador = Number(id_cobrador)}
-    get id_cobrador() {return this.#field.id_cobrador}
+    get id_cobrador() {return Number(this.#field.id_cobrador)}
 
-    get entidade_negocio() {return this.#field.entidade_negocio}
+    get entidade_negocio() {return Number(this.#field.entidade_negocio)}
 
     async ExecuteQuery(query, params = {}) {
         try {
@@ -68,18 +68,20 @@ export default class Perfis {
 
             if (rows) {
                 
-                this.#field.id = rows.id;
-                this.#field.id_venda = rows.id_venda;
-                this.#field.dt_pagamento = rows.dt_pagamento;
-                this.#field.vl_pagamento = rows.vl_pagamento;
-                this.#field.id_cobrador = rows.id_cobrador;
-                
+                this.id = Number(rows.id);
+                this.id_venda = String(rows.id_venda);
+                this.dt_pagamento = String(rows.dt_pagamento);
+                this.vl_pagamento = parseFloat(rows.vl_pagamento);
+                this.id_cobrador = Number(rows.id_cobrador);
+
                 this.#found = true;
+                
             } else {
                 this.#found = false;
             }
 
-            return this.#found ? rows : this.#found;
+            return this.#found ? this.#field : this.#found;
+
         } catch (error) {
             throw error;
         }
@@ -98,7 +100,7 @@ export default class Perfis {
                 
             } else {
 
-                this.#field.id = await this.#newId();
+                this.id = await this.#newId();
 
                 query = `INSERT INTO ${this.#tb_name} SET dt_pagamento = :dt_pagamento, vl_pagamento = :vl_pagamento, id_cobrador = :id_cobrador,
                 id_venda = :id_venda, id = :id, entidade_negocio = :entidade_negocio`
@@ -133,7 +135,7 @@ export default class Perfis {
             const query =  `SELECT IFNULL(MAX(id),0) + 1 as newid FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio AND id_venda = :id_venda`;
             const [rows] = await this.#conn.query(query,{entidade_negocio: this.#field.entidade_negocio, id_venda: this.#field.id_venda});
 
-            return rows.newid;
+            return Number(rows.newid);
 
         } catch (error) {
             throw error;

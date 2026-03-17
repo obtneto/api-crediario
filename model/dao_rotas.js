@@ -30,14 +30,14 @@ export default class Rotas {
     get found() {return this.#found}
 
     set id(id) {this.#field.id = Number(id)}
-    get id() {return this.#field.id}
+    get id() {return Number(this.#field.id)}
 
     set nom_rota(nom_rota) {this.#field.nom_rota = nom_rota}
     get nom_rota() {return this.#field.nom_rota}
-    get entidade_negocio() {return this.#field.entidade_negocio}
+    get entidade_negocio() {return Number(this.#field.entidade_negocio)}
 
     set ativo(ativo) {this.#field.ativo = Number(ativo)}
-    get ativo() {return this.#field.ativo}
+    get ativo() {return Number(this.#field.ativo)}
 
     async ExecuteQuery(query) {
         try {
@@ -58,15 +58,15 @@ export default class Rotas {
             const [rows] = await this.#conn.query(query,{id,entidade_negocio: this.#entidade_negocio});
 
             if (rows) {
-                this.#field.id = rows.id;
-                this.#field.nom_rota = rows.nom_rota;
-                this.#field.ativo = rows.ativo;
+                this.id = Number(rows.id);
+                this.nom_rota = String(rows.nom_rota);
+                this.ativo = Number(rows.ativo);
                 this.#found = true;
             } else {
                 this.#found = false;
             }
 
-            return this.#found ? rows : this.#found;
+            return this.#found ? this.#field : this.#found;
         } catch (error) {
             throw error;
         }
@@ -112,7 +112,8 @@ export default class Rotas {
             const query =  `SELECT IFNULL(MAX(id),0) + 1 as newid FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio`;
             const [rows] = await this.#conn.query(query,{entidade_negocio: this.#field.entidade_negocio});
 
-            return rows.newid;
+            return Number(rows.newid);
+            
         } catch (error) {
             throw error;
         }

@@ -32,25 +32,30 @@ export default class Cobradores {
     get found() {return this.#found}
 
     set id(id) {this.#field.id = Number(id)}
-    get id() {return this.#field.id}
+    get id() {return Number(this.#field.id)}
 
     set nom_cobrador(nom_cobrador) {this.#field.nom_cobrador = nom_cobrador}
     get nom_cobrador() {return this.#field.nom_cobrador}
 
-    set comissao(comissao) {this.#field.comissao = Number(comissao)}
-    get comissao() {return this.#field.comissao}
+    set comissao(comissao) {this.#field.comissao = parseFloat(comissao)}
+    get comissao() {return parseFloat(this.#field.comissao)}
 
     set cel_contato(cel_contato) {this.#field.cel_contato = cel_contato}
     get cel_contato() {return this.#field.cel_contato}
-    get entidade_negocio() {return this.#field.entidade_negocio}
+
+    get entidade_negocio() {return Number(this.#field.entidade_negocio)}
 
     set ativo(ativo) {this.#field.ativo = Number(ativo)}
-    get ativo() {return this.#field.ativo}
+    get ativo() {return Number(this.#field.ativo)}
 
     async ExecuteQuery(query) {
+
         try {
+
             const rows = await this.#conn.execute(query);
+
             return rows;
+
         } catch (error) {
             throw error;
         }
@@ -66,18 +71,19 @@ export default class Cobradores {
             const [rows] = await this.#conn.query(query,{id,entidade_negocio:this.#entidade_negocio});
 
             if (rows) {
-                this.#field.id = rows.id;
-                this.#field.nom_cobrador = rows.nom_cobrador;
-                this.#field.comissao = rows.comissao;
-                this.#field.cel_contato = rows.cel_contato;
-                this.#field.ativo = rows.ativo;
-                
+                this.id = rows.id;
+                this.nom_cobrador = rows.nom_cobrador;
+                this.comissao = rows.comissao;
+                this.cel_contato = rows.cel_contato;
+                this.ativo = rows.ativo;
+
                 this.#found = true;
             } else {
                 this.#found = false;
             }
 
-            return this.#found ? rows : this.#found;
+            return this.#found ? this.#field : this.#found;
+
         } catch (error) {
             throw error;
         }
@@ -92,7 +98,7 @@ export default class Cobradores {
                 query = `UPDATE ${this.#tb_name} SET nom_cobrador = :nom_cobrador, comissao = :comissao, cel_contato = :cel_contato, entidade_negocio = :entidade_negocio, ativo = :ativo
                 WHERE entidade_negocio = :entidade_negocio AND id = :id`;
             } else {
-                this.#field.id = await this.#newId();
+                this.id = await this.#newId();
                 query = `INSERT INTO ${this.#tb_name} SET nom_cobrador = :nom_cobrador, comissao = :comissao, cel_contato = :cel_contato, entidade_negocio = :entidade_negocio, ativo = :ativo, id = :id`
             }
 

@@ -33,24 +33,24 @@ export default class Perfis {
     get found() {return this.#found}
 
     set id(id) {this.#field.id = Number(id)}
-    get id() {return this.#field.id}
+    get id() {return Number(this.#field.id)}
 
     set nom_perfil(nom_perfil) {this.#field.nom_perfil = nom_perfil}
     get nom_perfil() {return this.#field.nom_perfil}
 
     set selecionar(selecionar) {this.#field.selecionar = Number(selecionar)}
-    get selecionar() {return this.#field.selecionar}
+    get selecionar() {return Number(this.#field.selecionar)}
 
     set inserir(inserir) {this.#field.inserir = Number(inserir)}
-    get inserirt() {return this.#field.inserir}
+    get inserir() {return Number(this.#field.inserir)}
 
     set atualizar(atualizar) {this.#field.atualizar = Number(atualizar)}
-    get atualizar() {return this.#field.atualizar}
+    get atualizar() {return Number(this.#field.atualizar)}
 
     set excluir(excluir) {this.#field.excluir = Number(excluir)}
-    get excluir() {return this.#field.excluir}
+    get excluir() {return Number(this.#field.excluir)}
 
-    get entidade_negocio() {return this.#field.entidade_negocio}
+    get entidade_negocio() {return Number(this.#field.entidade_negocio)}
 
     async ExecuteQuery(query) {
         try {
@@ -70,19 +70,19 @@ export default class Perfis {
             const [rows] = await this.#conn.query(query,{id,entidade_negocio: this.#entidade_negocio});
 
             if (rows) {
-                this.#field.id = rows.id;
-                this.#field.nom_perfil = rows.nom_perfil;
-                this.#field.selecionar = rows.selecionar;
-                this.#field.inserir = rows.inserir;
-                this.#field.atualizar = rows.atualizar;
-                this.#field.excluir = rows.excluir;
-                
+                this.id = Number(rows.id);
+                this.nom_perfil = String(rows.nom_perfil);
+                this.selecionar = Number(rows.selecionar);
+                this.inserir = Number(rows.inserir);
+                this.atualizar = Number(rows.atualizar);
+                this.excluir = Number(rows.excluir);
+
                 this.#found = true;
             } else {
                 this.#found = false;
             }
 
-            return this.#found ? rows : this.#found;
+            return this.#found ? this.#field : this.#found;
         } catch (error) {
             throw error;
         }
@@ -90,19 +90,22 @@ export default class Perfis {
     }
 
     async Save() {
+
         try {
+
             let query = null;
 
             if (this.#found) {
                 query = `UPDATE ${this.#tb_name} SET nom_perfil = :nom_perfil, selecionar = :selecionar, inserir = :inserir, atualizar = :atualizar,
                 excluir = :excluir WHERE entidade_negocio = :entidade_negocio AND id = :id`;
             } else {
-                this.#field.id = await this.#newId();
+                this.id = await this.#newId();
                 query = `INSERT INTO ${this.#tb_name} SET nom_perfil = :nom_perfil, selecionar = :selecionar, inserir = :inserir, atualizar = :atualizar,
                 excluir = :excluir, id = :id, entidade_negocio = :entidade_negocio`
             }
 
             return await this.#conn.query(query,this.#field);
+            
         } catch (error) {
             throw error;
         }
@@ -110,6 +113,7 @@ export default class Perfis {
     }
 
     async Excluir(id) {
+
         try {
             
             const query = `DELETE FROM ${this.#tb_name} WHERE entidade_negocio= :entidade_negocio AND id = :id`;
@@ -123,11 +127,14 @@ export default class Perfis {
     }
 
     async #newId() {
+
         try {
+
             const query =  `SELECT IFNULL(MAX(id),0) + 1 as newid FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio`;
             const [rows] = await this.#conn.query(query,{entidade_negocio: this.#field.entidade_negocio});
 
-            return rows.newid;
+            return Number(rows.newid);
+
         } catch (error) {
             throw error;
         }

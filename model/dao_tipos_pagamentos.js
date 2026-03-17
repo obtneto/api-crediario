@@ -30,15 +30,15 @@ export default class TiposPagamentos {
     get found() {return this.#found}
 
     set id(id) {this.#field.id = Number(id)}
-    get id() {return this.#field.id}
+    get id() {return Number(this.#field.id)}
 
     set nom_tipo(nom_tipo) {this.#field.nom_tipo = nom_tipo}
     get nom_tipo() {return this.#field.nom_tipo}
 
     set ativo(ativo) {this.#field.ativo = Number(ativo)}
-    get ativo() {return this.#field.ativo}
+    get ativo() {return Number(this.#field.ativo)}
 
-    get entidade_negocio() {return this.#field.entidade_negocio}
+    get entidade_negocio() {return Number(this.#field.entidade_negocio)}
 
     async ExecuteQuery(query) {
 
@@ -65,17 +65,16 @@ export default class TiposPagamentos {
 
             if (rows) {
                 
-                this.#field.id = rows.id;
-                this.#field.nom_tipo = rows.nom_tipo
-                this.#field.ativo = rows.ativo;
-                
+                this.id = Number(rows.id);
+                this.nom_tipo = String(rows.nom_tipo);
+                this.ativo = Number(rows.ativo);
                 this.#found = true;
                 
             } else {
                 this.#found = false;
             }
 
-            return this.#found ? rows : this.#found;
+            return this.#found ? this.#field : this.#found;
         } catch (error) {
             throw error;
         }
@@ -126,7 +125,7 @@ export default class TiposPagamentos {
             const query =  `SELECT IFNULL(MAX(id),0) + 1 as newid FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio`;
             const [rows] = await this.#conn.query(query,{entidade_negocio: this.#field.entidade_negocio});
 
-            return rows.newid;
+            return Number(rows.newid);
 
         } catch (error) {
             throw error;

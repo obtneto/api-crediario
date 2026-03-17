@@ -46,16 +46,16 @@ export default class Produtos {
     set und_produto(und_produto) {this.#field.und_produto = und_produto}
     get und_produto() {return this.#field.und_produto}
 
-    set prc_vista(prc_vista) {this.#field.prc_vista = Number(prc_vista).toFixed(2)}
-    get prc_vista() {return this.#field.prc_vista}
+    set prc_vista(prc_vista) {this.#field.prc_vista = parseFloat(prc_vista)}
+    get prc_vista() {return parseFloat(this.#field.prc_vista)}
 
-    set prc_prazo(prc_prazo) {this.#field.prc_prazo = Number(prc_prazo).toFixed(2)}
-    get prc_prazo() {return this.#field.prc_prazo}
+    set prc_prazo(prc_prazo) {this.#field.prc_prazo = parseFloat(prc_prazo)}
+    get prc_prazo() {return parseFloat(this.#field.prc_prazo)}
 
     set ativo(ativo) {this.#field.ativo = Number(ativo)}
-    get ativo() {return this.#field.ativo}
+    get ativo() {return Number(this.#field.ativo)}
 
-    get entidade_negocio() {return this.#field.entidade_negocio}
+    get entidade_negocio() {return Number(this.#field.entidade_negocio)}
 
     async ExecuteQuery(query) {
 
@@ -75,13 +75,13 @@ export default class Produtos {
 
             if (rows) {
 
-                this.#field.id = rows.id;
-                this.#field.nom_produto = rows.nom_produto;
-                this.#field.mar_produto = rows.mar_produto;
-                this.#field.und_produto = rows.und_produto;
-                this.#field.prc_vista = rows.prc_vista;
-                this.#field.prc_prazo = rows.prc_prazo;
-                this.#field.ativo = rows.ativo;
+                this.id = rows.id;
+                this.nom_produto = rows.nom_produto;
+                this.mar_produto = rows.mar_produto;
+                this.und_produto = rows.und_produto;
+                this.prc_vista = rows.prc_vista;
+                this.prc_prazo = rows.prc_prazo;
+                this.ativo = rows.ativo;
                 
                 this.#found = true;
 
@@ -89,7 +89,7 @@ export default class Produtos {
                 this.#found = false;
             }
 
-            return this.#found ? rows : this.#found;
+            return this.#found ? this.#field : this.#found;
 
         } catch (error) {
             throw error
@@ -111,7 +111,7 @@ export default class Produtos {
 
             } else {
 
-                this.#field.id = await this.#newId();
+                this.id = await this.#newId();
 
                 query = `INSERT INTO ${this.#tb_name} SET nom_produto = :nom_produto, mar_produto = :mar_produto, und_produto = :und_produto, 
                 prc_vista = :prc_vista, prc_prazo = :prc_prazo, entidade_negocio = :entidade_negocio, ativo = :ativo, id = :id`
@@ -146,7 +146,7 @@ export default class Produtos {
             const query =  `SELECT IFNULL(MAX(id),0) + 1 as newid FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio`;
             const [rows] = await this.#conn.query(query,{entidade_negocio: this.#field.entidade_negocio});
 
-            return rows.newid;
+            return Number(rows.newid);
 
          } catch (error) {
             throw error

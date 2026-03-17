@@ -41,22 +41,22 @@ export default class Vendas {
     get found() {return this.#found}
 
     set id(id) {this.#field.id = String(id)}
-    get id() {return this.#field.id}
+    get id() {return String(this.#field.id)}
 
     set dt_venda(dt_venda) {this.#field.dt_venda = dt_venda}
     get dt_venda() {return this.#field.dt_venda}
 
     set id_vendedor(id_vendedor) {this.#field.id_vendedor = Number(id_vendedor)}
-    get id_vendedor() {return this.#field.id_vendedor}
+    get id_vendedor() {return Number(this.#field.id_vendedor)}
 
     set id_cobrador(id_cobrador) {this.#field.id_cobrador = Number(id_cobrador)}
-    get id_cobrador() {return this.#field.id_cobrador}
+    get id_cobrador() {return Number(this.#field.id_cobrador)}
 
     set id_rota(id_rota) {this.#field.id_rota = Number(id_rota)}
-    get id_rota() {return this.#field.id_rota}
+    get id_rota() {return Number(this.#field.id_rota)}
 
     set id_tipo_pag(id_tipo_pag) {this.#field.id_tipo_pag = Number(id_tipo_pag)}
-    get id_tipo_pag() {return this.#field.id_tipo_pag}
+    get id_tipo_pag() {return Number(this.#field.id_tipo_pag)}
 
     set cpf_cliente(cpf_cliente) {this.#field.cpf_cliente = cpf_cliente}
     get cpf_cliente() {return this.#field.cpf_cliente}
@@ -65,13 +65,13 @@ export default class Vendas {
     get marca_venda() {return this.#field.marca_venda}
 
     set num_recibo(num_recibo) {this.#field.num_recibo = Number(num_recibo)}
-    get num_recibo() {return this.#field.num_recibo}
+    get num_recibo() {return Number(this.#field.num_recibo)}
 
     set referencia(referencia) {this.#field.referencia = referencia}
     get referencia() {return this.#field.referencia}
 
-    set val_tot_venda(val_tot_venda) {this.#field.val_tot_venda = Number(val_tot_venda).toFixed(2)}
-    get val_tot_venda() {return this.#field.val_tot_venda}
+    set val_tot_venda(val_tot_venda) {this.#field.val_tot_venda = parseFloat(val_tot_venda)}
+    get val_tot_venda() {return parseFloat(this.#field.val_tot_venda)}
 
     set situacao(situacao) {this.#field.situacao = situacao}
     get situacao() {return this.#field.situacao}
@@ -82,7 +82,7 @@ export default class Vendas {
     set melhor_dia(melhor_dia) {this.#field.melhor_dia = melhor_dia}
     get melhor_dia() {return this.#field.melhor_dia}
 
-    get entidade_negocio() {return this.#entidade_negocio}
+    get entidade_negocio() {return Number(this.#entidade_negocio)}
 
     async ExecuteQuery(query, params = {}) {
         
@@ -104,25 +104,26 @@ export default class Vendas {
             const [rows] = await this.#conn.query(query,{id,entidade_negocio: this.#entidade_negocio});
 
             if (rows) {
-                this.#field.id = rows.id;
-                this.#field.dt_venda = rows.dt_venda;
-                this.#field.id_vendedor = rows.id_vendedor;
-                this.#field.id_cobrador = rows.id_cobrador;
-                this.#field.id_rota = rows.id_rota;
-                this.#field.id_tipo_pag = rows.id_tipo_pag;
-                this.#field.cpf_cliente = rows.cpf_cliente;
-                this.#field.marca_venda = rows.marca_venda;
-                this.#field.num_recibo = rows.num_recibo;
-                this.#field.referencia = rows.referencia;
-                this.#field.val_tot_venda = rows.val_tot_venda;
-                this.#field.situacao = rows.situacao;
-                this.#field.dia_pagam = rows.dia_pagam;                
+                this.id = rows.id;
+                this.dt_venda = rows.dt_venda;
+                this.id_vendedor = rows.id_vendedor;
+                this.id_cobrador = rows.id_cobrador;
+                this.id_rota = rows.id_rota;
+                this.id_tipo_pag = rows.id_tipo_pag;
+                this.cpf_cliente = rows.cpf_cliente;
+                this.marca_venda = rows.marca_venda;
+                this.num_recibo = rows.num_recibo;
+                this.referencia = rows.referencia;
+                this.val_tot_venda = rows.val_tot_venda;
+                this.situacao = rows.situacao;
+                this.dia_pagam = rows.dia_pagam;
+                this.melhor_dia = rows.melhor_dia;
                 this.#found = true;
             } else {
                 this.#found = false;
             }
 
-            return this.#found ? rows : this.#found;
+            return this.#found ? this.#field : this.#found;
 
         } catch (error) {
             throw error;
@@ -140,26 +141,26 @@ export default class Vendas {
             const [rows] = await this.#conn.query(query,{entidade_negocio: this.#entidade_negocio,id_venda,cpf_cliente});
 
             if (rows) {
-                this.#field.id = rows.id;
-                this.#field.dt_venda = rows.dt_venda;
-                this.#field.id_vendedor = rows.id_vendedor;
-                this.#field.id_cobrador = rows.id_cobrador;
-                this.#field.id_rota = rows.id_rota;
-                this.#field.id_tipo_pag = rows.id_tipo_pag;
-                this.#field.cpf_cliente = rows.cpf_cliente;
-                this.#field.marca_venda = rows.marca_venda;
-                this.#field.num_recibo = rows.num_recibo;
-                this.#field.referencia = rows.referencia;
-                this.#field.val_tot_venda = rows.val_tot_venda;
-                this.#field.situacao = rows.situacao;
-                this.#field.dia_pagam = rows.dia_pagam;
-                this.#field.melhor_dia = rows.melhor_dia;                
+                this.id = rows.id;
+                this.dt_venda = rows.dt_venda;
+                this.id_vendedor = rows.id_vendedor;
+                this.id_cobrador = rows.id_cobrador;
+                this.id_rota = rows.id_rota;
+                this.id_tipo_pag = rows.id_tipo_pag;
+                this.cpf_cliente = rows.cpf_cliente;
+                this.marca_venda = rows.marca_venda;
+                this.num_recibo = rows.num_recibo;
+                this.referencia = rows.referencia;
+                this.val_tot_venda = rows.val_tot_venda;
+                this.situacao = rows.situacao;
+                this.dia_pagam = rows.dia_pagam;
+                this.melhor_dia = rows.melhor_dia;                
                 this.#found = true;
             } else {
                 this.#found = false;
             }
 
-            return this.#found ? rows : this.#found;
+            return this.#found ? this.#field : this.#found;
 
         } catch (error) {
             throw error;
@@ -181,7 +182,7 @@ export default class Vendas {
                 WHERE entidade_negocio = :entidade_negocio AND id = :id`;
             } else {
 
-                this.#field.id = await this.#newId();
+                this.id = await this.#newId();
 
                 query = `INSERT INTO ${this.#tb_name} SET dt_venda = :dt_venda, id_vendedor = :id_vendedor, 
                 id_cobrador = :id_cobrador, id_rota = :id_rota, id_tipo_pag = :id_tipo_pag, cpf_cliente = :cpf_cliente,

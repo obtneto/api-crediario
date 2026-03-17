@@ -58,12 +58,13 @@ export default class Adiantamentos {
 
     }
 
-    async FindById(id) {
+    async FindById(id,id_vendedor) {
         
         try {
-            const query = `SELECT * FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio AND id = :id`;
 
-            const [rows] = await this.#conn.query(query,{id,entidade_negocio: this.#entidade_negocio});
+            const query = `SELECT * FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio AND id_vendedor = :id_vendedor AND id = :id`;
+
+            const [rows] = await this.#conn.query(query,{id,entidade_negocio: this.#entidade_negocio, id_vendedor });
 
             if (rows) {
                 this.id = rows.id;
@@ -113,9 +114,14 @@ export default class Adiantamentos {
 
         try {
             
-            const query = `DELETE FROM ${this.#tb_name} WHERE entidade_negocio= :entidade_negocio AND id = :id`;
+            const query = `DELETE FROM ${this.#tb_name} 
+            WHERE entidade_negocio= :entidade_negocio AND id_vendedor = :id_vendedor AND id = :id`;
 
-            void await this.#conn.query(query,{id: this.#field.id, entidade_negocio: this.#field.entidade_negocio});
+            void await this.#conn.query(query,{
+                id: this.#field.id, 
+                entidade_negocio: this.#field.entidade_negocio, 
+                id_vendedor: this.#field.id_vendedor
+            });
             
         } catch (error) {
             throw error;
@@ -130,7 +136,10 @@ export default class Adiantamentos {
             const query =  `SELECT IFNULL(MAX(id),0) + 1 as newid FROM ${this.#tb_name} 
             WHERE entidade_negocio = :entidade_negocio AND id_vendedor = :id_vendedor`;
 
-            const [rows] = await this.#conn.query(query,{entidade_negocio: this.#field.entidade_negocio, id_vendedor: this.#field.id_vendedor});
+            const [rows] = await this.#conn.query(query,{
+                entidade_negocio: this.#field.entidade_negocio, 
+                id_vendedor: this.#field.id_vendedor
+            });
 
             return rows.newid;
             
