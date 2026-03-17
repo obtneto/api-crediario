@@ -8,7 +8,7 @@ export default class EstoqueMov {
     #field = {
         id: 0,
         dt_mov: '',
-        id_produto: 0,
+        id_produto: null,
         tp_mov: '',
         qt_mov: 0,
         nr_documento: '',
@@ -113,6 +113,8 @@ export default class EstoqueMov {
                 tp_mov = :tp_mov, qt_mov = :qt_mov, nr_documento = :nr_documento,
                 descricao = :descricao, entidade_negocio = :entidade_negocio`;
             }
+
+            if (this.#field.id_produto === 0) this.#field.id_produto = null;
 
             return await this.#conn.query(query,this.#field);
 

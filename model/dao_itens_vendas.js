@@ -7,7 +7,7 @@ export default class ItensVendas {
 
     #field = {
         entidade_negocio: 0,
-        id_produto: 0,
+        id_produto: null,
         id: 0,
         qt_produto: 0,
         id_venda: ''
@@ -112,6 +112,8 @@ export default class ItensVendas {
                 query = `INSERT INTO ${this.#tb_name} SET entidade_negocio = :entidade_negocio, id_produto = :id_produto,
                 id = :id, qt_produto = :qt_produto, id_venda = :id_venda`;
             }
+
+            if(this.#field.id_produto === 0) this.#field.id_produto = null;
 
             return await this.#conn.query(query,this.#field);
 

@@ -9,3 +9,84 @@
     at IniciarSessao (file:///home/ovidio.neto/Crediario/backend/controller/controller_parametrizacao.js:146:31)
     at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
 
+[17/03/2026 17:10:03] ControllerAuth.IniciarSessao: Error: Usuario ou senha invalidos.
+    at IniciarSessao (file:///home/ovidio.neto/Crediario/backend/controller/controller_parametrizacao.js:161:31)
+
+[17/03/2026 18:53:32] ControllerAuth.IniciarSessao: Error: Usuario ou senha invalidos.
+    at IniciarSessao (file:///home/ovidio.neto/Crediario/backend/controller/controller_parametrizacao.js:161:31)
+
+[17/03/2026 18:56:36] ControllerCobranca.SalvarPagamento: SqlError: (conn:70, no: 1452, SQLState: 23000) Cannot add or update a child row: a foreign key constraint fails (`dbcred`.`tb_vendas`, CONSTRAINT `fk_venda_cobradores` FOREIGN KEY (`entidade_negocio`, `id_cobrador`) REFERENCES `tb_cobradores` (`entidade_negocio`, `id`) ON DELETE NO ACTION ON UPDATE NO ACTION)
+sql: UPDATE tb_vendas SET dt_venda = :dt_venda, id_vendedor = :id_vendedor, 
+                id_cobrador = :id_cobrador, id_rota = :id_rota, id_tipo_pag = :id_tipo_pag, cpf_cliente = :cpf_cliente,
+                marca_venda = :marca_venda, num_recibo = :num_re...
+    at Module.createError (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/misc/errors.js:66:10)
+    at PacketNodeEncoded.readError (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/io/packet.js:595:19)
+    at Query.handleErrorPacket (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/parser.js:92:24)
+    at Query.readResponsePacket (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/parser.js:70:21)
+    at PacketInputStream.receivePacketBasic (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/io/packet-input-stream.js:94:9)
+    at PacketInputStream.onData (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/io/packet-input-stream.js:151:20)
+    at Socket.emit (node:events:508:28)
+    at addChunk (node:internal/streams/readable:563:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:514:3)
+    at Readable.push (node:internal/streams/readable:394:5)
+
+[17/03/2026 18:56:44] ControllerCobranca.SalvarPagamento: SqlError: (conn:75, no: 1452, SQLState: 23000) Cannot add or update a child row: a foreign key constraint fails (`dbcred`.`tb_vendas`, CONSTRAINT `fk_venda_cobradores` FOREIGN KEY (`entidade_negocio`, `id_cobrador`) REFERENCES `tb_cobradores` (`entidade_negocio`, `id`) ON DELETE NO ACTION ON UPDATE NO ACTION)
+sql: UPDATE tb_vendas SET dt_venda = :dt_venda, id_vendedor = :id_vendedor, 
+                id_cobrador = :id_cobrador, id_rota = :id_rota, id_tipo_pag = :id_tipo_pag, cpf_cliente = :cpf_cliente,
+                marca_venda = :marca_venda, num_recibo = :num_re...
+    at Module.createError (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/misc/errors.js:66:10)
+    at PacketNodeEncoded.readError (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/io/packet.js:595:19)
+    at Query.handleErrorPacket (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/parser.js:92:24)
+    at Query.readResponsePacket (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/parser.js:70:21)
+    at PacketInputStream.receivePacketBasic (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/io/packet-input-stream.js:94:9)
+    at PacketInputStream.onData (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/io/packet-input-stream.js:151:20)
+    at Socket.emit (node:events:508:28)
+    at addChunk (node:internal/streams/readable:563:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:514:3)
+    at Readable.push (node:internal/streams/readable:394:5)
+
+[17/03/2026 18:57:46] ControllerCobranca.SalvarPagamento: SqlError: (conn:80, no: 1452, SQLState: 23000) Cannot add or update a child row: a foreign key constraint fails (`dbcred`.`tb_vendas`, CONSTRAINT `fk_venda_cobradores` FOREIGN KEY (`entidade_negocio`, `id_cobrador`) REFERENCES `tb_cobradores` (`entidade_negocio`, `id`) ON DELETE NO ACTION ON UPDATE NO ACTION)
+sql: UPDATE tb_vendas SET dt_venda = :dt_venda, id_vendedor = :id_vendedor, 
+                id_cobrador = :id_cobrador, id_rota = :id_rota, id_tipo_pag = :id_tipo_pag, cpf_cliente = :cpf_cliente,
+                marca_venda = :marca_venda, num_recibo = :num_re...
+    at Module.createError (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/misc/errors.js:66:10)
+    at PacketNodeEncoded.readError (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/io/packet.js:595:19)
+    at Query.handleErrorPacket (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/parser.js:92:24)
+    at Query.readResponsePacket (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/parser.js:70:21)
+    at PacketInputStream.receivePacketBasic (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/io/packet-input-stream.js:94:9)
+    at PacketInputStream.onData (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/io/packet-input-stream.js:151:20)
+    at Socket.emit (node:events:508:28)
+    at addChunk (node:internal/streams/readable:563:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:514:3)
+    at Readable.push (node:internal/streams/readable:394:5)
+
+[17/03/2026 19:01:00] ControllerCobranca.SalvarPagamento: SqlError: (conn:92, no: 1452, SQLState: 23000) Cannot add or update a child row: a foreign key constraint fails (`dbcred`.`tb_vendas`, CONSTRAINT `fk_venda_cobradores` FOREIGN KEY (`entidade_negocio`, `id_cobrador`) REFERENCES `tb_cobradores` (`entidade_negocio`, `id`) ON DELETE NO ACTION ON UPDATE NO ACTION)
+sql: UPDATE tb_vendas SET dt_venda = :dt_venda, id_vendedor = :id_vendedor, 
+                id_cobrador = :id_cobrador, id_rota = :id_rota, id_tipo_pag = :id_tipo_pag, cpf_cliente = :cpf_cliente,
+                marca_venda = :marca_venda, num_recibo = :num_re...
+    at Module.createError (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/misc/errors.js:66:10)
+    at PacketNodeEncoded.readError (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/io/packet.js:595:19)
+    at Query.handleErrorPacket (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/parser.js:92:24)
+    at Query.readResponsePacket (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/parser.js:70:21)
+    at PacketInputStream.receivePacketBasic (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/io/packet-input-stream.js:94:9)
+    at PacketInputStream.onData (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/io/packet-input-stream.js:151:20)
+    at Socket.emit (node:events:508:28)
+    at addChunk (node:internal/streams/readable:563:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:514:3)
+    at Readable.push (node:internal/streams/readable:394:5)
+
+[17/03/2026 19:06:28] ControllerCobranca.SalvarPagamento: SqlError: (conn:97, no: 1452, SQLState: 23000) Cannot add or update a child row: a foreign key constraint fails (`dbcred`.`tb_vendas`, CONSTRAINT `fk_venda_cobradores` FOREIGN KEY (`entidade_negocio`, `id_cobrador`) REFERENCES `tb_cobradores` (`entidade_negocio`, `id`) ON DELETE NO ACTION ON UPDATE NO ACTION)
+sql: UPDATE tb_vendas SET dt_venda = :dt_venda, id_vendedor = :id_vendedor, 
+                id_cobrador = :id_cobrador, id_rota = :id_rota, id_tipo_pag = :id_tipo_pag, cpf_cliente = :cpf_cliente,
+                marca_venda = :marca_venda, num_recibo = :num_re...
+    at Module.createError (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/misc/errors.js:66:10)
+    at PacketNodeEncoded.readError (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/io/packet.js:595:19)
+    at Query.handleErrorPacket (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/parser.js:92:24)
+    at Query.readResponsePacket (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/parser.js:70:21)
+    at PacketInputStream.receivePacketBasic (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/io/packet-input-stream.js:94:9)
+    at PacketInputStream.onData (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/io/packet-input-stream.js:151:20)
+    at Socket.emit (node:events:508:28)
+    at addChunk (node:internal/streams/readable:563:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:514:3)
+    at Readable.push (node:internal/streams/readable:394:5)
+

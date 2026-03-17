@@ -97,6 +97,7 @@ export class ControllerCobranca {
             WHERE v.dt_venda >= :dt_ini
             AND v.dt_venda <= :dt_fim
             AND v.${fieldname} = :id_filter
+            AND v.marca_venda IS NULL
             AND v.entidade_negocio = :entidade_negocio
             GROUP BY v.id, v.dt_venda, c.cpf_cliente, c.nom_cliente, c.end_cliente, c.bai_cliente, 
             c.cid_cliente, c.uf_cliente, v.val_tot_venda
@@ -207,7 +208,6 @@ export class ControllerCobranca {
     static async SalvarPagamento(req,res) {
         
         const db = new Database('dbcred'); 
-        let transacaoConcluida = false;
 
         const resdata = {
             err: 0,
@@ -246,14 +246,15 @@ export class ControllerCobranca {
             void await db.Begin();
 
             const pagamentos = new Pagamentos(db.connection, entidade_negocio);
+            const vendas = new Vendas(db.connection, entidade_negocio);
 
-            const quety = `SELECT val_tot_venda, (val_tot_venda - SUM(COALESCE(vl_pagamento, 0))) AS saldo_pagar 
+            const query = `SELECT val_tot_venda, (val_tot_venda - SUM(COALESCE(vl_pagamento, 0))) AS saldo_pagar 
             FROM tb_vendas 
             LEFT JOIN tb_pagamentos ON tb_pagamentos.entidade_negocio = tb_vendas.entidade_negocio AND tb_pagamentos.id_venda = tb_vendas.id 
             WHERE tb_vendas.entidade_negocio = :entidade_negocio AND tb_vendas.id = :id_venda 
             GROUP BY val_tot_venda`
 
-            const [rows] = await pagamentos.ExecuteQuery(quety, { entidade_negocio, id_venda });
+            const [rows] = await pagamentos.ExecuteQuery(query, { entidade_negocio, id_venda });
 
             if (vl_pagamento > parseFloat(rows.saldo_pagar)) {
                 const error = new Error('Valor do pagamento nao pode ser maior que o saldo a pagar.');
@@ -269,6 +270,14 @@ export class ControllerCobranca {
             pagamentos.id_cobrador = id_cobrador;
 
             void await pagamentos.Save();
+
+            void await vendas.FindById(id_venda);
+
+            if(vendas.found) {
+                vendas.marca_venda = 'X';
+                void await vendas.Save();
+            }
+
             void await db.Commit();
            
             resdata.msg = 'Pagamento registrado com sucesso.';
@@ -282,9 +291,8 @@ export class ControllerCobranca {
             resdata.msg = error.message;
             resdata.status = Number(error.statusCode || 500);
 
-            if (error.err == 500) {
                 GravarLog('ControllerCobranca.SalvarPagamento', error.stack);
-            }
+            
 
         }
 
@@ -353,6 +361,84 @@ export class ControllerCobranca {
 
         res.status(resdata.status).json(resdata);
     }
+
+    static async DesmarcarVendaPaga(req,res) {
+        
+        const db = new Database('dbcred');
+    
+        const resdata = {
+            err: 0,
+            status: 200,
+            msg: '',
+            data: []
+        }
+
+        try {
+            
+            void await db.Connect();
+
+            const entidade_negocio = obterEntidadeNegocio(req);
+            const com_rota_cobranca = Number(req.params.com_rota_cobranca || 0);
+            const fieldname = com_rota_cobranca === 1 ? 'id_rota' : 'id_cobrador';
+            const id_filter = Number(req.params?.id || 0);
+            const dt_ini = String(req.query.dt_ini || '').trim();
+            const dt_fim = String(req.query.dt_fim || '').trim();
+
+            if (!dt_ini || !dt_fim) {
+                const error = new Error('Informe data inicial e data final.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(dt_ini)) {
+                const error = new Error('Data inicial invalida.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(dt_fim)) {
+                const error = new Error('Data final invalida.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (dt_ini > dt_fim) {
+                const error = new Error('Data inicial nao pode ser maior que data final.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            const vendas = new Vendas(db.connection, entidade_negocio);
+
+            const query = `UPDATE tb_vendas SET marca_venda = NULL
+            WHERE entidade_negocio = :entidade_negocio AND ${fieldname} = :id_filter 
+            AND dt_venda >= :dt_ini AND dt_venda <= :dt_fim`;
+
+            await vendas.ExecuteQuery(query, {
+                entidade_negocio,
+                id_filter,
+                dt_ini,
+                dt_fim
+            });
+
+            resdata.msg = 'Vendas desmarcadas como pagas com sucesso.';
+            
+        } catch (error) {
+            
+            resdata.err = Number(error.statusCode || 500);
+            resdata.msg = error.message;
+            resdata.status = Number(error.statusCode || 500);
+
+            if (resdata.status === 500) {
+                GravarLog('ControllerCobranca.DesmarcarVendaPaga', error.stack);
+            }
+
+        }
+
+        void await db.Close();
+
+        res.status(resdata.status).json(resdata);
+    }   
 
     /**********************************************
     * Adiantamentos

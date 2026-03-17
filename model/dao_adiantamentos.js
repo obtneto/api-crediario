@@ -8,7 +8,7 @@ export default class Adiantamentos {
     #field = {
         id: 0,
         entidade_negocio: 0,
-        num_recibo: 0,
+        num_recibo: null,
         id_vendedor: 0,
         dt_adiant : '',
         vl_adiant: 0

@@ -10,7 +10,7 @@ export default class Perfis {
         id_venda: '',
         dt_pagamento: '',
         vl_pagamento: 0,
-        id_cobrador: 0,
+        id_cobrador: null,
         entidade_negocio: 0
     }
 
@@ -106,6 +106,8 @@ export default class Perfis {
                 id_venda = :id_venda, id = :id, entidade_negocio = :entidade_negocio`
             }
 
+            if (this.#field.id_cobrador === 0) this.#field.id_cobrador = null;
+            
             return await this.#conn.query(query,this.#field);
 
         } catch (error) {

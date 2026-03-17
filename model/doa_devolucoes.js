@@ -6,8 +6,9 @@ export default class Devolucoes{
 
     #fields = {
         id: 0,
-        id_venda: '',
-        id_produto: 0,
+        id_venda: null,
+        id_produto: null,
+        id_vendedor: null,
         dt_devolucao: '',
         qt_devolucao: 0,
         vl_unit_devo: 0,
@@ -38,6 +39,9 @@ export default class Devolucoes{
 
     set id_produto(id_produto) {this.#fields.id_produto = Number(id_produto)}
     get id_produto() {return Number(this.#fields.id_produto)}
+
+    set id_vendedor(id_vendedor) {this.#fields.id_vendedor = Number(id_vendedor)}
+    get id_vendedor() {return Number(this.#fields.id_vendedor)}
 
     set dt_devolucao(dt_devolucao) {this.#fields.dt_devolucao = dt_devolucao}
     get dt_devolucao() {return this.#fields.dt_devolucao}
@@ -79,6 +83,7 @@ export default class Devolucoes{
                 this.id = rows[0].id;
                 this.id_venda = rows[0].id_venda;
                 this.id_produto = rows[0].id_produto;
+                this.id_vendedor = rows[0].id_vendedor;
                 this.dt_devolucao = rows[0].dt_devolucao;
                 this.qt_devolucao = rows[0].qt_devolucao;
                 this.vl_unit_devo = rows[0].vl_tot_devo;
@@ -105,18 +110,24 @@ export default class Devolucoes{
 
             if (this.#found) {
 
-                query = `UPDATE ${this.#tb_name} SET id_produto = :id_produto, dt_devoluao = :dt_devoluao, 
+                query = `UPDATE ${this.#tb_name} SET id_produto = :id_produto,id_vendedor = :id_vendedor, dt_devoluao = :dt_devoluao, 
                 qt_devolucao = :qt_devolucao, vl_tot_devo = :vl_tot_devo, vl_tot_devo = :vl_tot_devo, id_venda = :id_venda  
                 WHERE entidade_negocio = :entidade_negocio AND id = :id`;
             } else {
                 
                 this.id = await this.#newId();
 
-                query = `INSERT INTO ${this.#tb_name} SET id_produto = :id_produto, dt_devoluao = :dt_devoluao, 
+                query = `INSERT INTO ${this.#tb_name} SET id_produto = :id_produto,id_vendedor = :id_vendedor, dt_devoluao = :dt_devoluao, 
                 qt_devolucao = :qt_devolucao, vl_tot_devo = :vl_tot_devo, vl_tot_devo = :vl_tot_devo, id_venda = :id_venda,  
                 entidade_negocio = :entidade_negocio, id = :id`
 
             }
+
+            if (this.#fields.id_produto === 0) this.#fields.id_produto = null;
+            if (this.#fields.id_vendedor === 0) this.#fields.id_vendedor = null;
+            if (this.#fields.id_venda === '') this.#fields.id_venda = null;
+
+            void await this.#conn.query(query,this.#fields);
             
         } catch (error) {
             throw error;

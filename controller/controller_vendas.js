@@ -1190,4 +1190,5 @@ export class ControllerVendas {
         res.status(resdata.status).json(resdata);
 
     }
+
 }

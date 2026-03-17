@@ -9,7 +9,7 @@ export default class Vendas {
         id: '0',
         dt_venda: '',
         id_vendedor: 0,
-        id_cobrador:null,
+        id_cobrador: null,
         id_rota: null,
         id_tipo_pag: 0,
         cpf_cliente: '',
@@ -190,7 +190,11 @@ export default class Vendas {
                 situacao = :situacao, dia_pagam = :dia_pagam, melhor_dia = :melhor_dia, id = :id,entidade_negocio = :entidade_negocio`;
             }
 
+            if(this.#field.id_cobrador === 0) this.#field.id_cobrador = null;
+            if(this.#field.id_rota === 0) this.#field.id_rota = null;
+
             return await this.#conn.query(query,this.#field);
+
         } catch (error) {
             throw error;
         }

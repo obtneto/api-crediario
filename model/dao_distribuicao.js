@@ -8,8 +8,8 @@ export default class Distribuicao {
     #field = {
         id: 0,
         dt_distrib: '',
-        id_vendedor: 0,
-        id_produto:0,
+        id_vendedor: null,
+        id_produto: null,
         qt_distrib: 0,
         qt_retorno: 0,
         dt_retorno: '',
@@ -57,9 +57,13 @@ export default class Distribuicao {
     get entidade_negocio() {return this.#field.entidade_negocio}
 
     async ExecuteQuery(query, params = {}) {
+
         try {
+
             const rows = await this.#conn.execute(query, params);
+
             return rows;
+
         } catch (error) {
             throw error;
         }
@@ -112,7 +116,8 @@ export default class Distribuicao {
                 entidade_negocio = :entidade_negocio, id = :id`;
             }
 
-            console.log(this.#field)
+            if (this.#field.id_vendedor === 0) this.#field.id_vendedor = null;
+            if (this.#field.id_produto === 0) this.#field.id_produto = null;
 
             return await this.#conn.query(query,this.#field);
             
