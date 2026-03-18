@@ -8,6 +8,7 @@ export default class Clientes {
         id: 0,
         cpf_cliente: '',
         nom_cliente: '',
+        nom_usual: '',
         cel_cliente: '',
         end_cliente: '',
         num_cliente: '',
@@ -16,7 +17,8 @@ export default class Clientes {
         uf_cliente: '',
         cep_cliente: '',
         lat_cliente: '',
-        lon_cliente: ''
+        lon_cliente: '',
+        dat_cadastro: ''
     }
 
     constructor(connection) {
@@ -36,6 +38,9 @@ export default class Clientes {
 
     set nom_cliente(nom_cliente) {this.#field.nom_cliente = nom_cliente}
     get nom_cliente() {return this.#field.nom_cliente}
+
+    set nom_usual(nom_usual) {this.#field.nom_usual = nom_usual}
+    get nom_usual() {return this.#field.nom_usual}
 
     set cel_cliente(cel_cliente) {this.#field.cel_cliente = cel_cliente}
     get cel_cliente() {return this.#field.cel_cliente}
@@ -60,6 +65,9 @@ export default class Clientes {
 
     set lat_cliente(lat_cliente) {this.#field.lat_cliente = lat_cliente}
     get lat_cliente() {return this.#field.lat_cliente}
+
+    set dat_cadastro(dat_cadastro) {this.#field.dat_cadastro = dat_cadastro}
+    get dat_cadastro() {return this.#field.dat_cadastro}
 
     set lon_cliente(lon_cliente) {this.#field.lon_cliente = lon_cliente}
     get lon_cliente() {return this.#field.lon_cliente}
@@ -87,6 +95,7 @@ export default class Clientes {
                 this.id = rows.id;
                 this.cpf_cliente = rows.cpf_cliente;
                 this.nom_cliente = rows.nom_cliente;
+                this.nom_usual = rows.nom_usual;
                 this.cel_cliente = rows.cel_cliente;
                 this.end_cliente = rows.end_cliente;
                 this.num_cliente = rows.num_cliente;
@@ -96,6 +105,8 @@ export default class Clientes {
                 this.cep_cliente = rows.cep_cliente;
                 this.lat_cliente = rows.lat_cliente;
                 this.lon_cliente = rows.lon_cliente;
+                this.dat_cadastro = rows.dat_cadastro;
+
                 this.#found = true;
             } else {
                 this.#found = false;
@@ -121,6 +132,7 @@ export default class Clientes {
                 this.id = rows.id;
                 this.cpf_cliente = rows.cpf_cliente;
                 this.nom_cliente = rows.nom_cliente;
+                this.nom_usual = rows.nom_usual;
                 this.cel_cliente = rows.cel_cliente;
                 this.end_cliente = rows.end_cliente;
                 this.num_cliente = rows.num_cliente;
@@ -130,6 +142,8 @@ export default class Clientes {
                 this.cep_cliente = rows.cep_cliente;
                 this.lat_cliente = rows.lat_cliente;
                 this.lon_cliente = rows.lon_cliente;
+                this.dat_cadastro = rows.dat_cadastro;
+
                 this.#found = true;
             } else {
                 this.#found = false;
@@ -150,22 +164,23 @@ export default class Clientes {
             let query = null;
 
             if (this.#found) {
-                query = `UPDATE ${this.#tb_name} SET cpf_cliente = :cpf_cliente, nom_cliente = :nom_cliente,
+                query = `UPDATE ${this.#tb_name} SET cpf_cliente = :cpf_cliente, nom_cliente = :nom_cliente,nom_usual = :nom_usual,
                 cel_cliente = :cel_cliente, end_cliente = :end_cliente, num_cliente = :num_cliente, bai_cliente = :bai_cliente,
                 cid_cliente = :cid_cliente, uf_cliente = :uf_cliente, cep_cliente = :cep_cliente,
-                lat_cliente = :lat_cliente, lon_cliente = :lon_cliente
+                lat_cliente = :lat_cliente, lon_cliente = :lon_cliente, dat_cadastro = :dat_cadastro
                 WHERE id = :id`;
             } else {
 
                 this.id = await this.#newId();
 
-                query = `INSERT INTO ${this.#tb_name} SET cpf_cliente = :cpf_cliente, nom_cliente = :nom_cliente,
+                query = `INSERT INTO ${this.#tb_name} SET cpf_cliente = :cpf_cliente, nom_cliente = :nom_cliente,nom_usual = :nom_usual,
                 cel_cliente = :cel_cliente, end_cliente = :end_cliente, num_cliente = :num_cliente, bai_cliente = :bai_cliente,
                 cid_cliente = :cid_cliente, uf_cliente = :uf_cliente, cep_cliente = :cep_cliente,
-                lat_cliente = :lat_cliente, lon_cliente = :lon_cliente, id = :id`;
+                lat_cliente = :lat_cliente, lon_cliente = :lon_cliente, id = :id, dat_cadastro = :dat_cadastro`;
             }
 
             return await this.#conn.query(query,this.#field);
+            
         } catch (error) {
             throw error;
         }

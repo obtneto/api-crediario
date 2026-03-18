@@ -40,7 +40,7 @@ export class ControllerClientes {
                 params.pesq = `%${pesq}%`;
             }
 
-            let query = `SELECT c.id, c.cpf_cliente, c.nom_cliente, c.cel_cliente, c.end_cliente, c.num_cliente,
+            let query = `SELECT c.id, c.cpf_cliente, c.nom_cliente,c.nom_usual, c.cel_cliente, c.end_cliente, c.num_cliente,
                          c.bai_cliente, c.cid_cliente, c.uf_cliente, c.cep_cliente, c.lat_cliente, c.lon_cliente
                          FROM tb_clientes c
                          WHERE ${whereClause.join(' AND ')}
@@ -128,6 +128,7 @@ export class ControllerClientes {
 
             const cpf = String(req.body?.cpf || req.body?.cpf_cliente || '').replace(/\D/g, '');
             const nome = String(req.body?.nome || req.body?.nom_cliente || '').trim().toUpperCase();
+            const usual = String(req.body?.usual || req.body?.nom_usual || '').trim().toUpperCase();
             const celular = String(req.body?.celular || req.body?.cel_cliente || '').replace(/\D/g, '');
             const ender = String(req.body?.ender || req.body?.end_cliente || '').trim().toUpperCase();
             const numero = String(req.body?.numero || req.body?.num_cliente || '').trim().toUpperCase();
@@ -154,10 +155,15 @@ export class ControllerClientes {
 
             const clientes = new Clientes(db.connection);
 
-            void await clientes.FindByCpf(cpf)
+            void await clientes.FindByCpf(cpf);
+
+            if (clientes.found) {
+                clientes.dat_cadastro = new Date();
+            }
 
             clientes.cpf_cliente = cpf;
             clientes.nom_cliente = nome
+            clientes.nom_usual = usual;
             clientes.cel_cliente = celular;
             clientes.end_cliente = ender;
             clientes.num_cliente = numero;
