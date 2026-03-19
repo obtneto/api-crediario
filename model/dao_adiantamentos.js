@@ -10,6 +10,7 @@ export default class Adiantamentos {
         entidade_negocio: 0,
         num_recibo: null,
         id_vendedor: 0,
+        id_cobrador: 0,
         dt_adiant : '',
         vl_adiant: 0
     }
@@ -40,6 +41,9 @@ export default class Adiantamentos {
     set id_vendedor(id_vendedor) {this.#field.id_vendedor = Number(id_vendedor)}
     get id_vendedor() {return Number(this.#field.id_vendedor)}
 
+    set id_cobrador(id_cobrador) {this.#field.id_cobrador = Number(id_cobrador)}
+    get id_cobrador() {return Number(this.#field.id_cobrador)}
+
     set dt_adiant(dt_adiant) {this.#field.dt_adiant = dt_adiant}
     get dt_adiant() {return this.#field.dt_adiant}
 
@@ -48,9 +52,9 @@ export default class Adiantamentos {
 
     get entidade_negocio() {return Number(this.#field.entidade_negocio)}
 
-    async ExecuteQuery(query) {
+    async ExecuteQuery(query, params = {}) {
         try {
-            const rows = await this.#conn.execute(query);
+            const rows = await this.#conn.execute(query, params);
             return rows;
         } catch (error) {
             throw error;
@@ -58,18 +62,19 @@ export default class Adiantamentos {
 
     }
 
-    async FindById(id,id_vendedor) {
+    async FindById(id) {
         
         try {
 
-            const query = `SELECT * FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio AND id_vendedor = :id_vendedor AND id = :id`;
+            const query = `SELECT * FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio AND id = :id`;
 
-            const [rows] = await this.#conn.query(query,{id,entidade_negocio: this.#entidade_negocio, id_vendedor });
+            const [rows] = await this.#conn.query(query,{id,entidade_negocio: this.#entidade_negocio});
 
             if (rows) {
                 this.id = rows.id;
                 this.num_recibo = rows.num_recibo;
                 this.id_vendedor = rows.id_vendedor;
+                this.id_cobrador = rows.id_cobrador;
                 this.dt_adiant = rows.dt_adiant;
                 this.vl_adiant = rows.vl_adiant;
 
@@ -94,13 +99,16 @@ export default class Adiantamentos {
             let query = null;
 
             if (this.#found) {
-                query = `UPDATE ${this.#tb_name} SET id_vendedor = :id_vendedor, dt_adiant = :dt_adiant, 
+                query = `UPDATE ${this.#tb_name} SET id_vendedor = :id_vendedor,id_cobrador = :id_cobrador, dt_adiant = :dt_adiant, 
                 vl_adiant = :vl_adiant WHERE entidade_negocio = :entidade_negocio AND id = :id`;
             } else {
                 this.id = await this.#newId();
-                query = `INSERT INTO ${this.#tb_name} SET num_recibo = :num_recibo, id_vendedor = :id_vendedor, 
+                query = `INSERT INTO ${this.#tb_name} SET num_recibo = :num_recibo, id_vendedor = :id_vendedor, id_cobrador = :id_cobrador, 
                 dt_adiant = :dt_adiant, vl_adiant = :vl_adiant, id = :id, entidade_negocio = :entidade_negocio`;
             }
+
+            if (this.#field.id_cobrador === 0) this.#field.id_cobrador = null;
+            if (this.#field.id_vendedor === 0) this.#field.id_vendedor = null;
 
             return await this.#conn.query(query,this.#field);
 
@@ -115,7 +123,7 @@ export default class Adiantamentos {
         try {
             
             const query = `DELETE FROM ${this.#tb_name} 
-            WHERE entidade_negocio= :entidade_negocio AND id_vendedor = :id_vendedor AND id = :id`;
+            WHERE entidade_negocio= :entidade_negocio AND id = :id`;
 
             void await this.#conn.query(query,{
                 id: this.#field.id, 
@@ -134,11 +142,10 @@ export default class Adiantamentos {
         try {
 
             const query =  `SELECT IFNULL(MAX(id),0) + 1 as newid FROM ${this.#tb_name} 
-            WHERE entidade_negocio = :entidade_negocio AND id_vendedor = :id_vendedor`;
+            WHERE entidade_negocio = :entidade_negocio`;
 
             const [rows] = await this.#conn.query(query,{
-                entidade_negocio: this.#field.entidade_negocio, 
-                id_vendedor: this.#field.id_vendedor
+                entidade_negocio: this.#field.entidade_negocio
             });
 
             return rows.newid;

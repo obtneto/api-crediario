@@ -25,6 +25,9 @@ export default class Database {
             database: this.#dbname,
             password: process.env.DB_PASSWORD, 
             namedPlaceholders: true,
+            dateStrings: true,
+            timezone: '-03:00',
+            initSql: "SET time_zone = '-03:00'" 
         });
 
     };

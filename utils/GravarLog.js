@@ -6,7 +6,7 @@ export default function GravarLog(scriptname,mensagem) {
     const options_time = { timeZone: 'UTC', hour: '2-digit', minute: '2-digit', second: '2-digit' }; 
     
     const data = new Date().toLocaleDateString('pt-BR', options_date);
-    const hora = new Date().toLocaleTimeString('pt-BR', options_time);
+    const hora = new Date().toLocaleTimeString('sv-SE', options_time);
 
     const logMessage = `[${data} ${hora}] ${scriptname}: ${mensagem}\n\n`;
 

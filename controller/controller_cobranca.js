@@ -459,10 +459,10 @@ export class ControllerCobranca {
         try {
             
             const entidade_negocio = obterEntidadeNegocio(req);
-            const id_vendedor = Number(req.params.id_vendedor || 0);
+            const id_cobrador = Number(req.params.id_cobrador || 0);
 
-            if (!id_vendedor || id_vendedor <= 0) {
-                const error = new Error('ID do vendedor invalido.');
+            if (!id_cobrador || id_cobrador <= 0) {
+                const error = new Error('ID do cobrador invalido.');
                 error.statusCode = 400;
                 throw error;
             }
@@ -471,11 +471,16 @@ export class ControllerCobranca {
 
             const adiantamentos = new Adiantamentos(db.connection, entidade_negocio);
 
-            const query = `SELECT id, dt_adiantamento, vl_adiantamento FROM tb_adiantamentos 
-            WHERE entidade_negocio = :entidade_negocio AND id_vendedor = :id_vendedor AND num_recibo IS NOT NULL
-            ORDER BY dt_adiantamento DESC, id DESC`;
+            const query = `SELECT id, dt_adiant as dt_adiantamento, vl_adiant as vl_adiantamento 
+            FROM tb_adiantamentos 
+            WHERE entidade_negocio = :entidade_negocio AND id_cobrador = :id_cobrador
+            AND num_recibo IS NULL
+            ORDER BY dt_adiant DESC, id DESC`;
 
-            resdata.data.adiantamentos = await adiantamentos.ExecuteQuery(query, { entidade_negocio, id_vendedor });
+            resdata.data.adiantamentos = await adiantamentos.ExecuteQuery(query, { 
+                entidade_negocio, 
+                id_cobrador
+            });
 
         } catch (error) {
             
@@ -563,36 +568,33 @@ export class ControllerCobranca {
         }
 
         try {
+
+            void await db.Connect();
+            
+            void await db.Begin();
             
             const entidade_negocio = obterEntidadeNegocio(req);
             const body = req.body || {};
 
-            const id_vendedor = Number(body.id_vendedor || 0);
+            const id_cobrador = Number(body.id_cobrador || 0);
             const id_adiantamento = Number(body.id_adiantamento || 0);
-            const dt_adiantamento = String(body.dt_adiantamento || '').trim();
             const vl_adiantamento = parseFloat(body.vl_adiantamento || 0);
 
-            if (id_vendedor <= 0) {
-                const error = new Error('ID do vendedor invalido.');
+            if (id_cobrador <= 0) {
+                const error = new Error('ID do cobrador invalido.');
                 error.statusCode = 400;
                 throw error;
             }
-
-            if (!/^\d{4}-\d{2}-\d{2}$/.test(dt_adiantamento)) {
-                const error = new Error('Data do adiantamento invalida.');
-                error.statusCode = 400;
-                throw error;
-            }
-
-            void await db.Connect();
-            void await db.Begin();
 
             const adiantamentos = new Adiantamentos(db.connection, entidade_negocio);
 
-            void await adiantamentos.FindById(id_adiantamento, id_vendedor);
+            void await adiantamentos.FindById(id_adiantamento);
 
-            adiantamentos.id_vendedor = id_vendedor;
-            adiantamentos.dt_adiant = dt_adiantamento;
+            if (!adiantamentos.found) {
+                adiantamentos.dt_adiant = new Date().toLocaleString('sv-SE');
+            }
+
+            adiantamentos.id_cobrador = id_cobrador;
             adiantamentos.vl_adiant = vl_adiantamento;
 
             void await adiantamentos.Save();
@@ -606,13 +608,11 @@ export class ControllerCobranca {
             void await db.RollBack();
                 
             resdata.err = Number(error.statusCode || 500);
-            resdata.msg = error.message;
+            resdata.msg = error.message;    
             resdata.status = Number(error.statusCode || 500);
 
-            if (resdata.status === 500) {
-                GravarLog('ControllerCobranca.SalvarAdiantamento', error.stack);
-            }
-
+            GravarLog('ControllerCobranca.SalvarAdiantamento', error.stack);
+            
         }
 
         void await db.Close();

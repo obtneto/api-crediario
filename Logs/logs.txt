@@ -1,24 +1,180 @@
-[12/03/2026 23:53:40] ControllerAuth.IniciarSessao: Error: Usuario ou senha invalidos.
-    at IniciarSessao (file:///home/ovidio.neto/Crediario/backend/controller/controller_parametrizacao.js:161:31)
+[18/03/2026 18:02:38] ControllerCobranca.SalvarAdiantamento: SqlError: (conn:100, no: 1292, SQLState: 22007) Incorrect datetime value: '' for column `dbcred`.`tb_adiantamentos`.`dt_adiant` at row 1
+sql: INSERT INTO tb_adiantamentos SET num_recibo = :num_recibo, id_vendedor = :id_vendedor, 
+                dt_adiant = :dt_adiant, vl_adiant = :vl_adiant, id = :id, entidade_negocio = :entidade_negocio - parameters:{'id':1,'entidade_negocio':3,'num_recibo':nu...
+    at Module.createError (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/misc/errors.js:66:10)
+    at PacketNodeEncoded.readError (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/io/packet.js:595:19)
+    at Query.handleErrorPacket (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/parser.js:92:24)
+    at Query.readResponsePacket (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/parser.js:70:21)
+    at PacketInputStream.receivePacketBasic (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/io/packet-input-stream.js:94:9)
+    at PacketInputStream.onData (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/io/packet-input-stream.js:151:20)
+    at Socket.emit (node:events:508:28)
+    at addChunk (node:internal/streams/readable:563:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:514:3)
+    at Readable.push (node:internal/streams/readable:394:5)
 
-[16/03/2026 22:59:08] ControllerAuth.IniciarSessao: Error: Usuario ou senha invalidos.
-    at IniciarSessao (file:///home/ovidio.neto/Crediario/backend/controller/controller_parametrizacao.js:146:31)
+[18/03/2026 18:03:07] ControllerCobranca.SalvarAdiantamento: SqlError: (conn:101, no: 1292, SQLState: 22007) Incorrect datetime value: '' for column `dbcred`.`tb_adiantamentos`.`dt_adiant` at row 1
+sql: INSERT INTO tb_adiantamentos SET num_recibo = :num_recibo, id_vendedor = :id_vendedor, 
+                dt_adiant = :dt_adiant, vl_adiant = :vl_adiant, id = :id, entidade_negocio = :entidade_negocio - parameters:{'id':1,'entidade_negocio':3,'num_recibo':nu...
+    at Module.createError (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/misc/errors.js:66:10)
+    at PacketNodeEncoded.readError (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/io/packet.js:595:19)
+    at Query.handleErrorPacket (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/parser.js:92:24)
+    at Query.readResponsePacket (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/parser.js:70:21)
+    at PacketInputStream.receivePacketBasic (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/io/packet-input-stream.js:94:9)
+    at PacketInputStream.onData (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/io/packet-input-stream.js:151:20)
+    at Socket.emit (node:events:508:28)
+    at addChunk (node:internal/streams/readable:563:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:514:3)
+    at Readable.push (node:internal/streams/readable:394:5)
+
+[18/03/2026 18:04:25] ControllerCobranca.SalvarAdiantamento: SqlError: (conn:102, no: 1292, SQLState: 22007) Incorrect datetime value: '' for column `dbcred`.`tb_adiantamentos`.`dt_adiant` at row 1
+sql: INSERT INTO tb_adiantamentos SET num_recibo = :num_recibo, id_vendedor = :id_vendedor, 
+                dt_adiant = :dt_adiant, vl_adiant = :vl_adiant, id = :id, entidade_negocio = :entidade_negocio - parameters:{'id':1,'entidade_negocio':3,'num_recibo':nu...
+    at Module.createError (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/misc/errors.js:66:10)
+    at PacketNodeEncoded.readError (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/io/packet.js:595:19)
+    at Query.handleErrorPacket (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/parser.js:92:24)
+    at Query.readResponsePacket (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/parser.js:70:21)
+    at PacketInputStream.receivePacketBasic (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/io/packet-input-stream.js:94:9)
+    at PacketInputStream.onData (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/io/packet-input-stream.js:151:20)
+    at Socket.emit (node:events:508:28)
+    at addChunk (node:internal/streams/readable:563:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:514:3)
+    at Readable.push (node:internal/streams/readable:394:5)
+
+[18/03/2026 18:05:07] ControllerCobranca.SalvarAdiantamento: SqlError: (conn:106, no: 1292, SQLState: 22007) Incorrect datetime value: '' for column `dbcred`.`tb_adiantamentos`.`dt_adiant` at row 1
+sql: INSERT INTO tb_adiantamentos SET num_recibo = :num_recibo, id_vendedor = :id_vendedor, 
+                dt_adiant = :dt_adiant, vl_adiant = :vl_adiant, id = :id, entidade_negocio = :entidade_negocio - parameters:{'id':1,'entidade_negocio':3,'num_recibo':nu...
+    at Module.createError (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/misc/errors.js:66:10)
+    at PacketNodeEncoded.readError (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/io/packet.js:595:19)
+    at Query.handleErrorPacket (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/parser.js:92:24)
+    at Query.readResponsePacket (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/parser.js:70:21)
+    at PacketInputStream.receivePacketBasic (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/io/packet-input-stream.js:94:9)
+    at PacketInputStream.onData (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/io/packet-input-stream.js:151:20)
+    at Socket.emit (node:events:508:28)
+    at addChunk (node:internal/streams/readable:563:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:514:3)
+    at Readable.push (node:internal/streams/readable:394:5)
+
+[18/03/2026 18:06:06] ControllerCobranca.SalvarAdiantamento: SqlError: (conn:107, no: 1292, SQLState: 22007) Incorrect datetime value: '' for column `dbcred`.`tb_adiantamentos`.`dt_adiant` at row 1
+sql: INSERT INTO tb_adiantamentos SET num_recibo = :num_recibo, id_vendedor = :id_vendedor, 
+                dt_adiant = :dt_adiant, vl_adiant = :vl_adiant, id = :id, entidade_negocio = :entidade_negocio - parameters:{'id':1,'entidade_negocio':3,'num_recibo':nu...
+    at Module.createError (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/misc/errors.js:66:10)
+    at PacketNodeEncoded.readError (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/io/packet.js:595:19)
+    at Query.handleErrorPacket (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/parser.js:92:24)
+    at Query.readResponsePacket (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/parser.js:70:21)
+    at PacketInputStream.receivePacketBasic (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/io/packet-input-stream.js:94:9)
+    at PacketInputStream.onData (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/io/packet-input-stream.js:151:20)
+    at Socket.emit (node:events:508:28)
+    at addChunk (node:internal/streams/readable:563:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:514:3)
+    at Readable.push (node:internal/streams/readable:394:5)
+
+[18/03/2026 18:06:23] ControllerCobranca.SalvarAdiantamento: SqlError: (conn:108, no: 1292, SQLState: 22007) Incorrect datetime value: '' for column `dbcred`.`tb_adiantamentos`.`dt_adiant` at row 1
+sql: INSERT INTO tb_adiantamentos SET num_recibo = :num_recibo, id_vendedor = :id_vendedor, 
+                dt_adiant = :dt_adiant, vl_adiant = :vl_adiant, id = :id, entidade_negocio = :entidade_negocio - parameters:{'id':1,'entidade_negocio':3,'num_recibo':nu...
+    at Module.createError (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/misc/errors.js:66:10)
+    at PacketNodeEncoded.readError (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/io/packet.js:595:19)
+    at Query.handleErrorPacket (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/parser.js:92:24)
+    at Query.readResponsePacket (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/parser.js:70:21)
+    at PacketInputStream.receivePacketBasic (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/io/packet-input-stream.js:94:9)
+    at PacketInputStream.onData (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/io/packet-input-stream.js:151:20)
+    at Socket.emit (node:events:508:28)
+    at addChunk (node:internal/streams/readable:563:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:514:3)
+    at Readable.push (node:internal/streams/readable:394:5)
+
+[18/03/2026 18:06:34] ControllerCobranca.SalvarAdiantamento: SqlError: (conn:109, no: 1292, SQLState: 22007) Incorrect datetime value: '' for column `dbcred`.`tb_adiantamentos`.`dt_adiant` at row 1
+sql: INSERT INTO tb_adiantamentos SET num_recibo = :num_recibo, id_vendedor = :id_vendedor, 
+                dt_adiant = :dt_adiant, vl_adiant = :vl_adiant, id = :id, entidade_negocio = :entidade_negocio - parameters:{'id':1,'entidade_negocio':3,'num_recibo':nu...
+    at Module.createError (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/misc/errors.js:66:10)
+    at PacketNodeEncoded.readError (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/io/packet.js:595:19)
+    at Query.handleErrorPacket (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/parser.js:92:24)
+    at Query.readResponsePacket (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/parser.js:70:21)
+    at PacketInputStream.receivePacketBasic (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/io/packet-input-stream.js:94:9)
+    at PacketInputStream.onData (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/io/packet-input-stream.js:151:20)
+    at Socket.emit (node:events:508:28)
+    at addChunk (node:internal/streams/readable:563:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:514:3)
+    at Readable.push (node:internal/streams/readable:394:5)
+
+[18/03/2026 18:08:03] ControllerCobranca.SalvarAdiantamento: SqlError: (conn:110, no: 1292, SQLState: 22007) Incorrect datetime value: '' for column `dbcred`.`tb_adiantamentos`.`dt_adiant` at row 1
+sql: INSERT INTO tb_adiantamentos SET num_recibo = :num_recibo, id_vendedor = :id_vendedor, 
+                dt_adiant = :dt_adiant, vl_adiant = :vl_adiant, id = :id, entidade_negocio = :entidade_negocio - parameters:{'id':1,'entidade_negocio':3,'num_recibo':nu...
+    at Module.createError (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/misc/errors.js:66:10)
+    at PacketNodeEncoded.readError (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/io/packet.js:595:19)
+    at Query.handleErrorPacket (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/parser.js:92:24)
+    at Query.readResponsePacket (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/parser.js:70:21)
+    at PacketInputStream.receivePacketBasic (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/io/packet-input-stream.js:94:9)
+    at PacketInputStream.onData (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/io/packet-input-stream.js:151:20)
+    at Socket.emit (node:events:508:28)
+    at addChunk (node:internal/streams/readable:563:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:514:3)
+    at Readable.push (node:internal/streams/readable:394:5)
+
+[18/03/2026 18:10:12] ControllerCobranca.SalvarAdiantamento: SqlError: (conn:116, no: 1292, SQLState: 22007) Incorrect datetime value: '' for column `dbcred`.`tb_adiantamentos`.`dt_adiant` at row 1
+sql: INSERT INTO tb_adiantamentos SET num_recibo = :num_recibo, id_vendedor = :id_vendedor, 
+                dt_adiant = :dt_adiant, vl_adiant = :vl_adiant, id = :id, entidade_negocio = :entidade_negocio - parameters:{'id':1,'entidade_negocio':3,'num_recibo':nu...
+    at Module.createError (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/misc/errors.js:66:10)
+    at PacketNodeEncoded.readError (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/io/packet.js:595:19)
+    at Query.handleErrorPacket (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/parser.js:92:24)
+    at Query.readResponsePacket (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/parser.js:70:21)
+    at PacketInputStream.receivePacketBasic (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/io/packet-input-stream.js:94:9)
+    at PacketInputStream.onData (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/io/packet-input-stream.js:151:20)
+    at Socket.emit (node:events:508:28)
+    at addChunk (node:internal/streams/readable:563:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:514:3)
+    at Readable.push (node:internal/streams/readable:394:5)
+
+[18/03/2026 18:15:43] ControllerCobranca.SalvarAdiantamento: Error: Data do adiantamento invalida.
+    at SalvarAdiantamento (file:///home/ovidio.neto/Crediario/backend/controller/controller_cobranca.js:591:31)
     at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
 
-[16/03/2026 22:59:09] ControllerAuth.IniciarSessao: Error: Usuario ou senha invalidos.
-    at IniciarSessao (file:///home/ovidio.neto/Crediario/backend/controller/controller_parametrizacao.js:146:31)
+[18/03/2026 18:15:49] ControllerCobranca.SalvarAdiantamento: Error: Data do adiantamento invalida.
+    at SalvarAdiantamento (file:///home/ovidio.neto/Crediario/backend/controller/controller_cobranca.js:591:31)
     at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
 
-[17/03/2026 17:10:03] ControllerAuth.IniciarSessao: Error: Usuario ou senha invalidos.
-    at IniciarSessao (file:///home/ovidio.neto/Crediario/backend/controller/controller_parametrizacao.js:161:31)
+[18/03/2026 18:17:34] ControllerCobranca.SalvarAdiantamento: Error: Data do adiantamento invalida.
+    at SalvarAdiantamento (file:///home/ovidio.neto/Crediario/backend/controller/controller_cobranca.js:591:31)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
 
-[17/03/2026 18:53:32] ControllerAuth.IniciarSessao: Error: Usuario ou senha invalidos.
-    at IniciarSessao (file:///home/ovidio.neto/Crediario/backend/controller/controller_parametrizacao.js:161:31)
+[18/03/2026 18:18:50] ControllerCobranca.SalvarAdiantamento: Error: Data do adiantamento invalida.
+    at SalvarAdiantamento (file:///home/ovidio.neto/Crediario/backend/controller/controller_cobranca.js:591:31)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
 
-[17/03/2026 18:56:36] ControllerCobranca.SalvarPagamento: SqlError: (conn:70, no: 1452, SQLState: 23000) Cannot add or update a child row: a foreign key constraint fails (`dbcred`.`tb_vendas`, CONSTRAINT `fk_venda_cobradores` FOREIGN KEY (`entidade_negocio`, `id_cobrador`) REFERENCES `tb_cobradores` (`entidade_negocio`, `id`) ON DELETE NO ACTION ON UPDATE NO ACTION)
-sql: UPDATE tb_vendas SET dt_venda = :dt_venda, id_vendedor = :id_vendedor, 
-                id_cobrador = :id_cobrador, id_rota = :id_rota, id_tipo_pag = :id_tipo_pag, cpf_cliente = :cpf_cliente,
-                marca_venda = :marca_venda, num_recibo = :num_re...
+[18/03/2026 18:19:24] ControllerCobranca.SalvarAdiantamento: Error: Data do adiantamento invalida.
+    at SalvarAdiantamento (file:///home/ovidio.neto/Crediario/backend/controller/controller_cobranca.js:591:31)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+
+[18/03/2026 18:19:59] ControllerCobranca.SalvarAdiantamento: Error: Data do adiantamento invalida.
+    at SalvarAdiantamento (file:///home/ovidio.neto/Crediario/backend/controller/controller_cobranca.js:591:31)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+
+[18/03/2026 18:20:50] ControllerCobranca.SalvarAdiantamento: Error: Data do adiantamento invalida.
+    at SalvarAdiantamento (file:///home/ovidio.neto/Crediario/backend/controller/controller_cobranca.js:591:31)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+
+[18/03/2026 18:21:18] ControllerCobranca.SalvarAdiantamento: Error: Data do adiantamento invalida.
+    at SalvarAdiantamento (file:///home/ovidio.neto/Crediario/backend/controller/controller_cobranca.js:591:31)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+
+[18/03/2026 18:22:02] ControllerCobranca.SalvarAdiantamento: Error: Data do adiantamento invalida.
+    at SalvarAdiantamento (file:///home/ovidio.neto/Crediario/backend/controller/controller_cobranca.js:591:31)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+
+[18/03/2026 18:24:35] ControllerCobranca.SalvarAdiantamento: Error: Data do adiantamento invalida.
+    at SalvarAdiantamento (file:///home/ovidio.neto/Crediario/backend/controller/controller_cobranca.js:591:31)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+
+[18/03/2026 18:25:37] ControllerCobranca.SalvarAdiantamento: Error: Data do adiantamento invalida.
+    at SalvarAdiantamento (file:///home/ovidio.neto/Crediario/backend/controller/controller_cobranca.js:591:31)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+
+[18/03/2026 18:27:38] ControllerCobranca.SalvarAdiantamento: Error: Data do adiantamento invalida.
+    at SalvarAdiantamento (file:///home/ovidio.neto/Crediario/backend/controller/controller_cobranca.js:591:31)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+
+[18/03/2026 18:32:51] ControllerCobranca.SalvarAdiantamento: SqlError: (conn:143, no: 1292, SQLState: 22007) Incorrect datetime value: '18/03/2026  15:32:5' for column `dbcred`.`tb_adiantamentos`.`dt_adiant` at row 1
+sql: INSERT INTO tb_adiantamentos SET num_recibo = :num_recibo, id_vendedor = :id_vendedor, 
+                dt_adiant = :dt_adiant, vl_adiant = :vl_adiant, id = :id, entidade_negocio = :entidade_negocio - parameters:{'id':1,'entidade_negocio':3,'num_recibo':nu...
     at Module.createError (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/misc/errors.js:66:10)
     at PacketNodeEncoded.readError (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/io/packet.js:595:19)
     at Query.handleErrorPacket (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/parser.js:92:24)
@@ -30,10 +186,9 @@ sql: UPDATE tb_vendas SET dt_venda = :dt_venda, id_vendedor = :id_vendedor,
     at readableAddChunkPushByteMode (node:internal/streams/readable:514:3)
     at Readable.push (node:internal/streams/readable:394:5)
 
-[17/03/2026 18:56:44] ControllerCobranca.SalvarPagamento: SqlError: (conn:75, no: 1452, SQLState: 23000) Cannot add or update a child row: a foreign key constraint fails (`dbcred`.`tb_vendas`, CONSTRAINT `fk_venda_cobradores` FOREIGN KEY (`entidade_negocio`, `id_cobrador`) REFERENCES `tb_cobradores` (`entidade_negocio`, `id`) ON DELETE NO ACTION ON UPDATE NO ACTION)
-sql: UPDATE tb_vendas SET dt_venda = :dt_venda, id_vendedor = :id_vendedor, 
-                id_cobrador = :id_cobrador, id_rota = :id_rota, id_tipo_pag = :id_tipo_pag, cpf_cliente = :cpf_cliente,
-                marca_venda = :marca_venda, num_recibo = :num_re...
+[18/03/2026 18:33:36] ControllerCobranca.SalvarAdiantamento: SqlError: (conn:144, no: 1292, SQLState: 22007) Incorrect datetime value: '18/03/2026 15:33:36' for column `dbcred`.`tb_adiantamentos`.`dt_adiant` at row 1
+sql: INSERT INTO tb_adiantamentos SET num_recibo = :num_recibo, id_vendedor = :id_vendedor, 
+                dt_adiant = :dt_adiant, vl_adiant = :vl_adiant, id = :id, entidade_negocio = :entidade_negocio - parameters:{'id':1,'entidade_negocio':3,'num_recibo':nu...
     at Module.createError (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/misc/errors.js:66:10)
     at PacketNodeEncoded.readError (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/io/packet.js:595:19)
     at Query.handleErrorPacket (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/parser.js:92:24)
@@ -45,10 +200,9 @@ sql: UPDATE tb_vendas SET dt_venda = :dt_venda, id_vendedor = :id_vendedor,
     at readableAddChunkPushByteMode (node:internal/streams/readable:514:3)
     at Readable.push (node:internal/streams/readable:394:5)
 
-[17/03/2026 18:57:46] ControllerCobranca.SalvarPagamento: SqlError: (conn:80, no: 1452, SQLState: 23000) Cannot add or update a child row: a foreign key constraint fails (`dbcred`.`tb_vendas`, CONSTRAINT `fk_venda_cobradores` FOREIGN KEY (`entidade_negocio`, `id_cobrador`) REFERENCES `tb_cobradores` (`entidade_negocio`, `id`) ON DELETE NO ACTION ON UPDATE NO ACTION)
-sql: UPDATE tb_vendas SET dt_venda = :dt_venda, id_vendedor = :id_vendedor, 
-                id_cobrador = :id_cobrador, id_rota = :id_rota, id_tipo_pag = :id_tipo_pag, cpf_cliente = :cpf_cliente,
-                marca_venda = :marca_venda, num_recibo = :num_re...
+[18/03/2026 18:34:25] ControllerCobranca.SalvarAdiantamento: SqlError: (conn:145, no: 1292, SQLState: 22007) Incorrect datetime value: '18/03/2026 18:34:25' for column `dbcred`.`tb_adiantamentos`.`dt_adiant` at row 1
+sql: INSERT INTO tb_adiantamentos SET num_recibo = :num_recibo, id_vendedor = :id_vendedor, 
+                dt_adiant = :dt_adiant, vl_adiant = :vl_adiant, id = :id, entidade_negocio = :entidade_negocio - parameters:{'id':1,'entidade_negocio':3,'num_recibo':nu...
     at Module.createError (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/misc/errors.js:66:10)
     at PacketNodeEncoded.readError (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/io/packet.js:595:19)
     at Query.handleErrorPacket (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/parser.js:92:24)
@@ -60,10 +214,9 @@ sql: UPDATE tb_vendas SET dt_venda = :dt_venda, id_vendedor = :id_vendedor,
     at readableAddChunkPushByteMode (node:internal/streams/readable:514:3)
     at Readable.push (node:internal/streams/readable:394:5)
 
-[17/03/2026 19:01:00] ControllerCobranca.SalvarPagamento: SqlError: (conn:92, no: 1452, SQLState: 23000) Cannot add or update a child row: a foreign key constraint fails (`dbcred`.`tb_vendas`, CONSTRAINT `fk_venda_cobradores` FOREIGN KEY (`entidade_negocio`, `id_cobrador`) REFERENCES `tb_cobradores` (`entidade_negocio`, `id`) ON DELETE NO ACTION ON UPDATE NO ACTION)
-sql: UPDATE tb_vendas SET dt_venda = :dt_venda, id_vendedor = :id_vendedor, 
-                id_cobrador = :id_cobrador, id_rota = :id_rota, id_tipo_pag = :id_tipo_pag, cpf_cliente = :cpf_cliente,
-                marca_venda = :marca_venda, num_recibo = :num_re...
+[18/03/2026 19:02:36] ControllerCobranca.SalvarAdiantamento: SqlError: (conn:16, no: 1292, SQLState: 22007) Incorrect datetime value: '2026-03-18T19:02:36.291Z' for column `dbcred`.`tb_adiantamentos`.`dt_adiant` at row 1
+sql: INSERT INTO tb_adiantamentos SET num_recibo = :num_recibo, id_vendedor = :id_vendedor, 
+                dt_adiant = :dt_adiant, vl_adiant = :vl_adiant, id = :id, entidade_negocio = :entidade_negocio - parameters:{'id':1,'entidade_negocio':3,'num_recibo':nu...
     at Module.createError (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/misc/errors.js:66:10)
     at PacketNodeEncoded.readError (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/io/packet.js:595:19)
     at Query.handleErrorPacket (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/parser.js:92:24)
@@ -75,18 +228,22 @@ sql: UPDATE tb_vendas SET dt_venda = :dt_venda, id_vendedor = :id_vendedor,
     at readableAddChunkPushByteMode (node:internal/streams/readable:514:3)
     at Readable.push (node:internal/streams/readable:394:5)
 
-[17/03/2026 19:06:28] ControllerCobranca.SalvarPagamento: SqlError: (conn:97, no: 1452, SQLState: 23000) Cannot add or update a child row: a foreign key constraint fails (`dbcred`.`tb_vendas`, CONSTRAINT `fk_venda_cobradores` FOREIGN KEY (`entidade_negocio`, `id_cobrador`) REFERENCES `tb_cobradores` (`entidade_negocio`, `id`) ON DELETE NO ACTION ON UPDATE NO ACTION)
-sql: UPDATE tb_vendas SET dt_venda = :dt_venda, id_vendedor = :id_vendedor, 
-                id_cobrador = :id_cobrador, id_rota = :id_rota, id_tipo_pag = :id_tipo_pag, cpf_cliente = :cpf_cliente,
-                marca_venda = :marca_venda, num_recibo = :num_re...
+[18/03/2026 19:08:23] ControllerCobranca.ExcluirAdiantamento: SqlError: (conn:34, no: 45033, SQLState: 08S01) setting timezone '00:00' fails on server.
+ look at https://mariadb.com/kb/en/mysql_tzinfo_to_sql/ to load IANA timezone. 
+    at Module.createError (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/misc/errors.js:65:21)
+    at file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/connection.js:1110:25
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+
+[18/03/2026 20:25:57] ControllerCobranca.SalvarAdiantamento: SqlError: (conn:73, no: 45018, SQLState: HY000) Placeholder 'id_vendedor' is not defined
+sql: SELECT * FROM tb_adiantamentos WHERE entidade_negocio = :entidade_negocio AND id_vendedor = :id_vendedor AND id = :id - parameters:{'id':0,'entidade_negocio':3}
     at Module.createError (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/misc/errors.js:66:10)
-    at PacketNodeEncoded.readError (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/io/packet.js:595:19)
-    at Query.handleErrorPacket (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/parser.js:92:24)
-    at Query.readResponsePacket (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/parser.js:70:21)
-    at PacketInputStream.receivePacketBasic (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/io/packet-input-stream.js:94:9)
-    at PacketInputStream.onData (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/io/packet-input-stream.js:151:20)
-    at Socket.emit (node:events:508:28)
-    at addChunk (node:internal/streams/readable:563:12)
-    at readableAddChunkPushByteMode (node:internal/streams/readable:514:3)
-    at Readable.push (node:internal/streams/readable:394:5)
+    at splitQueryPlaceholder (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/misc/parse.js:256:26)
+    at Query.start (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/query.js:48:24)
+    at Connection.addCommandEnablePipeline (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/connection.js:1519:11)
+    at Connection.query (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/connection.js:1760:10)
+    at new Promise (<anonymous>)
+    at ConnectionPromise.query (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/connection-promise.js:99:12)
+    at Adiantamentos.FindById (file:///home/ovidio.neto/Crediario/backend/model/dao_adiantamentos.js:68:45)
+    at SalvarAdiantamento (file:///home/ovidio.neto/Crediario/backend/controller/controller_cobranca.js:591:38)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
 
