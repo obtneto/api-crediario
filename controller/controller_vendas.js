@@ -10,6 +10,7 @@ import Rotas from '../model/dao_rotas.js';
 import Adiantamentos from '../model/dao_adiantamentos.js';
 import GravarLog from '../utils/GravarLog.js';
 import {obterEntidadeNegocio} from '../utils/CheckEntidades.js';
+import {buildTableDocument, formatDateBR, sendPdfResponse} from '../utils/PdfReport.js';
 
 export class ControllerDistribuicao{
 
@@ -320,6 +321,142 @@ export class ControllerDistribuicao{
         void await db.Close();
 
         res.status(resdata.status).json(resdata);
+
+    }
+
+    static async Imprimir(req,res) {
+
+        const db = new Database('dbcred');
+
+        try {
+
+            const id_vendedor = Number(req.params.id_vendedor || 0);
+            const entidade_negocio = obterEntidadeNegocio(req);
+            const dt_ini = String(req.query.dt_ini || '').trim();
+            const dt_fim = String(req.query.dt_fim || '').trim();
+            const pesq = String(req.query.pesq || '').trim();
+
+            if (id_vendedor <= 0) {
+                const error = new Error('Vendedor invalido.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (dt_ini && !/^\d{4}-\d{2}-\d{2}$/.test(dt_ini)) {
+                const error = new Error('Data inicial invalida.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (dt_fim && !/^\d{4}-\d{2}-\d{2}$/.test(dt_fim)) {
+                const error = new Error('Data final invalida.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (dt_ini && dt_fim && dt_ini > dt_fim) {
+                const error = new Error('Data inicial nao pode ser maior que data final.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (dt_ini && dt_fim) {
+                const dtIniDate = new Date(`${dt_ini}T00:00:00Z`);
+                const dtFimDate = new Date(`${dt_fim}T00:00:00Z`);
+                const diffMs = dtFimDate.getTime() - dtIniDate.getTime();
+                const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+                if (diffDays > 45) {
+                    const error = new Error('Intervalo maximo permitido e de 45 dias.');
+                    error.statusCode = 400;
+                    throw error;
+                }
+            }
+
+            void await db.Connect();
+
+            const distrib = new Distribuicao(db.connection, entidade_negocio);
+
+            const whereClause = ['d.id_vendedor = :id_vendedor', 'd.entidade_negocio = :entidade_negocio', 'd.qt_distrib > 0'];
+            const params = {
+                id_vendedor,
+                entidade_negocio
+            };
+
+            if (dt_ini) {
+                whereClause.push('d.dt_distrib >= :dt_ini');
+                params.dt_ini = dt_ini;
+            }
+
+            if (dt_fim) {
+                whereClause.push('d.dt_distrib <= :dt_fim');
+                params.dt_fim = dt_fim;
+            }
+
+            if (pesq) {
+                whereClause.push('p.nom_produto LIKE :nom_produto');
+                params.nom_produto = `%${pesq}%`;
+            }
+
+            const query = `SELECT d.id, d.dt_distrib, p.nom_produto, p.mar_produto, p.und_produto, d.qt_distrib, vd.nom_vendedor
+                           FROM tb_distribuicao d
+                           LEFT JOIN tb_produtos p ON p.id = d.id_produto AND p.entidade_negocio = d.entidade_negocio
+                           LEFT JOIN tb_vendedores vd ON vd.id = d.id_vendedor AND vd.entidade_negocio = d.entidade_negocio
+                           WHERE ${whereClause.join(' AND ')}
+                           ORDER BY d.dt_distrib DESC, d.id DESC`;
+
+            const rows = await distrib.ExecuteQuery(query, params);
+
+            if (!Array.isArray(rows) || rows.length === 0) {
+                const error = new Error('Nao ha dados para impressao.');
+                error.statusCode = 404;
+                throw error;
+            }
+
+            const vendedor = String(rows[0]?.nom_vendedor || '-');
+            const periodo = dt_ini && dt_fim ? `Periodo: ${formatDateBR(dt_ini)} a ${formatDateBR(dt_fim)}` : '';
+            const filtroProduto = pesq ? `Filtro: ${pesq}` : '';
+            const subtitle = [ `Vendedor: ${vendedor}`, periodo, filtroProduto ].filter(Boolean).join(' | ');
+
+            const body = [
+                [
+                    { text: 'Data', bold: true, fontSize: 9, alignment: 'left' },
+                    { text: 'Produto', bold: true, fontSize: 9, alignment: 'left' },
+                    { text: 'Unidade', bold: true, fontSize: 9, alignment: 'center' },
+                    { text: 'Quantidade', bold: true, fontSize: 9, alignment: 'right' }
+                ],
+                ...rows.map((item) => ([
+                    { text: formatDateBR(item?.dt_distrib), alignment: 'left' },
+                    { text: `${item?.nom_produto || '-'}${item?.mar_produto ? ` - ${item.mar_produto}` : ''}`.trim(), alignment: 'left' },
+                    { text: String(item?.und_produto || '-'), alignment: 'center' },
+                    { text: String(item?.qt_distrib ?? 0), alignment: 'right' }
+                ]))
+            ];
+
+            const document = buildTableDocument({
+                title: 'RELATORIO DE DISTRIBUICAO',
+                subtitle,
+                widths: ['16%', '52%', '12%', '20%'],
+                body
+            });
+
+            await sendPdfResponse(res, `relatorio-distribuicao-${id_vendedor}.pdf`, document);
+
+        } catch (error) {
+
+            if (!res.headersSent) {
+                res.status(Number(error.statusCode || 500)).json({
+                    err: Number(error.statusCode || 500),
+                    msg: error.message,
+                    status: Number(error.statusCode || 500),
+                    data: []
+                });
+            }
+
+            GravarLog('ControllerDistribuicao.Imprimir', error.stack);
+        }
+
+        void await db.Close();
 
     }
 

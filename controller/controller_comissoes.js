@@ -3,6 +3,7 @@ import GravarLog from '../utils/GravarLog.js';
 import {obterEntidadeNegocio} from '../utils/CheckEntidades.js';
 import Entidades from '../model/dao_entidades.js';
 import Adiantamentos from '../model/dao_adiantamentos.js';
+import {buildTableDocument, formatCurrencyBR, formatDateBR, sendPdfResponse} from '../utils/PdfReport.js';
 
 export class ControllerComissoes {
 
@@ -24,9 +25,16 @@ export class ControllerComissoes {
             const entidade_negocio = obterEntidadeNegocio(req);
             const id = Number(req.params.id || 0); 
             const fieldname = req.params.fieldname;  //id_vendedor ou id_cobrador
+            const fieldnamePermitido = fieldname === 'id_vendedor' || fieldname === 'id_cobrador';
 
             if (!id || id <= 0) {
                 const error = new Error('ID do cobrador ou vendedor invalido.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (!fieldnamePermitido) {
+                const error = new Error('Campo de destino invalido.');
                 error.statusCode = 400;
                 throw error;
             }
@@ -60,6 +68,119 @@ export class ControllerComissoes {
         void await db.Close();
 
         res.status(resdata.status).json(resdata);
+    }
+
+    static async ImprimirAdiantamentosAtivos(req,res) {
+
+        const db = new Database('dbcred');
+
+        try {
+
+            const entidade_negocio = obterEntidadeNegocio(req);
+            const id = Number(req.params.id || 0);
+            const fieldname = String(req.params.fieldname || '').trim();
+            const pesq = String(req.query.pesq || '').trim().toLowerCase();
+            const fieldnamePermitido = fieldname === 'id_vendedor' || fieldname === 'id_cobrador';
+            const labelDestino = fieldname === 'id_cobrador' ? 'Cobrador' : 'Vendedor';
+            const tabelaDestino = fieldname === 'id_cobrador' ? 'tb_cobradores' : 'tb_vendedores';
+            const colunaNome = fieldname === 'id_cobrador' ? 'nom_cobrador' : 'nom_vendedor';
+
+            if (!id || id <= 0) {
+                const error = new Error('ID do cobrador ou vendedor invalido.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (!fieldnamePermitido) {
+                const error = new Error('Campo de destino invalido.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            void await db.Connect();
+
+            const adiantamentos = new Adiantamentos(db.connection, entidade_negocio);
+
+            const query = `SELECT a.id, a.dt_adiant as dt_adiantamento, a.vl_adiant as vl_adiantamento, d.${colunaNome} as nom_destino
+                           FROM tb_adiantamentos a
+                           LEFT JOIN ${tabelaDestino} d ON d.id = a.${fieldname} AND d.entidade_negocio = a.entidade_negocio
+                           WHERE a.entidade_negocio = :entidade_negocio AND a.${fieldname} = :id
+                           AND a.num_recibo IS NULL
+                           ORDER BY a.dt_adiant DESC, a.id DESC`;
+
+            let rows = await adiantamentos.ExecuteQuery(query, { entidade_negocio, id });
+
+            if (!Array.isArray(rows) || rows.length === 0) {
+                const error = new Error('Nao ha dados para impressao.');
+                error.statusCode = 404;
+                throw error;
+            }
+
+            const nomeDestino = String(rows[0]?.nom_destino || '-');
+
+            if (pesq) {
+                rows = rows.filter((item) => {
+                    const campos = [
+                        item?.id,
+                        item?.dt_adiantamento,
+                        formatDateBR(item?.dt_adiantamento, true),
+                        item?.vl_adiantamento,
+                        formatCurrencyBR(item?.vl_adiantamento),
+                        nomeDestino,
+                        labelDestino
+                    ];
+
+                    return campos.some((campo) => String(campo ?? '').toLowerCase().includes(pesq));
+                });
+            }
+
+            if (!Array.isArray(rows) || rows.length === 0) {
+                const error = new Error('Nao ha dados para impressao com o filtro atual.');
+                error.statusCode = 404;
+                throw error;
+            }
+
+            const total = rows.reduce((acc, item) => acc + Number(item?.vl_adiantamento || 0), 0);
+            const subtitle = `${labelDestino}: ${nomeDestino} | Total: ${formatCurrencyBR(total)}`;
+            const body = [
+                [
+                    { text: 'ID', bold: true, fontSize: 9, alignment: 'left' },
+                    { text: labelDestino, bold: true, fontSize: 9, alignment: 'left' },
+                    { text: 'Data/Hora', bold: true, fontSize: 9, alignment: 'left' },
+                    { text: 'Valor', bold: true, fontSize: 9, alignment: 'right' }
+                ],
+                ...rows.map((item) => ([
+                    { text: String(item?.id ?? 0), alignment: 'left' },
+                    { text: nomeDestino, alignment: 'left' },
+                    { text: formatDateBR(item?.dt_adiantamento, true), alignment: 'left' },
+                    { text: formatCurrencyBR(item?.vl_adiantamento), alignment: 'right' }
+                ]))
+            ];
+
+            const document = buildTableDocument({
+                title: 'RELATORIO DE ADIANTAMENTOS',
+                subtitle,
+                widths: ['12%', '36%', '30%', '22%'],
+                body
+            });
+
+            await sendPdfResponse(res, `relatorio-adiantamentos-${fieldname}-${id}.pdf`, document);
+
+        } catch (error) {
+
+            if (!res.headersSent) {
+                res.status(Number(error.statusCode || 500)).json({
+                    err: Number(error.statusCode || 500),
+                    msg: error.message,
+                    status: Number(error.statusCode || 500),
+                    data: []
+                });
+            }
+
+            GravarLog('ControllerComissoes.ImprimirAdiantamentosAtivos', error.stack);
+        }
+
+        void await db.Close();
     }
     
     static async EditarAdiantamento(req,res) {

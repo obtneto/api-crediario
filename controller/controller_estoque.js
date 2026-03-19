@@ -1,8 +1,10 @@
 import Database from '../connections/dbconn.js';
 import Estoque from '../model/dao_estoque.js';
 import Estoque_mov from '../model/dao_estoque_mov.js';
+import Entidades from '../model/dao_entidades.js';
 import GravarLog from '../utils/GravarLog.js';
 import {obterEntidadeNegocio} from '../utils/CheckEntidades.js';
+import {buildTableDocument, sendPdfResponse} from '../utils/PdfReport.js';
 
 export class ControllerEstoque {
 
@@ -56,6 +58,93 @@ export class ControllerEstoque {
         void await db.Close();
 
         res.status(resdata.status).json(resdata);
+
+    }
+
+    static async Imprimir(req,res) {
+
+        const db = new Database('dbcred');
+
+        try {
+
+            const pesq = String(req.params.pesq || '*').trim() || '*';
+            const entidade_negocio = obterEntidadeNegocio(req);
+
+            void await db.Connect();
+
+            const estoque = new Estoque(db.connection, entidade_negocio);
+            const entidades = new Entidades(db.connection);
+            const params = { entidade_negocio };
+            let query = `SELECT e.id_produto, p.nom_produto, p.mar_produto, p.und_produto, e.qt_reservada, e.qt_disponivel
+            FROM tb_estoque e
+            LEFT JOIN tb_produtos p ON p.id = e.id_produto AND p.entidade_negocio = e.entidade_negocio
+            WHERE e.entidade_negocio = :entidade_negocio`;
+
+            if (pesq !== '*') {
+                query += ` AND p.nom_produto LIKE :pesq`;
+                params.pesq = `%${pesq}%`;
+            }
+
+            query += ` ORDER BY p.nom_produto ASC, e.id_produto ASC`;
+
+            const rows = await estoque.ExecuteQuery(query, params);
+
+            if (!Array.isArray(rows) || rows.length === 0) {
+                const error = new Error('Nao ha dados para impressao.');
+                error.statusCode = 404;
+                throw error;
+            }
+
+            const [entidade] = await entidades.ExecuteQuery(
+                `SELECT id, nom_entidade FROM tb_entidades WHERE id = :entidade_negocio`,
+                { entidade_negocio }
+            );
+
+            const subtitle = `Entidade: ${entidade?.nom_entidade || entidade_negocio}`;
+            const body = [
+                [
+                    { text: 'ID', bold: true, fontSize: 9, alignment: 'left' },
+                    { text: 'Produto', bold: true, fontSize: 9, alignment: 'left' },
+                    { text: 'Marca', bold: true, fontSize: 9, alignment: 'left' },
+                    { text: 'Und', bold: true, fontSize: 9, alignment: 'left' },
+                    { text: 'Reservada', bold: true, fontSize: 9, alignment: 'right' },
+                    { text: 'Disponivel', bold: true, fontSize: 9, alignment: 'right' }
+                ],
+                ...rows.map((item) => ([
+                    { text: String(item?.id_produto ?? 0), alignment: 'left' },
+                    { text: String(item?.nom_produto || '-'), alignment: 'left' },
+                    { text: String(item?.mar_produto || '-'), alignment: 'left' },
+                    { text: String(item?.und_produto || '-'), alignment: 'left' },
+                    { text: String(Number(item?.qt_reservada ?? 0)), alignment: 'right' },
+                    { text: String(Number(item?.qt_disponivel ?? 0)), alignment: 'right' }
+                ]))
+            ];
+
+            const document = buildTableDocument({
+                title: 'RELATORIO DE ESTOQUE',
+                subtitle,
+                widths: ['8%', '34%', '18%', '10%', '15%', '15%'],
+                body,
+                orientation: 'landscape'
+            });
+
+            await sendPdfResponse(res, 'relatorio-estoque.pdf', document);
+
+        } catch (error) {
+
+            if (!res.headersSent) {
+                res.status(Number(error.statusCode || 500)).json({
+                    err: Number(error.statusCode || 500),
+                    msg: error.message,
+                    status: Number(error.statusCode || 500),
+                    data: []
+                });
+            }
+
+            GravarLog.Gravar('ControllerEstoque.Imprimir', error.stack);
+        }
+
+        void await db.Close();
 
     }
 

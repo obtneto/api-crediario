@@ -7,6 +7,7 @@ const router = Router();
 router.use(criarMiddlewareSessao());
 
 router.get('/listar_adiantamentos_ativos/:id/:fieldname', ControllerComissoes.ListarAdiantamentosAtivos);
+router.get('/imprimir_adiantamentos_ativos/:id/:fieldname', ControllerComissoes.ImprimirAdiantamentosAtivos);
 router.get('/listar_adiantamentos_historico/', ControllerComissoes.ListarHistoricoAdiantamentos);
 router.get('/editar_adiantamento/:id_adiantamento/', ControllerComissoes.EditarAdiantamento);
 router.post('/salvar_adiantamento', ControllerComissoes.SalvarAdiantamento);
