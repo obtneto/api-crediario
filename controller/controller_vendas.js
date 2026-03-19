@@ -633,9 +633,11 @@ export class ControllerVendas {
                 params.dt_fim = dt_fim;
             }
 
-            let query = `SELECT v.id, v.dt_venda, c.nom_cliente, c.end_cliente, c.bai_cliente, c.cid_cliente, c.uf_cliente, v.val_tot_venda
+            let query = `SELECT v.id, v.dt_venda, v.cpf_cliente, c.nom_cliente, c.nom_usual, c.end_cliente, c.bai_cliente, c.cid_cliente, c.uf_cliente,
+                                v.val_tot_venda, tp.nom_tipo
                          FROM tb_vendas v
                          LEFT JOIN tb_clientes c ON c.cpf_cliente = v.cpf_cliente
+                         LEFT JOIN tb_tipos_pagamentos tp ON tp.id = v.id_tipo_pag AND tp.entidade_negocio = v.entidade_negocio
                          WHERE ${whereClause.join(' AND ')}
                          ORDER BY v.dt_venda DESC, v.id DESC
                          LIMIT :limit OFFSET :offset`;

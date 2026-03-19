@@ -94,9 +94,14 @@ export default class Comissoes {
             let query = null;
             
             if (this.#found) {
-                query = `UPDATE ${this.#tb_name} SET dt_recibo = :dt_recibo, tp_recibo = :tp_recibo, vl_recibo = :vl_recibo, vl_adiant = :vl_adiant WHERE entidade_negocio = :entidade_negocio AND num_recibo = :num_recibo`;
+                query = `UPDATE ${this.#tb_name} SET dt_recibo = :dt_recibo, tp_recibo = :tp_recibo, vl_recibo = :vl_recibo, vl_adiant = :vl_adiant 
+                WHERE entidade_negocio = :entidade_negocio AND num_recibo = :num_recibo`;
             } else {
-                query = `INSERT INTO ${this.#tb_name} (num_recibo, dt_recibo, tp_recibo, vl_recibo, vl_adiant, entidade_negocio) VALUES (:num_recibo, :dt_recibo, :tp_recibo, :vl_recibo, :vl_adiant, :entidade_negocio)`;
+
+                this.num_recibo = await this.#newId();
+
+                query = `INSERT INTO ${this.#tb_name} (num_recibo, dt_recibo, tp_recibo, vl_recibo, vl_adiant, entidade_negocio) 
+                VALUES (:num_recibo, :dt_recibo, :tp_recibo, :vl_recibo, :vl_adiant, :entidade_negocio)`;
             }
 
             void await this.#conn.execute(query, this.#field);
@@ -129,7 +134,19 @@ export default class Comissoes {
 
             const [rows] = await this.#conn.query(query, { entidade_negocio: this.#entidade_negocio });
 
-           return rows[0].num_recibo ? parseInt(rows[0].num_recibo) + 1 : 1;
+            const query_check_ano = "SELECT ano_corrente FROM tb_check_ano WHERE id = 1";
+
+            const [rows_check] = await this.#conn.query(query_check_ano);
+
+            const ano_corrente = rows_check.ano_corrente;
+            const ano_novo = new Date(this.#field.dt_recibo).getFullYear();
+
+            const entidade = String(this.#entidade_negocio).padStart(3, '0');
+
+            const id = ano_novo > ano_corrente ? String(ano_novo) + entidade + '1'.padStart(3, '0') : 
+                String(ano_novo) + entidade + String(Number(String(rows.num_recibo).substring(8,10)) + 1).padStart(3, '0');
+
+            return (String(id));
            
         } catch (error) {
             throw error;

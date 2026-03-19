@@ -227,31 +227,12 @@ export default class Vendas {
 
             const ano_corrente = rows_check.ano_corrente;
             const ano = new Date(this.#field.dt_venda).getFullYear();
+            const entidade = String(this.#field.entidade_negocio).padStart(3, '0');
 
-            let id = ano > ano_corrente ? '1' : String(Number(String(rows.newid).substr(8,11)) + 1);
+            const id = ano > ano_corrente ? String(ano) + entidade + '1'.padStart(4, '0') : 
+            String(ano) + entidade + String(Number(String(rows.newid).substring(8,11)) + 1).padStart(4, '0');
 
-            let x = 1
-            let entidade = String(this.#field.entidade_negocio);
-
-            while (x <= String(entidade).length) {
-                
-                if (x == 1) {entidade = '00' + entidade; break}
-                if (x == 2) {entidade = '0' + entidade; break}
-                
-                x++;
-
-            }
-
-            while (x <= String(id).length) {
-
-                if (x == 1) {id = '000' + id; break}
-                if (x == 2) {id = '00' + id; break}
-                if (x == 3) {id = '0' + id; break}
-                
-                x++;
-            }
-
-            return (String(ano)+entidade+id);
+            return (String(id));
             
         } catch (error) {
             throw error;
