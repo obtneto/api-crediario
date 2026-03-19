@@ -91,6 +91,7 @@ export default class Cobradores {
     }
 
     async Save() {
+
         try {
             let query = null;
 
@@ -102,7 +103,8 @@ export default class Cobradores {
                 query = `INSERT INTO ${this.#tb_name} SET nom_cobrador = :nom_cobrador, comissao = :comissao, cel_contato = :cel_contato, entidade_negocio = :entidade_negocio, ativo = :ativo, id = :id`
             }
 
-            return await this.#conn.query(query,this.#field);
+            void await this.#conn.query(query,this.#field);
+
         } catch (error) {
             throw error;
         }

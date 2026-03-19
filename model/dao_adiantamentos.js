@@ -127,8 +127,7 @@ export default class Adiantamentos {
 
             void await this.#conn.query(query,{
                 id: this.#field.id, 
-                entidade_negocio: this.#field.entidade_negocio, 
-                id_vendedor: this.#field.id_vendedor
+                entidade_negocio: this.#field.entidade_negocio
             });
             
         } catch (error) {

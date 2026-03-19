@@ -247,3 +247,32 @@ sql: SELECT * FROM tb_adiantamentos WHERE entidade_negocio = :entidade_negocio A
     at SalvarAdiantamento (file:///home/ovidio.neto/Crediario/backend/controller/controller_cobranca.js:591:38)
     at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
 
+[19/03/2026 14:07:49] ControllerCobranca.ListarAdiantamentos: SqlError: (conn:47, no: 45017, SQLState: HY000) Parameter named undefined is not set
+sql: SELECT id, dt_adiant as dt_adiantamento, vl_adiant as vl_adiantamento 
+            FROM tb_adiantamentos 
+            WHERE entidade_negocio = :entidade_negocio AND undefined = :undefined
+            AND num_recibo IS NULL
+            ORDER BY dt_adiant DE...
+    at Module.createError (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/misc/errors.js:66:10)
+    at Execute.sendCancelled (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/command.js:83:24)
+    at Execute.validateParameters (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/execute.js:200:16)
+    at Execute.start (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/execute.js:68:15)
+    at Connection.addCommandEnablePipeline (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/connection.js:1519:11)
+    at Connection.prepareExecute (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/connection.js:1861:14)
+    at new Promise (<anonymous>)
+    at ConnectionPromise.execute (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/connection-promise.js:129:12)
+    at Adiantamentos.ExecuteQuery (file:///home/ovidio.neto/Crediario/backend/model/dao_adiantamentos.js:57:43)
+    at ListarAdiantamentosAtivos (file:///home/ovidio.neto/Crediario/backend/controller/controller_comissoes.js:44:62)
+
+[19/03/2026 14:09:32] ControllerCobranca.SalvarAdiantamento: ReferenceError: id_cobrador is not defined
+    at SalvarAdiantamento (file:///home/ovidio.neto/Crediario/backend/controller/controller_comissoes.js:141:13)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+
+[19/03/2026 14:10:33] ControllerCobranca.SalvarAdiantamento: ReferenceError: id_vendedor is not defined
+    at SalvarAdiantamento (file:///home/ovidio.neto/Crediario/backend/controller/controller_comissoes.js:155:113)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+
+[19/03/2026 14:11:19] ControllerCobranca.SalvarAdiantamento: ReferenceError: id_vendedor is not defined
+    at SalvarAdiantamento (file:///home/ovidio.neto/Crediario/backend/controller/controller_comissoes.js:155:113)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+
