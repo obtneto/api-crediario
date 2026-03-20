@@ -22,6 +22,7 @@ const app = express();
 
 process.env.TZ = 'America/Bahia'
 
+app.disable('x-powered-by');
 app.use(helmet());
 
 app.use(
@@ -44,18 +45,25 @@ const defaultAllowedOrigins = [
     'http://192.168.0.7',
 ];
 
-const allowedOrigins = String(process.env.CORS_ORIGIN || defaultAllowedOrigins.join(','))
-    .split(',')
-    .map((item) => item.trim())
-    .filter(Boolean);
+const envAllowedOrigins = String(process.env.CORS_ORIGIN || '');
+const allowedOrigins = (process.env.NODE_ENV === 'production' && !envAllowedOrigins)
+    ? []
+    : String(envAllowedOrigins || defaultAllowedOrigins.join(','))
+        .split(',')
+        .map((item) => item.trim())
+        .filter(Boolean);
 
 // Criar o middleware para permitir requisição externa
 app.use(
     cors({
         origin: (origin, callback) => {
-            if (!origin || allowedOrigins.includes(origin)) {
+            console.log('CORS check for origin:', origin); // Debug log
+            if (!origin) return callback(null, true); // Allow requests with no origin (like mobile apps or curl requests)
+            if (origin.includes('localhost') || origin.includes('127.0.0.1') || origin.includes('192.168.0.7')) {
+                console.log('CORS allowed for origin:', origin);
                 return callback(null, true);
             }
+            console.log('CORS denied for origin:', origin);
             return callback(new Error('Origem nao permitida pelo CORS.'));
         },
         credentials: true,

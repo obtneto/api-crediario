@@ -52,9 +52,9 @@ export default class Perfis {
 
     get entidade_negocio() {return Number(this.#field.entidade_negocio)}
 
-    async ExecuteQuery(query) {
+    async ExecuteQuery(query, params = {}) {
         try {
-            const rows = await this.#conn.execute(query);
+            const rows = await this.#conn.execute(query, params);
             return rows;
         } catch (error) {
             throw error;

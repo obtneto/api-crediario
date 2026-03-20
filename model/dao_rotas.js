@@ -39,9 +39,9 @@ export default class Rotas {
     set ativo(ativo) {this.#field.ativo = Number(ativo)}
     get ativo() {return Number(this.#field.ativo)}
 
-    async ExecuteQuery(query) {
+    async ExecuteQuery(query, params = {}) {
         try {
-            const rows = await this.#conn.execute(query);
+            const rows = await this.#conn.execute(query, params);
             return rows;
         } catch (error) {
             throw error;

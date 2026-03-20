@@ -86,20 +86,17 @@ export class ControllerDistribuicao{
             const distrib = new Distribuicao(db.connection, entidade_negocio);
             const entidades = new Entidades(db.connection,entidade_negocio);
            
-            const whereClause = ['d.id_vendedor = :id_vendedor', 'd.entidade_negocio = :entidade_negocio'];
-            const params = {
-                id_vendedor,
-                entidade_negocio
-            };
+            const whereClause = ['d.id_vendedor = ?', 'd.entidade_negocio = ?'];
+            const params = [id_vendedor, entidade_negocio];
 
             if (dt_ini) {
-                whereClause.push('d.dt_distrib >= :dt_ini');
-                params.dt_ini = dt_ini;
+                whereClause.push('d.dt_distrib >= ?');
+                params.push(dt_ini);
             }
 
             if (dt_fim) {
-                whereClause.push('d.dt_distrib <= :dt_fim');
-                params.dt_fim = dt_fim;
+                whereClause.push('d.dt_distrib <= ?');
+                params.push(dt_fim);
             }
 
             whereClause.push('qt_distrib > 0');
@@ -109,20 +106,20 @@ export class ControllerDistribuicao{
                          LEFT JOIN tb_produtos p ON p.id = d.id_produto AND p.entidade_negocio = d.entidade_negocio
                          WHERE ${whereClause.join(' AND ')}
                          ORDER BY d.dt_distrib DESC, d.id DESC
-                         LIMIT :limit OFFSET :offset`;
+                         LIMIT ? OFFSET ?`;
 
-            resdata.data.distrib = await distrib.ExecuteQuery(query, { ...params, limit, offset });
+            const paramsWithLimit = [...params, limit, offset];
+            resdata.data.distrib = await distrib.ExecuteQuery(query, paramsWithLimit);
 
             query = `SELECT COUNT(*) AS total
                      FROM tb_distribuicao d
                      WHERE ${whereClause.join(' AND ')}`;
 
-                   
             const countResult = await distrib.ExecuteQuery(query, params);
             const total = Number(Array.isArray(countResult) && countResult[0] ? countResult[0].total : 0);
 
-            query = `SELECT id,nom_entidade FROM tb_entidades WHERE id = :entidade_negocio`;
-            resdata.data.entidades = await entidades.ExecuteQuery(query, { entidade_negocio });
+            query = `SELECT id,nom_entidade FROM tb_entidades WHERE id = ?`;
+            resdata.data.entidades = await entidades.ExecuteQuery(query, [entidade_negocio]);
             resdata.data.paginacao = {
                 page,
                 limit,
@@ -218,46 +215,43 @@ export class ControllerDistribuicao{
             const distrib = new Distribuicao(db.connection, entidade_negocio);
             const entidades = new Entidades(db.connection,entidade_negocio);
            
-            const whereClause = ['d.id_vendedor = :id_vendedor', 'd.entidade_negocio = :entidade_negocio'];
-            const params = {
-                id_vendedor,
-                entidade_negocio,
-            };
+            const whereClause = ['d.id_vendedor = ?', 'd.entidade_negocio = ?'];
+            const params = [id_vendedor, entidade_negocio];
 
             if (dt_ini) {
-                whereClause.push('d.dt_distrib >= :dt_ini');
-                params.dt_ini = dt_ini;
+                whereClause.push('d.dt_distrib >= ?');
+                params.push(dt_ini);
             }
 
             if (dt_fim) {
-                whereClause.push('d.dt_distrib <= :dt_fim');
-                params.dt_fim = dt_fim;
+                whereClause.push('d.dt_distrib <= ?');
+                params.push(dt_fim);
             }
 
             whereClause.push('d.qt_distrib > 0');
-            whereClause.push('p.nom_produto LIKE :nom_produto');
-            params.nom_produto = `%${String(nom_produto || '').trim()}%`;
+            whereClause.push('p.nom_produto LIKE ?');
+            params.push(`%${String(nom_produto || '').trim()}%`);
 
             let query = `SELECT d.id, d.dt_distrib, p.nom_produto, p.mar_produto, p.und_produto, d.qt_distrib
                          FROM tb_distribuicao d
                          LEFT JOIN tb_produtos p ON p.id = d.id_produto AND p.entidade_negocio = d.entidade_negocio
                          WHERE ${whereClause.join(' AND ')}
                          ORDER BY d.dt_distrib DESC, d.id DESC
-                         LIMIT :limit OFFSET :offset`;
+                         LIMIT ? OFFSET ?`;
 
-            resdata.data.distrib = await distrib.ExecuteQuery(query, { ...params, limit, offset });
+            const paramsWithLimit = [...params, limit, offset];
+            resdata.data.distrib = await distrib.ExecuteQuery(query, paramsWithLimit);
 
             query = `SELECT COUNT(*) AS total
                      FROM tb_distribuicao d
                      LEFT JOIN tb_produtos p ON p.id = d.id_produto AND p.entidade_negocio = d.entidade_negocio
                      WHERE ${whereClause.join(' AND ')}`;
 
-                   
             const countResult = await distrib.ExecuteQuery(query, params);
             const total = Number(Array.isArray(countResult) && countResult[0] ? countResult[0].total : 0);
 
-            query = `SELECT id,nom_entidade FROM tb_entidades WHERE id = :entidade_negocio`;
-            resdata.data.entidades = await entidades.ExecuteQuery(query, { entidade_negocio });
+            query = `SELECT id,nom_entidade FROM tb_entidades WHERE id = ?`;
+            resdata.data.entidades = await entidades.ExecuteQuery(query, [entidade_negocio]);
             resdata.data.paginacao = {
                 page,
                 limit,
@@ -302,9 +296,9 @@ export class ControllerDistribuicao{
 
             const query = `SELECT d.id_produto, p.nom_produto, p.mar_produto,p.und_produto, d.qt_distrib as saldo  FROM tb_distribuicao d
             LEFT JOIN tb_produtos p ON p.entidade_negocio = d.entidade_negocio AND p.id = d.id_produto 
-            WHERE d.entidade_negocio = :entidade_negocio AND d.id_vendedor = :id_vendedor AND p.ativo = 1 AND d.qt_distrib > 0 `;
+            WHERE d.entidade_negocio = ? AND d.id_vendedor = ? AND p.ativo = 1 AND d.qt_distrib > 0 `;
 
-            const rows = await distrib.ExecuteQuery(query,{entidade_negocio,id_vendedor});
+            const rows = await distrib.ExecuteQuery(query, [entidade_negocio, id_vendedor]);
 
             resdata.data = rows;
 
@@ -377,25 +371,22 @@ export class ControllerDistribuicao{
 
             const distrib = new Distribuicao(db.connection, entidade_negocio);
 
-            const whereClause = ['d.id_vendedor = :id_vendedor', 'd.entidade_negocio = :entidade_negocio', 'd.qt_distrib > 0'];
-            const params = {
-                id_vendedor,
-                entidade_negocio
-            };
+            const whereClause = ['d.id_vendedor = ?', 'd.entidade_negocio = ?', 'd.qt_distrib > 0'];
+            const params = [id_vendedor, entidade_negocio];
 
             if (dt_ini) {
-                whereClause.push('d.dt_distrib >= :dt_ini');
-                params.dt_ini = dt_ini;
+                whereClause.push('d.dt_distrib >= ?');
+                params.push(dt_ini);
             }
 
             if (dt_fim) {
-                whereClause.push('d.dt_distrib <= :dt_fim');
-                params.dt_fim = dt_fim;
+                whereClause.push('d.dt_distrib <= ?');
+                params.push(dt_fim);
             }
 
             if (pesq) {
-                whereClause.push('p.nom_produto LIKE :nom_produto');
-                params.nom_produto = `%${pesq}%`;
+                whereClause.push('p.nom_produto LIKE ?');
+                params.push(`%${pesq}%`);
             }
 
             const query = `SELECT d.id, d.dt_distrib, p.nom_produto, p.mar_produto, p.und_produto, d.qt_distrib, vd.nom_vendedor
@@ -754,20 +745,17 @@ export class ControllerVendas {
             const vendas = new Vendas(db.connection, entidade_negocio);
             const entidades = new Entidades(db.connection,entidade_negocio);
 
-            const whereClause = ['v.id_vendedor = :id_vendedor', 'v.entidade_negocio = :entidade_negocio'];
-            const params = {
-                id_vendedor,
-                entidade_negocio
-            };
+            const whereClause = ['v.id_vendedor = ?', 'v.entidade_negocio = ?'];
+            const params = [id_vendedor, entidade_negocio];
 
             if (dt_ini) {
-                whereClause.push('v.dt_venda >= :dt_ini');
-                params.dt_ini = dt_ini;
+                whereClause.push('v.dt_venda >= ?');
+                params.push(dt_ini);
             }
 
             if (dt_fim) {
-                whereClause.push('v.dt_venda <= :dt_fim');
-                params.dt_fim = dt_fim;
+                whereClause.push('v.dt_venda <= ?');
+                params.push(dt_fim);
             }
 
             let query = `SELECT v.id, v.dt_venda, v.cpf_cliente, c.nom_cliente, c.nom_usual, c.end_cliente, c.bai_cliente, c.cid_cliente, c.uf_cliente,
@@ -777,9 +765,10 @@ export class ControllerVendas {
                          LEFT JOIN tb_tipos_pagamentos tp ON tp.id = v.id_tipo_pag AND tp.entidade_negocio = v.entidade_negocio
                          WHERE ${whereClause.join(' AND ')}
                          ORDER BY v.dt_venda DESC, v.id DESC
-                         LIMIT :limit OFFSET :offset`;
+                         LIMIT ? OFFSET ?`;
 
-            resdata.data.vendas = await vendas.ExecuteQuery(query, { ...params, limit, offset });
+            const paramsWithLimit = [...params, limit, offset];
+            resdata.data.vendas = await vendas.ExecuteQuery(query, paramsWithLimit);
 
             query = `SELECT COUNT(*) AS total
                      FROM tb_vendas v
@@ -788,8 +777,8 @@ export class ControllerVendas {
             const countResult = await vendas.ExecuteQuery(query, params);
             const total = Number(Array.isArray(countResult) && countResult[0] ? countResult[0].total : 0);
 
-            query = `SELECT id,nom_entidade FROM tb_entidades WHERE id = :entidade_negocio`;
-            resdata.data.entidades = await entidades.ExecuteQuery(query, { entidade_negocio });
+            query = `SELECT id,nom_entidade FROM tb_entidades WHERE id = ?`;
+            resdata.data.entidades = await entidades.ExecuteQuery(query, [entidade_negocio]);
             resdata.data.paginacao = {
                 page,
                 limit,
@@ -1171,15 +1160,11 @@ export class ControllerVendas {
             const vendas = new Vendas(db.connection, entidade_negocio);
             const entidades = new Entidades(db.connection,entidade_negocio);
 
-            const whereClause = ['v.entidade_negocio = :entidade_negocio'];
-            const params = {
-                entidade_negocio,
-                dt_ini,
-                dt_fim
-            };
+            const whereClause = ['v.entidade_negocio = ?'];
+            const params = [entidade_negocio, dt_ini, dt_fim];
 
-            whereClause.push('v.dt_venda >= :dt_ini');
-            whereClause.push('v.dt_venda <= :dt_fim');
+            whereClause.push('v.dt_venda >= ?');
+            whereClause.push('v.dt_venda <= ?');
             whereClause.push(com_rota_cobranca === 1 ? 'v.id_rota IS NULL' : 'v.id_cobrador IS NULL');
 
             let query = `SELECT v.id, v.dt_venda, c.nom_cliente,c.end_cliente,c.bai_cliente,c.cid_cliente,c.uf_cliente,
@@ -1189,9 +1174,10 @@ export class ControllerVendas {
                          LEFT JOIN tb_vendedores vd ON vd.id = v.id_vendedor AND vd.entidade_negocio = v.entidade_negocio
                          WHERE ${whereClause.join(' AND ')}
                          ORDER BY v.dt_venda DESC, v.id DESC
-                         LIMIT :limit OFFSET :offset`;
+                         LIMIT ? OFFSET ?`;
 
-            resdata.data.vendas = await vendas.ExecuteQuery(query, { ...params, limit, offset });
+            const paramsWithLimit = [...params, limit, offset];
+            resdata.data.vendas = await vendas.ExecuteQuery(query, paramsWithLimit);
 
             query = `SELECT COUNT(*) AS total
                      FROM tb_vendas v
@@ -1200,9 +1186,9 @@ export class ControllerVendas {
             const countResult = await vendas.ExecuteQuery(query, params);
             const total = Number(Array.isArray(countResult) && countResult[0] ? countResult[0].total : 0);
 
-            query = `SELECT id,nom_entidade FROM tb_entidades WHERE id = :entidade_negocio`;
+            query = `SELECT id,nom_entidade FROM tb_entidades WHERE id = ?`;
 
-            resdata.data.entidades = await entidades.ExecuteQuery(query, { entidade_negocio });
+            resdata.data.entidades = await entidades.ExecuteQuery(query, [entidade_negocio]);
 
             resdata.data.paginacao = {
                 page,

@@ -19,7 +19,8 @@
     "jsonwebtoken": "^9.0.3",
     "mariadb": "^3.5.1",
     "nodemailer": "^8.0.1",
-    "pdfmake": "^0.3.4"
+    "pdfmake": "^0.3.4",
+    "zod": "^3.22.2"
   },
   "devDependencies": {
     "@types/crypto-js": "^4.2.2"

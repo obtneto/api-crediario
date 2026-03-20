@@ -10,9 +10,11 @@ import TiposPagamentos from '../model/dao_tipos_pagamentos.js';
 import Estoque from '../model/dao_estoque.js';
 import GravarLog from '../utils/GravarLog.js';
 import {obterEntidadeNegocio} from '../utils/CheckEntidades.js';
-import {definirSessaoHttpOnly, limparSessaoHttpOnly, obterSessaoHttpOnly, renovarSessaoHttpOnly} from '../utils/AuthSession.js';
+import {definirSessaoHttpOnly, limparSessaoHttpOnly, obterSessaoHttpOnly, renovarSessaoHttpOnly, getCurrentToken} from '../utils/AuthSession.js';
+import {addTokenToBlacklist} from '../utils/TokenBlacklist.js';
 import {criptografarSenha, senhaPrecisaUpgrade, SENHA_RESET_PADRAO, validarSenha} from '../utils/Criptografia.js';
 import {desencriptar} from '../utils/DecriptPayload.js';
+import { validate, authSessionSchema, usuarioSalvarSchema } from '../utils/RequestValidator.js';
 
 const PASSWORD_REGEX = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=\S{8,}).+$/;
 
@@ -80,7 +82,7 @@ async function buscarEntidadeAuth(entidades, entidade_negocio) {
     
     const [entidade] = await entidades.ExecuteQuery(
         `SELECT id, nom_entidade, com_rota_cobranca FROM tb_entidades WHERE id = :id`,
-        {id: entidade_negocio}
+        { id: entidade_negocio }
     );
 
     return entidade || null;
@@ -108,6 +110,8 @@ export class ControllerAuth {
             const entidade_negocio = Number(req.body?.entidade_negocio || 0);
             const user = String(req.body?.user || '').trim();
             const password = desencriptar(String(req.body?.password || '').trim());
+
+            validate(authSessionSchema, { entidade_negocio, user, password });
 
             if (entidade_negocio <= 0) {
                 const error = new Error('Entidade de negocio invalida.');
@@ -255,6 +259,13 @@ export class ControllerAuth {
             status: 200,
             data: []
         };
+
+        const token = getCurrentToken(req);
+        const ttlSeconds = Number(process.env.AUTH_SESSION_TIMEOUT_SECONDS || 720);
+
+        if (token) {
+            addTokenToBlacklist(token, ttlSeconds);
+        }
 
         limparSessaoHttpOnly(res);
 
@@ -502,14 +513,12 @@ export class ControllerUsuarios{
             const entidades = new Entidades(db.connection, entidade);
             const perfis = new Perfis(db.connection, entidade);
 
-            query = `SELECT id,nom_entidade FROM tb_entidades WHERE id = ${entidade}`;
+            query = `SELECT id,nom_entidade FROM tb_entidades WHERE id = :entidade`;
 
-            resdata.data.entidades = await entidades.ExecuteQuery(query);
+            resdata.data.entidades = await entidades.ExecuteQuery(query,{ entidade });
 
-            let perfisRows = await perfis.ExecuteQuery(`SELECT id,nom_perfil FROM tb_perfis WHERE entidade_negocio = ${entidade}`);
-            if (!Array.isArray(perfisRows) || perfisRows.length === 0) {
-                perfisRows = await perfis.ExecuteQuery("SELECT id,nom_perfil FROM tb_perfis");
-            }
+            let perfisRows = await perfis.ExecuteQuery(`SELECT id,nom_perfil FROM tb_perfis WHERE entidade_negocio = :entidade_negocio`, { entidade_negocio: entidade });
+            
 
             resdata.data.perfis = perfisRows;
 
@@ -590,6 +599,10 @@ export class ControllerUsuarios{
 
             let {id,usuario,nom_completo,email,id_perfil,reset_password,password} = req.body;
             const entidade = obterEntidadeNegocio(req);
+
+            const validated = validate(usuarioSalvarSchema, {usuario,nom_completo,email,id_perfil,reset_password,password});
+            ({ id, usuario, nom_completo, email, id_perfil, reset_password, password } = validated);
+
             const passwordNormalizado = String(password || '').trim();
             
             void await db.Connect();
@@ -713,11 +726,11 @@ export class ControllerEntidades{
 
             let query = `SELECT id,nom_entidade,nom_responsavel,num_cnpj,cel_contato
             FROM tb_entidades`;
-            const params = {};
+            const params = [];
 
             if (entidadeNegocio > 0) {
-                query += ` WHERE id = :entidade_negocio`;
-                params.entidade_negocio = entidadeNegocio;
+                query += ` WHERE id = ?`;
+                params.push(entidadeNegocio);
             }
 
             resdata.data = await entidades.ExecuteQuery(query, params);
@@ -813,13 +826,16 @@ export class ControllerPerfis{
 
             const perfis = new Perfis(db.connection,entidade_negocio );
 
-            let query = `SELECT * FROM tb_perfis WHERE entidade_negocio = ${entidade_negocio}`;
+            let query = `SELECT * FROM tb_perfis WHERE entidade_negocio = :entidade_negocio`;
+
+            const params = { entidade_negocio };
 
             if (pesq != "*") {
-                query += ` AND nom_perfil LIKE '%${pesq}%'`;
+                query += ` AND nom_perfil LIKE :pesq`;
+                params.pesq = `%${pesq}%`;
             }
 
-            const rows = await perfis.ExecuteQuery(query);
+            const rows = await perfis.ExecuteQuery(query, params);
 
             console.log(rows,pesq,entidade_negocio)
             
@@ -1006,14 +1022,16 @@ export class ControllerVendedores{
 
             let query = null;
 
-            query = `SELECT * FROM tb_vendedores WHERE entidade_negocio = ${entidade}`;
+            query = `SELECT * FROM tb_vendedores WHERE entidade_negocio = :entidade_negocio`;
+            const params = { entidade_negocio: entidade };
 
             if (pesq != "*") {
-                query += ` AND nom_vendedor LIKE '%${pesq}%'`
+                query += ` AND nom_vendedor LIKE :pesq`;
+                params.pesq = `%${pesq}%`;
             }
 
-            resdata.data.vendedores = await vendedores.ExecuteQuery(query);
-            resdata.data.entidades = await entidades.ExecuteQuery(`SELECT id,nom_entidade FROM tb_entidades WHERE id = ${entidade}`)
+            resdata.data.vendedores = await vendedores.ExecuteQuery(query, params);
+            resdata.data.entidades = await entidades.ExecuteQuery(`SELECT id,nom_entidade FROM tb_entidades WHERE id = :id`, { id: entidade })
 
         } catch (error) {
             resdata.err = 500;
@@ -1055,14 +1073,16 @@ export class ControllerVendedores{
 
             let query = null;
 
-            query = `SELECT * FROM tb_vendedores WHERE entidade_negocio = ${entidade} AND ativo = 1 `;
+            query = `SELECT * FROM tb_vendedores WHERE entidade_negocio = :entidade_negocio AND ativo = 1`;
+            const params = { entidade_negocio: entidade };
 
             if (pesq != "*") {
-                query += ` AND nom_vendedor LIKE '%${pesq}%'`
+                query += ` AND nom_vendedor LIKE :pesq`;
+                params.pesq = `%${pesq}%`;
             }
 
-            resdata.data.vendedores = await vendedores.ExecuteQuery(query);
-            resdata.data.entidades = await entidades.ExecuteQuery(`SELECT id,nom_entidade FROM tb_entidades WHERE id = ${entidade}`)
+            resdata.data.vendedores = await vendedores.ExecuteQuery(query, params);
+            resdata.data.entidades = await entidades.ExecuteQuery(`SELECT id,nom_entidade FROM tb_entidades WHERE id = :id`, { id: entidade })
 
         } catch (error) {
             resdata.err = 500;
@@ -1244,14 +1264,16 @@ export class ControllerCobradores{
 
             let query = null;
 
-            query = `SELECT * FROM tb_cobradores WHERE entidade_negocio = ${entidade_negocio} `;
+            query = `SELECT * FROM tb_cobradores WHERE entidade_negocio = :entidade_negocio`;
+            const params = { entidade_negocio };
 
             if (pesq != "*") {
-                query += ` AND nom_cobrador LIKE '%${pesq}%'`
+                query += ` AND nom_cobrador LIKE :pesq`;
+                params.pesq = `%${pesq}%`;
             }
 
-            resdata.data.cobradores  = await cobradores.ExecuteQuery(query);
-            resdata.data.entidades = await entidades.ExecuteQuery(`SELECT id,nom_entidade FROM tb_entidades WHERE id = ${entidade_negocio}`)
+            resdata.data.cobradores = await cobradores.ExecuteQuery(query, params);
+            resdata.data.entidades = await entidades.ExecuteQuery(`SELECT id,nom_entidade FROM tb_entidades WHERE id = :id`, { id: entidade_negocio })
 
         } catch (error) {
             resdata.err = 500;
@@ -1293,14 +1315,16 @@ export class ControllerCobradores{
 
             let query = null;
 
-            query = `SELECT * FROM tb_cobradores WHERE entidade_negocio = ${entidade_negocio} AND ativo = 1 `;
+            query = `SELECT * FROM tb_cobradores WHERE entidade_negocio = :entidade_negocio AND ativo = 1`;
+            const paramsAtivos = { entidade_negocio };
 
             if (pesq != "*") {
-                query += ` AND nom_cobrador LIKE '%${pesq}%'`
+                query += ` AND nom_cobrador LIKE :pesq`;
+                paramsAtivos.pesq = `%${pesq}%`;
             }
 
-            resdata.data.cobradores  = await cobradores.ExecuteQuery(query);
-            resdata.data.entidades = await entidades.ExecuteQuery(`SELECT id,nom_entidade FROM tb_entidades WHERE id = ${entidade_negocio}`)
+            resdata.data.cobradores = await cobradores.ExecuteQuery(query, paramsAtivos);
+            resdata.data.entidades = await entidades.ExecuteQuery(`SELECT id,nom_entidade FROM tb_entidades WHERE id = :id`, { id: entidade_negocio })
 
         } catch (error) {
             resdata.err = 500;
@@ -1480,14 +1504,16 @@ export class ControllerProdutos {
 
             let query = null;
 
-            query = `SELECT * FROM tb_produtos WHERE entidade_negocio = ${entidade_negocio} `;
+            query = `SELECT * FROM tb_produtos WHERE entidade_negocio = :entidade_negocio`;
+            const params = { entidade_negocio };
 
             if (pesq != "*") {
-                query += ` AND nom_produto LIKE '%${pesq}%'`
+                query += ` AND nom_produto LIKE :pesq`;
+                params.pesq = `%${pesq}%`;
             }
 
-            resdata.data.produtos  = await produtos.ExecuteQuery(query);
-            resdata.data.entidades = await entidades.ExecuteQuery(`SELECT id,nom_entidade FROM tb_entidades WHERE id = ${entidade_negocio}`)
+            resdata.data.produtos = await produtos.ExecuteQuery(query, params);
+            resdata.data.entidades = await entidades.ExecuteQuery(`SELECT id,nom_entidade FROM tb_entidades WHERE id = :id`, { id: entidade_negocio })
 
         } catch (error) {
             resdata.err = 500;
@@ -1529,14 +1555,16 @@ export class ControllerProdutos {
 
             let query = null;
 
-            query = `SELECT * FROM tb_produtos WHERE entidade_negocio = ${entidade_negocio} AND ativo = 1 `;
+            query = `SELECT * FROM tb_produtos WHERE entidade_negocio = :entidade_negocio AND ativo = 1`;
+            const paramsAtivos = { entidade_negocio };
 
             if (pesq != "*") {
-                query += ` AND nom_produto LIKE '%${pesq}%'`
+                query += ` AND nom_produto LIKE :pesq`;
+                paramsAtivos.pesq = `%${pesq}%`;
             }
 
-            resdata.data.produtos  = await produtos.ExecuteQuery(query);
-            resdata.data.entidades = await entidades.ExecuteQuery(`SELECT id,nom_entidade FROM tb_entidades WHERE id = ${entidade_negocio}`)
+            resdata.data.produtos = await produtos.ExecuteQuery(query, paramsAtivos);
+            resdata.data.entidades = await entidades.ExecuteQuery(`SELECT id,nom_entidade FROM tb_entidades WHERE id = :id`, { id: entidade_negocio })
 
         } catch (error) {
             resdata.err = 500;
@@ -1732,14 +1760,16 @@ export class ControllerRotas{
 
             let query = null;
 
-            query = `SELECT * FROM tb_rotas WHERE entidade_negocio = ${entidade_negocio} `;
+            query = `SELECT * FROM tb_rotas WHERE entidade_negocio = :entidade_negocio`;
+            const params = { entidade_negocio };
 
             if (pesq != "*") {
-                query += ` AND nom_rota LIKE '%${pesq}%'`
+                query += ` AND nom_rota LIKE :pesq`;
+                params.pesq = `%${pesq}%`;
             }
 
-            resdata.data.rotas  = await rotas.ExecuteQuery(query);
-            resdata.data.entidades =await entidades.ExecuteQuery(`SELECT id,nom_entidade FROM tb_entidades WHERE id = ${entidade_negocio}`)
+            resdata.data.rotas = await rotas.ExecuteQuery(query, params);
+            resdata.data.entidades = await entidades.ExecuteQuery(`SELECT id,nom_entidade FROM tb_entidades WHERE id = :id`, { id: entidade_negocio })
 
         } catch (error) {
 
@@ -1782,14 +1812,16 @@ export class ControllerRotas{
 
             let query = null;
 
-            query = `SELECT * FROM tb_rotas WHERE entidade_negocio = ${entidade_negocio} AND ativo = 1 `;
+            query = `SELECT * FROM tb_rotas WHERE entidade_negocio = :entidade_negocio AND ativo = 1`;
+            const paramsAtivos = { entidade_negocio };
 
             if (pesq != "*") {
-                query += ` AND nom_rota LIKE '%${pesq}%'`
+                query += ` AND nom_rota LIKE :pesq`;
+                paramsAtivos.pesq = `%${pesq}%`;
             }
 
-            resdata.data.rotas  = await rotas.ExecuteQuery(query);
-            resdata.data.entidades = await entidades.ExecuteQuery(`SELECT id,nom_entidade FROM tb_entidades WHERE id = ${entidade_negocio}`)
+            resdata.data.rotas = await rotas.ExecuteQuery(query, paramsAtivos);
+            resdata.data.entidades = await entidades.ExecuteQuery(`SELECT id,nom_entidade FROM tb_entidades WHERE id = :id`, { id: entidade_negocio })
 
         } catch (error) {
 
@@ -1963,13 +1995,15 @@ export class ControllerTiposPagamentos{
 
             const tipos = new TiposPagamentos(db.connection, entidade_negocio);
 
-            let query = `SELECT * FROM tb_tipos_pagamentos WHERE entidade_negocio = ${entidade_negocio}`;
+            let query = `SELECT * FROM tb_tipos_pagamentos WHERE entidade_negocio = :entidade_negocio`;
+            const params = { entidade_negocio };
 
             if (pesq != "*") {
-                query += ` AND nom_tipo LIKE '%${pesq}%'`;
+                query += ` AND nom_tipo LIKE :pesq`;
+                params.pesq = `%${pesq}%`;
             }
 
-            const rows = await tipos.ExecuteQuery(query);
+            const rows = await tipos.ExecuteQuery(query, params);
             
             resdata.data.tipos = rows;
 
@@ -2010,13 +2044,15 @@ export class ControllerTiposPagamentos{
 
             const tipos = new TiposPagamentos(db.connection, entidade_negocio);
 
-            let query = `SELECT * FROM tb_tipos_pagamentos WHERE entidade_negocio = ${entidade_negocio} AND ativo = 1 `;
+            let query = `SELECT * FROM tb_tipos_pagamentos WHERE entidade_negocio = :entidade_negocio AND ativo = 1`;
+            const params = { entidade_negocio };
 
             if (pesq != "*") {
-                query += ` AND nom_tipo LIKE '%${pesq}%'`;
+                query += ` AND nom_tipo LIKE :pesq`;
+                params.pesq = `%${pesq}%`;
             }
 
-            const rows = await tipos.ExecuteQuery(query);
+            const rows = await tipos.ExecuteQuery(query, params);
             
             resdata.data.tipos = rows;
 

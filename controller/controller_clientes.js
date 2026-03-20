@@ -1,6 +1,7 @@
 import Database from '../connections/dbconn.js';
 import Clientes from '../model/dao_clientes.js';
 import GravarLog from '../utils/GravarLog.js'; 
+import { validate, clienteSalvarSchema } from '../utils/RequestValidator.js';
 
 export class ControllerClientes {
 
@@ -33,11 +34,11 @@ export class ControllerClientes {
 
             const clientes = new Clientes(db.connection);
             const whereClause = ['1 = 1'];
-            const params = {};
+            const params = [];
 
             if (pesq !== '*') {
-                whereClause.push('c.nom_cliente LIKE :pesq');
-                params.pesq = `%${pesq}%`;
+                whereClause.push('c.nom_cliente LIKE ?');
+                params.push(`%${pesq}%`);
             }
 
             let query = `SELECT c.id, c.cpf_cliente, c.nom_cliente,c.nom_usual, c.cel_cliente, c.end_cliente, c.num_cliente,
@@ -45,15 +46,16 @@ export class ControllerClientes {
                          FROM tb_clientes c
                          WHERE ${whereClause.join(' AND ')}
                          ORDER BY c.nom_cliente ASC, c.id DESC
-                         LIMIT :limit OFFSET :offset`;
+                         LIMIT ? OFFSET ?`;
 
-            resdata.data.clientes = await clientes.ExecuteQuery(query, { ...params, limit, offset });
+            params.push(limit, offset);
+            resdata.data.clientes = await clientes.ExecuteQuery(query, params);
 
             query = `SELECT COUNT(*) AS total
                      FROM tb_clientes c
                      WHERE ${whereClause.join(' AND ')}`;
 
-            const countResult = await clientes.ExecuteQuery(query, params);
+            const countResult = await clientes.ExecuteQuery(query, params.slice(0, -2)); // Remove limit and offset for count
             const total = Number(Array.isArray(countResult) && countResult[0] ? countResult[0].total : 0);
             resdata.data.paginacao = {
                 page,
@@ -136,6 +138,19 @@ export class ControllerClientes {
             const cidade = String(req.body?.cidade || req.body?.cid_cliente || '').trim().toUpperCase();
             const uf = String(req.body?.uf || req.body?.uf_cliente || '').trim().toUpperCase();
             const cep = String(req.body?.cep || req.body?.cep_cliente || '').replace(/\D/g, '');
+
+            validate(clienteSalvarSchema, {
+                cpf,
+                nome,
+                usual,
+                celular,
+                ender,
+                numero,
+                bairro,
+                cidade,
+                uf,
+                cep
+            });
 
             if (cpf.length !== 11) {
                 const error = new Error('CPF invalido.');

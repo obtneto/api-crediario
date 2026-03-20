@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import crypto from 'node:crypto';
+import { isTokenBlacklisted } from './TokenBlacklist.js';
 
 const COOKIE_NAME = 'crediario_token';
 const RESPONSE_TOKEN_HEADER = 'x-crediario-token';
@@ -60,7 +61,19 @@ function getTokenFromRequest(req) {
     };
 }
 
+function _getCurrentToken(req) {
+    const { bearerToken, cookieToken } = getTokenFromRequest(req);
+    return bearerToken || cookieToken || '';
+}
+
 function verifyToken(token = '') {
+    if (!token) {
+        return null;
+    }
+
+    if (isTokenBlacklisted(token)) {
+        return null;
+    }
     if (!token) {
         return null;
     }
@@ -213,3 +226,8 @@ export function limparSessaoHttpOnly(res) {
         maxAge: 0
     });
 }
+
+export function getCurrentToken(req) {
+    return _getCurrentToken(req);
+}
+

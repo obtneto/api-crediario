@@ -30,6 +30,21 @@ export default class Database {
             initSql: "SET time_zone = '-03:00'" 
         });
 
+        // normaliza parâmetros posicionais ? para named placeholders :p1, :p2, ...
+        const originalExecute = this.#conn.execute.bind(this.#conn);
+        this.#conn.execute = async (query, params={}) => {
+            if (Array.isArray(params) && query.includes('?')) {
+                let counter = 0;
+                const transformedQuery = query.replace(/\?/g, () => `:p${++counter}`);
+                const transformedParams = params.reduce((result, value, index) => {
+                    result[`p${index + 1}`] = value;
+                    return result;
+                }, {});
+                return originalExecute(transformedQuery, transformedParams);
+            }
+            return originalExecute(query, params);
+        };
+
     };
 
     async Begin() {

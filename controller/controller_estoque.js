@@ -30,15 +30,15 @@ export class ControllerEstoque {
 
             const estoque = new Estoque(db.connection, entidade_negocio );
 
-            const params = { entidade_negocio };
+            const params = [entidade_negocio];
             let query = `SELECT e.id_produto, p.nom_produto, p.mar_produto, p.und_produto, e.qt_reservada, e.qt_disponivel
             FROM tb_estoque e
             LEFT JOIN tb_produtos p ON p.id = e.id_produto AND p.entidade_negocio = e.entidade_negocio
-            WHERE e.entidade_negocio = :entidade_negocio`;
+            WHERE e.entidade_negocio = ?`;
 
             if (pesq != "*") {
-                query += ` AND p.nom_produto LIKE :pesq`;
-                params.pesq = `%${pesq}%`;
+                query += ` AND p.nom_produto LIKE ?`;
+                params.push(`%${pesq}%`);
             }
 
             const rows = await estoque.ExecuteQuery(query, params);
@@ -74,15 +74,15 @@ export class ControllerEstoque {
 
             const estoque = new Estoque(db.connection, entidade_negocio);
             const entidades = new Entidades(db.connection);
-            const params = { entidade_negocio };
+            const params = [entidade_negocio];
             let query = `SELECT e.id_produto, p.nom_produto, p.mar_produto, p.und_produto, e.qt_reservada, e.qt_disponivel
             FROM tb_estoque e
             LEFT JOIN tb_produtos p ON p.id = e.id_produto AND p.entidade_negocio = e.entidade_negocio
-            WHERE e.entidade_negocio = :entidade_negocio`;
+            WHERE e.entidade_negocio = ?`;
 
             if (pesq !== '*') {
-                query += ` AND p.nom_produto LIKE :pesq`;
-                params.pesq = `%${pesq}%`;
+                query += ` AND p.nom_produto LIKE ?`;
+                params.push(`%${pesq}%`);
             }
 
             query += ` ORDER BY p.nom_produto ASC, e.id_produto ASC`;
@@ -96,8 +96,8 @@ export class ControllerEstoque {
             }
 
             const [entidade] = await entidades.ExecuteQuery(
-                `SELECT id, nom_entidade FROM tb_entidades WHERE id = :entidade_negocio`,
-                { entidade_negocio }
+                `SELECT id, nom_entidade FROM tb_entidades WHERE id = ?`,
+                [entidade_negocio]
             );
 
             const subtitle = `Entidade: ${entidade?.nom_entidade || entidade_negocio}`;

@@ -46,14 +46,14 @@ export class ControllerComissoes {
 
             const query = `SELECT id, dt_adiant as dt_adiantamento, vl_adiant as vl_adiantamento 
             FROM tb_adiantamentos 
-            WHERE entidade_negocio = :entidade_negocio AND ${fieldname} = :${fieldname}
+            WHERE entidade_negocio = ? AND ${fieldname} = ?
             AND num_recibo IS NULL
             ORDER BY dt_adiant DESC, id DESC`;
 
-            resdata.data.adiantamentos = await adiantamentos.ExecuteQuery(query, { 
+            resdata.data.adiantamentos = await adiantamentos.ExecuteQuery(query, [ 
                 entidade_negocio, 
-                [fieldname]: id
-            });
+                id
+            ]);
 
         } catch (error) {
             
@@ -105,11 +105,11 @@ export class ControllerComissoes {
             const query = `SELECT a.id, a.dt_adiant as dt_adiantamento, a.vl_adiant as vl_adiantamento, d.${colunaNome} as nom_destino
                            FROM tb_adiantamentos a
                            LEFT JOIN ${tabelaDestino} d ON d.id = a.${fieldname} AND d.entidade_negocio = a.entidade_negocio
-                           WHERE a.entidade_negocio = :entidade_negocio AND a.${fieldname} = :id
+                           WHERE a.entidade_negocio = ? AND a.${fieldname} = ?
                            AND a.num_recibo IS NULL
                            ORDER BY a.dt_adiant DESC, a.id DESC`;
 
-            let rows = await adiantamentos.ExecuteQuery(query, { entidade_negocio, id });
+            let rows = await adiantamentos.ExecuteQuery(query, [entidade_negocio, id]);
 
             if (!Array.isArray(rows) || rows.length === 0) {
                 const error = new Error('Nao ha dados para impressao.');
@@ -442,36 +442,36 @@ export class ControllerComissoes {
             let query = `SELECT id, dt_adiantamento, vl_adiantamento, num_recibo,
             case when num_recibo is not null then 'Não Pago' else 'Pagamento Feito' end as situacao
             FROM tb_adiantamentos 
-            WHERE entidade_negocio = :entidade_negocio AND id_cobrador = :id_cobrador 
-            AND dt_adiantamento >= :dt_ini AND dt_adiantamento <= :dt_fim
+            WHERE entidade_negocio = ? AND id_cobrador = ? 
+            AND dt_adiantamento >= ? AND dt_adiantamento <= ?
             ORDER BY dt_adiantamento DESC, id DESC
-            LIMIT :limit OFFSET :offset`;
+            LIMIT ? OFFSET ?`;
 
-            resdata.data.adiantamentos = await adiantamentos.ExecuteQuery(query,{
+            resdata.data.adiantamentos = await adiantamentos.ExecuteQuery(query, [
                 entidade_negocio,
                 id_cobrador,
                 dt_ini,
                 dt_fim,
                 limit,
                 offset
-            });
+            ]);
 
             query = `SELECT COUNT(*) AS total FROM tb_adiantamentos 
-            WHERE entidade_negocio = :entidade_negocio AND id_cobrador = :id_cobrador
-            AND dt_adiantamento >= :dt_ini AND dt_adiantamento <= :dt_fim`;
+            WHERE entidade_negocio = ? AND id_cobrador = ?
+            AND dt_adiantamento >= ? AND dt_adiantamento <= ?`;
 
-            const [countResult] = await adiantamentos.ExecuteQuery(query,{
+            const [countResult] = await adiantamentos.ExecuteQuery(query, [
                 entidade_negocio,
                 id_cobrador,
                 dt_ini,
                 dt_fim
-            });
+            ]);
 
             const total = Number(countResult?.total || 0);
 
-            query = `SELECT id,nom_entidade FROM tb_entidades WHERE id = :entidade_negocio`;
+            query = `SELECT id,nom_entidade FROM tb_entidades WHERE id = ?`;
 
-            resdata.data.entidades = await entidades.ExecuteQuery(query, { entidade_negocio });
+            resdata.data.entidades = await entidades.ExecuteQuery(query, [entidade_negocio]);
 
             resdata.data.paginacao = {
                 page,
@@ -575,29 +575,29 @@ export class ControllerComissoes {
             const query = `SELECT cm.dt_recibo,cm.num_recibo,cb.nom_cobrador, vl_adiant, vl_recibo, (vl_recibo - vl_adiant) as Vl_pago 
             FROM tb_comisoes cm
             LEFT JOIN tb_cobradores cb ON cb.entidade_negocio = cb.entidade_negocio AND cb.id = cm.id_colaborador
-            WHERE cm.entidade_negocio = :entidade_negocio AND cm.id_colaborador = :id_cobrador
-            AND cm.dt_recibo >= :dt_ini AND cm.dt_recibo <= :dt_fim
-            ORDER BY cm.dt_recibo DESC LIMIT :limit OFFSET :offset`
+            WHERE cm.entidade_negocio = ? AND cm.id_colaborador = ?
+            AND cm.dt_recibo >= ? AND cm.dt_recibo <= ?
+            ORDER BY cm.dt_recibo DESC LIMIT ? OFFSET ?`
 
-            resdata.recibos = await comissoes.ExecuteQuery(query,{
+            resdata.recibos = await comissoes.ExecuteQuery(query, [
                 entidade_negocio,
                 id_cobrador,
                 dt_ini,
                 dt_fim,
                 limit,
                 offset
-            });
+            ]);
 
             query = `SELECT COUNT(*) AS total FROM tb_comissoes 
-            WHERE entidade_negocio = :entidade_negocio AND id_colaborador = :id_cobrador
-            AND dt_recibo >= :dt_ini AND dt_recibo <= :dt_fim`;
+            WHERE entidade_negocio = ? AND id_colaborador = ?
+            AND dt_recibo >= ? AND dt_recibo <= ?`;
 
-            const [countResult] = await comissoes.ExecuteQuery(query,{
+            const [countResult] = await comissoes.ExecuteQuery(query, [
                 entidade_negocio,
                 id_cobrador,
                 dt_ini,
                 dt_fim
-            });
+            ]);
 
             const total = Number(countResult?.total || 0);
 
@@ -693,6 +693,10 @@ export class ControllerComissoes {
         }
 
         try {
+
+
+
+
             
         } catch (error) {
             

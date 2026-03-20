@@ -15,7 +15,7 @@ const SCRYPT_OPTIONS = {
     maxmem: 32 * 1024 * 1024
 };
 
-export const SENHA_RESET_PADRAO = 'abcd@1234';
+export const SENHA_RESET_PADRAO = String(process.env.SENHA_RESET_PADRAO || 'abcd@1234');
 
 function normalizarSenha(password) {
     return String(password || '').trim();
