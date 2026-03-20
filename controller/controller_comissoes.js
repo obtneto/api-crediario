@@ -3,6 +3,7 @@ import GravarLog from '../utils/GravarLog.js';
 import {obterEntidadeNegocio} from '../utils/CheckEntidades.js';
 import Entidades from '../model/dao_entidades.js';
 import Adiantamentos from '../model/dao_adiantamentos.js';
+import Comissoes from '../model/dao_comissoes.js';
 import {buildTableDocument, formatCurrencyBR, formatDateBR, sendPdfResponse} from '../utils/PdfReport.js';
 
 export class ControllerComissoes {
