@@ -21,6 +21,7 @@ router.get('/excluir_adiantamento/:id_adiantamento/', ControllerComissoes.Exclui
 router.get('/listar/:id_cobrador', ControllerComissoes.ListarComissoesCobrador);
 router.get('/editar/:num_recibo', ControllerComissoes.EditarReciboCobrador);
 router.post('/salvar', ControllerComissoes.SalvarReciboCobrador);
-router.delete('/excluir/:num_recibo', ControllerComissoes.ExcluirReciboCobrador);
+router.delete('/excluir/:num_recibo/:id_cobrador', ControllerComissoes.ExcluirReciboCobrador);
+router.get('/listar_comissoes_nao_pagas/:id_cobrador',ControllerComissoes.ListarComissoesNaoPagasCobrador)
 
 export default router;

@@ -3,6 +3,7 @@ import GravarLog from '../utils/GravarLog.js';
 import {obterEntidadeNegocio} from '../utils/CheckEntidades.js';
 import Entidades from '../model/dao_entidades.js';
 import Adiantamentos from '../model/dao_adiantamentos.js';
+import Pagamentos from '../model/dao_pagamentos.js';
 import Comissoes from '../model/dao_comissoes.js';
 import {buildTableDocument, formatCurrencyBR, formatDateBR, sendPdfResponse} from '../utils/PdfReport.js';
 
@@ -432,7 +433,7 @@ export class ControllerComissoes {
     }
 
     /*********************************************************
-    * Recibos de Pagamentos Comissões
+    * Recibos de Pagamentos Comissões Cobrador
     **********************************************************/
     static async ListarHistoricoPagamentos(req,res) {
         
@@ -685,6 +686,16 @@ export class ControllerComissoes {
 
             await comissoes.Save();
 
+            const updated_pagamentos = `UPDATE tb_pagamentos SET num_recibo = :num_recibo 
+            WHERE entidade_negocio = :entidade_negocio AND id_cobrador = :id_cobrador AND num_recibo IS NULL`;
+
+            void await db.connection.execute(updated_pagamentos,{entidade_negocio,id_cobrador,num_recibo: comissoes.num_recibo});
+
+            const updated_adiantamentos = `UPDATE tb_adiantamentos SET num_recibo = :num_recibo 
+            WHERE entidade_negocio = :entidade_negocio AND id_cobrador = :id_cobrador AND num_recibo IS NULL`;
+
+            void await db.connection.execute(updated_adiantamentos,{entidade_negocio,id_cobrador,num_recibo: comissoes.num_recibo});
+
             void await db.Commit();
 
             resdata.data = {
@@ -726,9 +737,16 @@ export class ControllerComissoes {
 
             const entidade_negocio = obterEntidadeNegocio(req);
             const num_recibo = String(req.params.num_recibo || '').trim();
+            const id_cobrador = Number(req.params.id_cobrador || 0);
 
             if (!num_recibo) {
                 const error = new Error('Numero de recibo invalido.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (!id_cobrador || id_cobrador <= 0) {
+                const error = new Error('ID do cobrador invalido.');
                 error.statusCode = 400;
                 throw error;
             }
@@ -745,6 +763,16 @@ export class ControllerComissoes {
                 error.statusCode = 404;
                 throw error;
             }
+
+            const updated_pagamentos = `UPDATE tb_pagamentos SET num_recibo = Null
+            WHERE entidade_negocio = :entidade_negocio AND id_cobrador = :id_cobrador AND num_recibo = :num_recibo`;
+
+            void await db.connection.execute(updated_pagamentos,{entidade_negocio,id_cobrador,num_recibo});
+
+            const updated_adiantamentos = `UPDATE tb_adiantamentos SET num_recibo = Null
+            WHERE entidade_negocio = :entidade_negocio AND id_cobrador = :id_cobrador AND num_recibo = :num_recibo`;
+
+            void await db.connection.execute(updated_adiantamentos,{entidade_negocio,id_cobrador,num_recibo});
 
             await comissoes.Excluir();
 
@@ -893,6 +921,144 @@ export class ControllerComissoes {
             if (resdata.status === 500) {
                 GravarLog('ControllerComissoes.ListarComissoesCobrador', error.stack);
             }
+
+        }
+
+        void await db.Close();
+
+        res.status(resdata.status).json(resdata);
+    }
+
+    static async ListarComissoesNaoPagasCobrador(req,res) {
+
+        const db = new Database('dbcred'); 
+
+        const resdata = {
+            err: 0,
+            status: 200,
+            msg: '',
+            data: {
+                vendas: []
+            }
+        }
+
+        try {
+
+            void await db.Connect();
+            
+            const entidade_negocio = obterEntidadeNegocio(req);
+            const id_cobrador = Number(req.params.id_cobrador || 0);
+            const dt_ini = String(req.query.dt_ini || '').trim();
+            const dt_fim = String(req.query.dt_fim || '').trim();
+
+            if (!dt_ini || !dt_fim) {
+                const error = new Error('Informe data inicial e data final.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(dt_ini)) {
+                const error = new Error('Data inicial invalida.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(dt_fim)) {
+                const error = new Error('Data final invalida.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (dt_ini > dt_fim) {
+                const error = new Error('Data inicial nao pode ser maior que data final.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (!id_cobrador || id_cobrador <=0) {
+                const error = new Error('ID Cobrador invalido')
+                error.statusCode = 400;
+                throw error;
+            }
+
+            const pagamentos = new Pagamentos(db.connection,entidade_negocio);
+
+            const quey = `SELECT pg.id_venda,pg.dt_pagamento,cl.nom_cliente,pg.vl_pagamento from tb_pagamentos pg
+            LEFT JOIN tb_vendas vd ON vd.id = pg.id_venda AND vd.entidade_negocio = pg.entidade_negocio
+            LEFT JOIN tb_clientes cl ON cl.cpf_cliente = vd.cpf_cliente
+            WHERE pg.entidade_negocio = :entidade_negocio AND pg.id_cobrador = :id_cobrador 
+            AND (pg.dt_pagamento >= :dt_ini AND pg.dt_pagamento <= :dt_fim) AND pg.num_recibo IS NULL`
+            
+            resdata.data.vendas = await pagamentos.ExecuteQuery(quey,{
+                entidade_negocio,
+                id_cobrador,
+                dt_ini,
+                dt_fim
+            });
+
+        } catch (error) {
+
+            resdata.err = Number(error.statusCode || 500);
+            resdata.msg = error.message;
+            resdata.status = Number(error.statusCode || 500);
+
+            if (resdata.err == 500) GravarLog('ControllerComissoes.SalvarReciboCobrador', error.stack);
+
+        }
+
+        void await db.Close();
+
+        res.status(resdata.status).json(resdata);
+    }
+
+    static async ListarComissoesPagasPorRecibo(req,res) {
+
+        const db = new Database('dbcred'); 
+
+        const resdata = {
+            err: 0,
+            status: 200,
+            msg: '',
+            data: {
+                pagamentos: [],
+                adiantamentos:[]
+            }
+        }
+
+        try {
+
+            void await db.Connect();
+            
+            const entidade_negocio = obterEntidadeNegocio(req);
+            const num_rebibo = String(req.params.num_rebibo).trim();
+            
+            if (!num_rebibo || num_rebibo == '') {
+                const error = new Error('Numero do Recibo invalido')
+                error.statusCode = 400;
+                throw error;
+            }
+
+            const pagamentos = new Pagamentos(db.connection,entidade_negocio);
+
+            let query = `SELECT pg.id_venda,pg.dt_pagamento,cl.nom_cliente,pg.vl_pagamento from tb_pagamentos pg
+            LEFT JOIN tb_vendas vd ON vd.id = pg.id_venda AND vd.entidade_negocio = pg.entidade_negocio
+            LEFT JOIN tb_clientes cl ON cl.cpf_cliente = vd.cpf_cliente
+            WHERE pg.entidade_negocio = :entidade_negocio AND pg.num_recibo = :num_recibo`
+            
+            resdata.data.pagamentos = await pagamentos.ExecuteQuery(query,{
+                entidade_negocio,
+                num_rebibo
+            });
+
+            query = `SELECT  FROM tb_adiantamentos` 
+
+        } catch (error) {
+
+            resdata.err = Number(error.statusCode || 500);
+            resdata.msg = error.message;
+            resdata.status = Number(error.statusCode || 500);
+
+            if (resdata.err == 500) GravarLog('ControllerComissoes.SalvarReciboCobrador', error.stack);
 
         }
 

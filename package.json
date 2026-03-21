@@ -23,6 +23,9 @@
     "zod": "^3.22.2"
   },
   "devDependencies": {
-    "@types/crypto-js": "^4.2.2"
+    "@eslint/js": "^10.0.1",
+    "@types/crypto-js": "^4.2.2",
+    "eslint": "^10.1.0",
+    "globals": "^17.4.0"
   }
 }

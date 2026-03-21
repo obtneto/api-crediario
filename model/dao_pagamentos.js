@@ -11,6 +11,7 @@ export default class Perfis {
         dt_pagamento: '',
         vl_pagamento: 0,
         id_cobrador: null,
+        num_recibo: null,
         entidade_negocio: 0
     }
 
@@ -46,6 +47,9 @@ export default class Perfis {
     set id_cobrador(id_cobrador) {this.#field.id_cobrador = Number(id_cobrador)}
     get id_cobrador() {return Number(this.#field.id_cobrador)}
 
+    set num_recibo(num_recibo) {this.#field.num_recibo = String(num_recibo)}
+    get num_recibo() { return String(this.#field.num_recibo)}
+
     get entidade_negocio() {return Number(this.#field.entidade_negocio)}
 
     async ExecuteQuery(query, params = {}) {
@@ -73,6 +77,7 @@ export default class Perfis {
                 this.dt_pagamento = String(rows.dt_pagamento);
                 this.vl_pagamento = parseFloat(rows.vl_pagamento);
                 this.id_cobrador = Number(rows.id_cobrador);
+                this.num_recibo = String(rows.num_recibo);
 
                 this.#found = true;
                 
@@ -95,15 +100,17 @@ export default class Perfis {
 
             if (this.#found) {
 
-                query = `UPDATE ${this.#tb_name} SET dt_pagamento = :dt_pagamento, vl_pagamento = :vl_pagamento, id_cobrador = :id_cobrador
+                query = `UPDATE ${this.#tb_name} SET dt_pagamento = :dt_pagamento, vl_pagamento = :vl_pagamento, 
+                id_cobrador = :id_cobrador, num_recibo = :num_recibo
                 WHERE entidade_negocio = :entidade_negocio AND id_venda = :id_venda AND id = :id`;
                 
             } else {
 
                 this.id = await this.#newId();
 
-                query = `INSERT INTO ${this.#tb_name} SET dt_pagamento = :dt_pagamento, vl_pagamento = :vl_pagamento, id_cobrador = :id_cobrador,
-                id_venda = :id_venda, id = :id, entidade_negocio = :entidade_negocio`
+                query = `INSERT INTO ${this.#tb_name} SET dt_pagamento = :dt_pagamento, vl_pagamento = :vl_pagamento, 
+                id_cobrador = :id_cobrador,num_recibo = :num_recibo, id_venda = :id_venda, 
+                id = :id, entidade_negocio = :entidade_negocio`
             }
 
             if (this.#field.id_cobrador === 0) this.#field.id_cobrador = null;

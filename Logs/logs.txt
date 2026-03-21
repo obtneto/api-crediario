@@ -1,61 +1,9 @@
-[20/03/2026 19:40:25] ControllerVendedores.Listar: SqlError: (conn:58, no: 45017, SQLState: HY000) Parameter named entidade_negocio is not set
-sql: SELECT * FROM tb_vendedores WHERE entidade_negocio = :entidade_negocio - parameters:{}
-    at Module.createError (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/misc/errors.js:66:10)
-    at Execute.sendCancelled (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/command.js:83:24)
-    at Execute.validateParameters (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/execute.js:200:16)
-    at Execute.start (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/execute.js:68:15)
-    at Connection.addCommandEnablePipeline (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/connection.js:1519:11)
-    at Connection.prepareExecute (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/connection.js:1861:14)
-    at new Promise (<anonymous>)
-    at ConnectionPromise.execute (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/connection-promise.js:129:12)
-    at Connect.#conn.execute (file:///home/ovidio.neto/Crediario/backend/connections/dbconn.js:45:20)
-    at Vendedores.ExecuteQuery (file:///home/ovidio.neto/Crediario/backend/model/dao_vendedores.js:56:43)
-
-[20/03/2026 19:40:25] ControllerVendedores.Listar: SqlError: (conn:59, no: 45017, SQLState: HY000) Parameter named entidade_negocio is not set
-sql: SELECT * FROM tb_vendedores WHERE entidade_negocio = :entidade_negocio - parameters:{}
-    at Module.createError (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/misc/errors.js:66:10)
-    at Execute.sendCancelled (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/command.js:83:24)
-    at Execute.validateParameters (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/execute.js:200:16)
-    at Execute.start (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/execute.js:68:15)
-    at Connection.addCommandEnablePipeline (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/connection.js:1519:11)
-    at Connection.prepareExecute (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/connection.js:1861:14)
-    at new Promise (<anonymous>)
-    at ConnectionPromise.execute (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/connection-promise.js:129:12)
-    at Connect.#conn.execute (file:///home/ovidio.neto/Crediario/backend/connections/dbconn.js:45:20)
-    at Vendedores.ExecuteQuery (file:///home/ovidio.neto/Crediario/backend/model/dao_vendedores.js:56:43)
-
-[20/03/2026 19:40:27] ControllerRotas.Listar: SqlError: (conn:64, no: 45017, SQLState: HY000) Parameter named entidade_negocio is not set
-sql: SELECT * FROM tb_rotas WHERE entidade_negocio = :entidade_negocio - parameters:{}
-    at Module.createError (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/misc/errors.js:66:10)
-    at Execute.sendCancelled (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/command.js:83:24)
-    at Execute.validateParameters (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/execute.js:200:16)
-    at Execute.start (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/execute.js:68:15)
-    at Connection.addCommandEnablePipeline (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/connection.js:1519:11)
-    at Connection.prepareExecute (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/connection.js:1861:14)
-    at new Promise (<anonymous>)
-    at ConnectionPromise.execute (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/connection-promise.js:129:12)
-    at Connect.#conn.execute (file:///home/ovidio.neto/Crediario/backend/connections/dbconn.js:45:20)
-    at Rotas.ExecuteQuery (file:///home/ovidio.neto/Crediario/backend/model/dao_rotas.js:44:43)
-
-[20/03/2026 19:40:27] ControllerRotas.Listar: SqlError: (conn:65, no: 45017, SQLState: HY000) Parameter named entidade_negocio is not set
-sql: SELECT * FROM tb_rotas WHERE entidade_negocio = :entidade_negocio - parameters:{}
-    at Module.createError (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/misc/errors.js:66:10)
-    at Execute.sendCancelled (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/command.js:83:24)
-    at Execute.validateParameters (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/execute.js:200:16)
-    at Execute.start (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/execute.js:68:15)
-    at Connection.addCommandEnablePipeline (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/connection.js:1519:11)
-    at Connection.prepareExecute (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/connection.js:1861:14)
-    at new Promise (<anonymous>)
-    at ConnectionPromise.execute (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/connection-promise.js:129:12)
-    at Connect.#conn.execute (file:///home/ovidio.neto/Crediario/backend/connections/dbconn.js:45:20)
-    at Rotas.ExecuteQuery (file:///home/ovidio.neto/Crediario/backend/model/dao_rotas.js:44:43)
-
-[20/03/2026 19:40:28] ControllerTiposPagamentos.Listar: SqlError: (conn:66, no: 1064, SQLState: 42000) You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near ':entidade_negocio' at line 1
-sql: SELECT * FROM tb_tipos_pagamentos WHERE entidade_negocio = :entidade_negocio - parameters:[]
+[21/03/2026 14:47:41] ControllerComissoes.ExcluirReciboCobrador: SqlError: (conn:74, no: 1451, SQLState: 23000) Cannot delete or update a parent row: a foreign key constraint fails (`dbcred`.`tb_adiantamentos`, CONSTRAINT `fk_adiant_comissoes` FOREIGN KEY (`entidade_negocio`, `num_recibo`) REFERENCES `tb_comissoes` (`entidade_negocio`, `num_recibo`) ON DELETE NO ACTION ON UPDATE NO ACTION)
+sql: DELETE FROM tb_comissoes WHERE entidade_negocio = :entidade_negocio AND num_recibo = :num_recibo - parameters:{'num_recibo':'2026003001','entidade_negocio':3}
     at Module.createError (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/misc/errors.js:66:10)
     at PacketNodeEncoded.readError (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/io/packet.js:595:19)
-    at Query.handleErrorPacket (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/parser.js:92:24)
-    at Query.readResponsePacket (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/parser.js:70:21)
+    at Execute.handleErrorPacket (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/parser.js:92:24)
+    at Execute.readResponsePacket (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/parser.js:70:21)
     at PacketInputStream.receivePacketBasic (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/io/packet-input-stream.js:94:9)
     at PacketInputStream.onData (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/io/packet-input-stream.js:151:20)
     at Socket.emit (node:events:508:28)
@@ -63,94 +11,7 @@ sql: SELECT * FROM tb_tipos_pagamentos WHERE entidade_negocio = :entidade_negoci
     at readableAddChunkPushByteMode (node:internal/streams/readable:514:3)
     at Readable.push (node:internal/streams/readable:394:5)
 
-[20/03/2026 19:40:28] ControllerTiposPagamentos.Listar: SqlError: (conn:67, no: 1064, SQLState: 42000) You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near ':entidade_negocio' at line 1
-sql: SELECT * FROM tb_tipos_pagamentos WHERE entidade_negocio = :entidade_negocio - parameters:[]
-    at Module.createError (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/misc/errors.js:66:10)
-    at PacketNodeEncoded.readError (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/io/packet.js:595:19)
-    at Query.handleErrorPacket (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/parser.js:92:24)
-    at Query.readResponsePacket (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/parser.js:70:21)
-    at PacketInputStream.receivePacketBasic (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/io/packet-input-stream.js:94:9)
-    at PacketInputStream.onData (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/io/packet-input-stream.js:151:20)
-    at Socket.emit (node:events:508:28)
-    at addChunk (node:internal/streams/readable:563:12)
-    at readableAddChunkPushByteMode (node:internal/streams/readable:514:3)
-    at Readable.push (node:internal/streams/readable:394:5)
-
-[20/03/2026 19:40:29] ControllerUsuarios.Listar: SqlError: (conn:68, no: 45017, SQLState: HY000) Parameter named entidade_negocio is not set
-sql: SELECT id,nom_perfil FROM tb_perfis WHERE entidade_negocio = :entidade_negocio - parameters:{}
-    at Module.createError (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/misc/errors.js:66:10)
-    at Execute.sendCancelled (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/command.js:83:24)
-    at Execute.validateParameters (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/execute.js:200:16)
-    at Execute.start (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/execute.js:68:15)
-    at Connection.addCommandEnablePipeline (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/connection.js:1519:11)
-    at Connection.prepareExecute (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/connection.js:1861:14)
-    at new Promise (<anonymous>)
-    at ConnectionPromise.execute (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/connection-promise.js:129:12)
-    at Connect.#conn.execute (file:///home/ovidio.neto/Crediario/backend/connections/dbconn.js:45:20)
-    at Perfis.ExecuteQuery (file:///home/ovidio.neto/Crediario/backend/model/dao_perfis.js:57:43)
-
-[20/03/2026 19:40:29] ControllerUsuarios.Listar: SqlError: (conn:69, no: 45017, SQLState: HY000) Parameter named entidade_negocio is not set
-sql: SELECT id,nom_perfil FROM tb_perfis WHERE entidade_negocio = :entidade_negocio - parameters:{}
-    at Module.createError (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/misc/errors.js:66:10)
-    at Execute.sendCancelled (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/command.js:83:24)
-    at Execute.validateParameters (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/execute.js:200:16)
-    at Execute.start (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/execute.js:68:15)
-    at Connection.addCommandEnablePipeline (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/connection.js:1519:11)
-    at Connection.prepareExecute (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/connection.js:1861:14)
-    at new Promise (<anonymous>)
-    at ConnectionPromise.execute (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/connection-promise.js:129:12)
-    at Connect.#conn.execute (file:///home/ovidio.neto/Crediario/backend/connections/dbconn.js:45:20)
-    at Perfis.ExecuteQuery (file:///home/ovidio.neto/Crediario/backend/model/dao_perfis.js:57:43)
-
-[20/03/2026 19:40:30] ControllerPerfis.Listar: SqlError: (conn:70, no: 45017, SQLState: HY000) Parameter named entidade_negocio is not set
-sql: SELECT * FROM tb_perfis WHERE entidade_negocio = :entidade_negocio - parameters:{}
-    at Module.createError (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/misc/errors.js:66:10)
-    at Execute.sendCancelled (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/command.js:83:24)
-    at Execute.validateParameters (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/execute.js:200:16)
-    at Execute.start (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/execute.js:68:15)
-    at Connection.addCommandEnablePipeline (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/connection.js:1519:11)
-    at Connection.prepareExecute (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/connection.js:1861:14)
-    at new Promise (<anonymous>)
-    at ConnectionPromise.execute (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/connection-promise.js:129:12)
-    at Connect.#conn.execute (file:///home/ovidio.neto/Crediario/backend/connections/dbconn.js:45:20)
-    at Perfis.ExecuteQuery (file:///home/ovidio.neto/Crediario/backend/model/dao_perfis.js:57:43)
-
-[20/03/2026 19:40:30] ControllerPerfis.Listar: SqlError: (conn:71, no: 45017, SQLState: HY000) Parameter named entidade_negocio is not set
-sql: SELECT * FROM tb_perfis WHERE entidade_negocio = :entidade_negocio - parameters:{}
-    at Module.createError (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/misc/errors.js:66:10)
-    at Execute.sendCancelled (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/command.js:83:24)
-    at Execute.validateParameters (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/execute.js:200:16)
-    at Execute.start (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/execute.js:68:15)
-    at Connection.addCommandEnablePipeline (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/connection.js:1519:11)
-    at Connection.prepareExecute (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/connection.js:1861:14)
-    at new Promise (<anonymous>)
-    at ConnectionPromise.execute (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/connection-promise.js:129:12)
-    at Connect.#conn.execute (file:///home/ovidio.neto/Crediario/backend/connections/dbconn.js:45:20)
-    at Perfis.ExecuteQuery (file:///home/ovidio.neto/Crediario/backend/model/dao_perfis.js:57:43)
-
-[20/03/2026 19:41:35] ControllerVendedores.Listar: SqlError: (conn:72, no: 45017, SQLState: HY000) Parameter named entidade_negocio is not set
-sql: SELECT * FROM tb_vendedores WHERE entidade_negocio = :entidade_negocio - parameters:{}
-    at Module.createError (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/misc/errors.js:66:10)
-    at Execute.sendCancelled (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/command.js:83:24)
-    at Execute.validateParameters (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/execute.js:200:16)
-    at Execute.start (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/execute.js:68:15)
-    at Connection.addCommandEnablePipeline (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/connection.js:1519:11)
-    at Connection.prepareExecute (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/connection.js:1861:14)
-    at new Promise (<anonymous>)
-    at ConnectionPromise.execute (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/connection-promise.js:129:12)
-    at Connect.#conn.execute (file:///home/ovidio.neto/Crediario/backend/connections/dbconn.js:45:20)
-    at Vendedores.ExecuteQuery (file:///home/ovidio.neto/Crediario/backend/model/dao_vendedores.js:56:43)
-
-[20/03/2026 19:41:35] ControllerVendedores.Listar: SqlError: (conn:73, no: 45017, SQLState: HY000) Parameter named entidade_negocio is not set
-sql: SELECT * FROM tb_vendedores WHERE entidade_negocio = :entidade_negocio - parameters:{}
-    at Module.createError (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/misc/errors.js:66:10)
-    at Execute.sendCancelled (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/command.js:83:24)
-    at Execute.validateParameters (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/execute.js:200:16)
-    at Execute.start (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/execute.js:68:15)
-    at Connection.addCommandEnablePipeline (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/connection.js:1519:11)
-    at Connection.prepareExecute (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/connection.js:1861:14)
-    at new Promise (<anonymous>)
-    at ConnectionPromise.execute (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/connection-promise.js:129:12)
-    at Connect.#conn.execute (file:///home/ovidio.neto/Crediario/backend/connections/dbconn.js:45:20)
-    at Vendedores.ExecuteQuery (file:///home/ovidio.neto/Crediario/backend/model/dao_vendedores.js:56:43)
+[21/03/2026 14:53:13] ControllerComissoes.ExcluirReciboCobrador: ReferenceError: id_cobrador is not defined
+    at ExcluirReciboCobrador (file:///home/ovidio.neto/Crediario/backend/controller/controller_comissoes.js:753:83)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
 
