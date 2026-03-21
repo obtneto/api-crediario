@@ -6,18 +6,21 @@ const router = Router();
 
 router.use(criarMiddlewareSessao());
 
-/**** COMISSÕES - COBRADOR ****/
+/*******************************************************
+* Pagamentos de Adiantamentos a Cobradores e Vendedores
+********************************************************/
+router.get('/listar_adiantamentos_ativos/:id/:fieldname', ControllerComissoes.ListarAdiantamentosAtivos);
+router.get('/imprimir_adiantamentos_ativos/:id/:fieldname', ControllerComissoes.ImprimirAdiantamentosAtivos);
+router.get('/editar_adiantamento/:id_adiantamento/', ControllerComissoes.EditarAdiantamento);
+router.post('/salvar_adiantamento', ControllerComissoes.SalvarAdiantamento);
+router.get('/excluir_adiantamento/:id_adiantamento/', ControllerComissoes.ExcluirAdiantamento);
 
-// GET - Listar comissões de um cobrador com paginação e filtro de data
+/*****************************************
+* Pagamentos de Comissoes Cobrador
+******************************************/
 router.get('/listar/:id_cobrador', ControllerComissoes.ListarComissoesCobrador);
-
-// GET - Consultar um recibo específico
-router.get('/consultar/:num_recibo', ControllerComissoes.ConsultarReciboCobrador);
-
-// POST - Salvar/Atualizar recibo de comissão
+router.get('/editar/:num_recibo', ControllerComissoes.EditarReciboCobrador);
 router.post('/salvar', ControllerComissoes.SalvarReciboCobrador);
-
-// DELETE - Excluir recibo de comissão
 router.delete('/excluir/:num_recibo', ControllerComissoes.ExcluirReciboCobrador);
 
 export default router;
