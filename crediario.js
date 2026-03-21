@@ -67,7 +67,7 @@ app.use(
             return callback(new Error('Origem nao permitida pelo CORS.'));
         },
         credentials: true,
-        methods: ['POST','GET','OPTIONS'], // metodos permitidos
+        methods: ['POST','GET','DELETE','OPTIONS'], // metodos permitidos
         allowedHeaders: ['Content-Type','Authorization','x-entidade-negocio'], // headers permitidos
         exposedHeaders: ['x-crediario-token']
     })

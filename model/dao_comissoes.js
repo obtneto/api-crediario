@@ -11,8 +11,9 @@ export default class Comissoes {
         tp_recibo: '',
         vl_recibo: 0,
         vl_adiant: 0,
+        id_colaborador: 0,
+        tp_recibo: '',
         entidade_negocio: '',
-        
     }
 
     constructor(connection, entidade_negocio = 0) {
@@ -47,6 +48,9 @@ export default class Comissoes {
     set vl_adiant(vl_adiant) {this.#field.vl_adiant = parseFloat(vl_adiant)}
     get vl_adiant() {return parseFloat(this.#field.vl_adiant)}
 
+    set id_colaborador(id_colaborador) {this.#field.id_colaborador = Number(id_colaborador)}
+    get id_colaborador() {return Number(this.#field.id_colaborador)}
+
     get entidade_negocio() {return Number(this.#field.entidade_negocio)}
 
     async ExecuteQuery(query, parms) {
@@ -74,6 +78,7 @@ export default class Comissoes {
                 this.tp_recibo = rows.tp_recibo;
                 this.vl_recibo = rows.vl_recibo;
                 this.vl_adiant = rows.vl_adiant;
+                this.id_colaborador = rows.id_colaborador;
 
                 this.#found = true;
             } else {
@@ -94,14 +99,17 @@ export default class Comissoes {
             let query = null;
             
             if (this.#found) {
-                query = `UPDATE ${this.#tb_name} SET dt_recibo = :dt_recibo, tp_recibo = :tp_recibo, vl_recibo = :vl_recibo, vl_adiant = :vl_adiant 
+                query = `UPDATE ${this.#tb_name} SET dt_recibo = :dt_recibo, tp_recibo = :tp_recibo,
+                vl_recibo = :vl_recibo, vl_adiant = :vl_adiant, id_colaborador = :id_colaborador
                 WHERE entidade_negocio = :entidade_negocio AND num_recibo = :num_recibo`;
             } else {
 
                 this.num_recibo = await this.#newId();
 
-                query = `INSERT INTO ${this.#tb_name} (num_recibo, dt_recibo, tp_recibo, vl_recibo, vl_adiant, entidade_negocio) 
-                VALUES (:num_recibo, :dt_recibo, :tp_recibo, :vl_recibo, :vl_adiant, :entidade_negocio)`;
+                query = `INSERT INTO ${this.#tb_name} (num_recibo, dt_recibo, tp_recibo, vl_recibo, 
+                vl_adiant, id_colaborador, entidade_negocio) 
+                VALUES (:num_recibo, :dt_recibo, :tp_recibo, :vl_recibo, :vl_adiant, :id_colaborador, 
+                :entidade_negocio)`;
             }
 
             void await this.#conn.execute(query, this.#field);
