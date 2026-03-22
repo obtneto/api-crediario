@@ -11,7 +11,8 @@ export default class Comissoes {
         tp_recibo: '',
         vl_recibo: 0,
         vl_adiant: 0,
-        id_colaborador: 0,
+        id_cobrador: null,
+        id_vendedor: null,
         tp_recibo: '',
         entidade_negocio: '',
     }
@@ -48,8 +49,11 @@ export default class Comissoes {
     set vl_adiant(vl_adiant) {this.#field.vl_adiant = parseFloat(vl_adiant)}
     get vl_adiant() {return parseFloat(this.#field.vl_adiant)}
 
-    set id_colaborador(id_colaborador) {this.#field.id_colaborador = Number(id_colaborador)}
-    get id_colaborador() {return Number(this.#field.id_colaborador)}
+    set id_cobrador(id_cobrador) {this.#field.id_cobrador = Number(id_cobrador)}
+    get id_cobrador() {return Number(this.#field.id_cobrador)}
+
+    set id_vendedor(id_vendedor) {this.#field.id_vendedor = Number(id_vendedor)}
+    get id_vendedor() {return Number(this.#field.id_vendedor)}
 
     get entidade_negocio() {return Number(this.#field.entidade_negocio)}
 
@@ -69,8 +73,14 @@ export default class Comissoes {
     async FindById(num_recibo) {
 
         try {
-            const query = `SELECT * FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio AND num_recibo = :num_recibo`;
-            const [rows] = await this.#conn.query(query, { num_recibo, entidade_negocio: this.#entidade_negocio });
+
+            const query = `SELECT * FROM ${this.#tb_name} 
+            WHERE entidade_negocio = :entidade_negocio AND num_recibo = :num_recibo`;
+
+            const [rows] = await this.#conn.query(query, { 
+                num_recibo, 
+                entidade_negocio: this.#entidade_negocio 
+            });
             
             if (rows) {
                 this.num_recibo = rows.num_recibo;
@@ -78,7 +88,8 @@ export default class Comissoes {
                 this.tp_recibo = rows.tp_recibo;
                 this.vl_recibo = rows.vl_recibo;
                 this.vl_adiant = rows.vl_adiant;
-                this.id_colaborador = rows.id_colaborador;
+                this.id_cobrador = rows.id_cobrador;
+                this.id_vendedor = rows.id_vendedor;
 
                 this.#found = true;
             } else {
@@ -100,17 +111,20 @@ export default class Comissoes {
             
             if (this.#found) {
                 query = `UPDATE ${this.#tb_name} SET dt_recibo = :dt_recibo, tp_recibo = :tp_recibo,
-                vl_recibo = :vl_recibo, vl_adiant = :vl_adiant, id_colaborador = :id_colaborador
+                vl_recibo = :vl_recibo, vl_adiant = :vl_adiant, id_cobrador = :id_cobrador, id_vendedor = :id_vendedor
                 WHERE entidade_negocio = :entidade_negocio AND num_recibo = :num_recibo`;
             } else {
 
                 this.num_recibo = await this.#newId();
 
                 query = `INSERT INTO ${this.#tb_name} (num_recibo, dt_recibo, tp_recibo, vl_recibo, 
-                vl_adiant, id_colaborador, entidade_negocio) 
-                VALUES (:num_recibo, :dt_recibo, :tp_recibo, :vl_recibo, :vl_adiant, :id_colaborador, 
+                vl_adiant, id_cobrador,id_vendedor, entidade_negocio) 
+                VALUES (:num_recibo, :dt_recibo, :tp_recibo, :vl_recibo, :vl_adiant, :id_cobrador,:id_vendedor, 
                 :entidade_negocio)`;
             }
+
+            if (this.#field.id_cobrador === 0 ) this.#field.id_cobrador = null;
+            if (this.#field.id_vendedor === 0 ) this.#field.id_vendedor = null;
 
             void await this.#conn.execute(query, this.#field);
 
