@@ -433,143 +433,67 @@ export class ControllerComissoes {
     }
 
     /*********************************************************
-    * Recibos de Pagamentos Comissões Cobrador
+    * Recibos de Pagamentos Comissões 
     **********************************************************/
-    static async ListarHistoricoPagamentos(req,res) {
-        
+    static async ListarComissoesPagasPorRecibo(req,res) {
+
         const db = new Database('dbcred'); 
 
         const resdata = {
             err: 0,
             status: 200,
             msg: '',
-                data: {
-                adiantamentos: [],
-                entidades: [],
-                paginacao: {
-                    page: 1,
-                    limit: 50,
-                    total: 0,
-                    total_pages: 0
-                }
+            data: {
+                pagamentos: [],
+                adiantamentos:[]
             }
         }
 
         try {
-            
-            const entidade_negocio = obterEntidadeNegocio(req);
-            const id_cobrador = Number(req.params.id_cobrador || 0);
-
-            const dt_ini = String(req.query.dt_ini || '').trim();
-            const dt_fim = String(req.query.dt_fim || '').trim();
-            const page = Math.max(1, Number(req.query.page || 1));
-            const limit = Math.min(200, Math.max(1, Number(req.query.limit || 50)));
-            const offset = (page - 1) * limit;
-
-            if (!id_cobrador || id_cobrador <= 0) {
-                const error = new Error('ID do cobrador invalido.');
-                error.statusCode = 400;
-                throw error;
-            }
-
-            if (!dt_ini || !dt_fim) {
-                const error = new Error('Informe data inicial e data final.');
-                error.statusCode = 400;
-                throw error;
-            }
-
-            if (!/^\d{4}-\d{2}-\d{2}$/.test(dt_ini)) {
-                const error = new Error('Data inicial invalida.');
-                error.statusCode = 400;
-                throw error;
-            }
-
-            if (!/^\d{4}-\d{2}-\d{2}$/.test(dt_fim)) {
-                const error = new Error('Data final invalida.');
-                error.statusCode = 400;
-                throw error;
-            }
-
-            if (dt_ini > dt_fim) {
-                const error = new Error('Data inicial nao pode ser maior que data final.');
-                error.statusCode = 400;
-                throw error;
-            }
-
-            const dtIniDate = new Date(`${dt_ini}T00:00:00Z`);
-            const dtFimDate = new Date(`${dt_fim}T00:00:00Z`);
-            const diffMs = dtFimDate.getTime() - dtIniDate.getTime();
-            const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-                if (diffDays >= 45) {
-                const error = new Error('Intervalo deve ser inferior a 45 dias.');
-                error.statusCode = 400;
-                throw error;
-            }
 
             void await db.Connect();
+            
+            const entidade_negocio = obterEntidadeNegocio(req);
+            const num_rebibo = String(req.params.num_rebibo).trim();
+            
+            if (!num_rebibo || num_rebibo == '') {
+                const error = new Error('Numero do Recibo invalido')
+                error.statusCode = 400;
+                throw error;
+            }
 
-            const adiantamentos = new Adiantamentos(db.connection, entidade_negocio);
-            const entidades = new Entidades(db.connection);
+            const pagamentos = new Pagamentos(db.connection,entidade_negocio);
 
-            let query = `SELECT id, dt_adiantamento, vl_adiantamento, num_recibo,
-            case when num_recibo is not null then 'Não Pago' else 'Pagamento Feito' end as situacao
-            FROM tb_adiantamentos 
-            WHERE entidade_negocio = ? AND id_cobrador = ? 
-            AND dt_adiantamento >= ? AND dt_adiantamento <= ?
-            ORDER BY dt_adiantamento DESC, id DESC
-            LIMIT ? OFFSET ?`;
-
-            resdata.data.adiantamentos = await adiantamentos.ExecuteQuery(query, [
+            let query = `SELECT pg.id_venda,pg.dt_pagamento,cl.nom_cliente,pg.vl_pagamento from tb_pagamentos pg
+            LEFT JOIN tb_vendas vd ON vd.id = pg.id_venda AND vd.entidade_negocio = pg.entidade_negocio
+            LEFT JOIN tb_clientes cl ON cl.cpf_cliente = vd.cpf_cliente
+            WHERE pg.entidade_negocio = :entidade_negocio AND pg.num_recibo = :num_recibo`
+            
+            resdata.data.pagamentos = await pagamentos.ExecuteQuery(query,{
                 entidade_negocio,
-                id_cobrador,
-                dt_ini,
-                dt_fim,
-                limit,
-                offset
-            ]);
+                num_rebibo
+            });
 
-            query = `SELECT COUNT(*) AS total FROM tb_adiantamentos 
-            WHERE entidade_negocio = ? AND id_cobrador = ?
-            AND dt_adiantamento >= ? AND dt_adiantamento <= ?`;
-
-            const [countResult] = await adiantamentos.ExecuteQuery(query, [
-                entidade_negocio,
-                id_cobrador,
-                dt_ini,
-                dt_fim
-            ]);
-
-            const total = Number(countResult?.total || 0);
-
-            query = `SELECT id,nom_entidade FROM tb_entidades WHERE id = ?`;
-
-            resdata.data.entidades = await entidades.ExecuteQuery(query, [entidade_negocio]);
-
-            resdata.data.paginacao = {
-                page,
-                limit,
-                total,
-                total_pages: total > 0 ? Math.ceil(total / limit) : 0
-            };
+            query = `SELECT  FROM tb_adiantamentos` 
 
         } catch (error) {
-            
+
             resdata.err = Number(error.statusCode || 500);
             resdata.msg = error.message;
             resdata.status = Number(error.statusCode || 500);
 
-            if (resdata.status === 500) {
-                GravarLog('ControllerCobranca.ListarHistoricoAdiantamentos', error.stack);
-            }   
+            if (resdata.err == 500) GravarLog('ControllerComissoes.SalvarReciboCobrador', error.stack);
 
         }
 
         void await db.Close();
 
-        res.status(resdata.status).json(resdata);   
+        res.status(resdata.status).json(resdata);
     }
 
+    /*********************************************************
+    * Recibos de Pagamentos Comissões Cobrador
+    **********************************************************/
     static async EditarReciboCobrador(req,res) {
 
         const db = new Database('dbcred');
@@ -622,6 +546,267 @@ export class ControllerComissoes {
 
         res.status(resdata.status).json(resdata);
 
+    }
+
+    static async ImprimirReciboCobrador(req,res) {
+
+        const db = new Database('dbcred');
+
+        try {
+
+            const entidade_negocio = obterEntidadeNegocio(req);
+            const num_recibo = String(req.params.num_recibo || '').trim();
+
+            if (!num_recibo) {
+                const error = new Error('Numero do recibo invalido.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            void await db.Connect();
+
+            const comissoes = new Comissoes(db.connection, entidade_negocio);
+            const entidades = new Entidades(db.connection);
+            const pagamentos = new Pagamentos(db.connection, entidade_negocio);
+            const adiantamentos = new Adiantamentos(db.connection, entidade_negocio);
+
+            const recibo = await comissoes.ExecuteQuery(
+                `SELECT cm.num_recibo, cm.dt_recibo, cm.tp_recibo, cm.vl_recibo, cm.vl_adiant,
+                        cm.id_colaborador as id_cobrador, cb.nom_cobrador
+                 FROM tb_comissoes cm
+                 LEFT JOIN tb_cobradores cb ON cb.id = cm.id_colaborador AND cb.entidade_negocio = cm.entidade_negocio
+                 WHERE cm.entidade_negocio = ? AND cm.num_recibo = ?
+                 LIMIT 1`,
+                [entidade_negocio, num_recibo]
+            );
+
+            const itemRecibo = Array.isArray(recibo) ? recibo[0] : null;
+
+            if (!itemRecibo) {
+                const error = new Error('Recibo de comissao nao encontrado.');
+                error.statusCode = 404;
+                throw error;
+            }
+
+            const entidade = await entidades.ExecuteQuery(
+                `SELECT id, nom_entidade FROM tb_entidades WHERE id = ?`,
+                [entidade_negocio]
+            );
+
+            const itemEntidade = Array.isArray(entidade) ? entidade[0] : null;
+            const nomeEntidade = String(itemEntidade?.nom_entidade || entidade_negocio);
+            const nomeCobrador = String(itemRecibo?.nom_cobrador || '-');
+            const valorRecibo = Number(itemRecibo?.vl_recibo || 0);
+            const valorAdiantado = Number(itemRecibo?.vl_adiant || 0);
+            const valorLiquido = valorRecibo - valorAdiantado;
+
+            const rowsPagamentos = await pagamentos.ExecuteQuery(
+                `SELECT pg.id_venda, cl.nom_cliente, SUM(pg.vl_pagamento) as vl_pagamento,
+                        SUM(pg.vl_pagamento * (cb.comissao/100)) as vl_comissao
+                 FROM tb_pagamentos pg
+                 LEFT JOIN tb_vendas vd ON vd.id = pg.id_venda AND vd.entidade_negocio = pg.entidade_negocio
+                 LEFT JOIN tb_clientes cl ON cl.cpf_cliente = vd.cpf_cliente
+                 LEFT JOIN tb_cobradores cb ON cb.id = pg.id_cobrador AND cb.entidade_negocio = pg.entidade_negocio
+                 WHERE pg.entidade_negocio = ? AND pg.num_recibo = ?
+                 GROUP BY pg.id_venda, cl.nom_cliente
+                 ORDER BY pg.id_venda ASC`,
+                [entidade_negocio, num_recibo]
+            );
+
+            const rowsAdiantamentos = await adiantamentos.ExecuteQuery(
+                `SELECT ad.id, ad.dt_adiant as dt_adiantamento, ad.vl_adiant as vl_adiantamento
+                 FROM tb_adiantamentos ad
+                 WHERE ad.entidade_negocio = ? AND ad.num_recibo = ?
+                 ORDER BY ad.dt_adiant ASC, ad.id ASC`,
+                [entidade_negocio, num_recibo]
+            );
+
+            const totalPagamentos = Array.isArray(rowsPagamentos)
+                ? rowsPagamentos.reduce((acc, item) => acc + Number(item?.vl_pagamento || 0), 0)
+                : 0;
+
+            const totalComissao = Array.isArray(rowsPagamentos)
+                ? rowsPagamentos.reduce((acc, item) => acc + Number(item?.vl_comissao || 0), 0)
+                : 0;
+
+            const totalAdiantamentos = Array.isArray(rowsAdiantamentos)
+                ? rowsAdiantamentos.reduce((acc, item) => acc + Number(item?.vl_adiantamento || 0), 0)
+                : 0;
+
+            const pagamentosBody = Array.isArray(rowsPagamentos) && rowsPagamentos.length > 0
+                ? [
+                    [
+                        { text: 'Cobrança', bold: true, fontSize: 8, alignment: 'left' },
+                        //{ text: 'Data', bold: true, fontSize: 8, alignment: 'left' },
+                        { text: 'Cliente', bold: true, fontSize: 8, alignment: 'left' },
+                        { text: 'Valor', bold: true, fontSize: 8, alignment: 'right' },
+                        { text: 'Comissao', bold: true, fontSize: 8, alignment: 'right' }
+                    ],
+                    ...rowsPagamentos.map((item) => ([
+                        { text: String(item?.id_venda ?? '-'), alignment: 'left' },
+                        //{ text: formatDateBR(item?.dt_pagamento, true), alignment: 'left' },
+                        { text: String(item?.nom_cliente || '-'), alignment: 'left' },
+                        { text: formatCurrencyBR(item?.vl_pagamento), alignment: 'right' },
+                        { text: formatCurrencyBR(item?.vl_comissao), alignment: 'right' }
+                    ]))
+                ]
+                : [[
+                    { text: 'Nenhum pagamento vinculado a este recibo.', colSpan: 5, alignment: 'center', margin: [0, 6, 0, 6] },
+                    {},
+                    {},
+                    {},
+                    {}
+                ]];
+
+            const adiantamentosBody = Array.isArray(rowsAdiantamentos) && rowsAdiantamentos.length > 0
+                ? [
+                    [
+                        { text: 'ID', bold: true, fontSize: 8, alignment: 'left' },
+                        { text: 'Data', bold: true, fontSize: 8, alignment: 'left' },
+                        { text: 'Valor', bold: true, fontSize: 8, alignment: 'right' }
+                    ],
+                    ...rowsAdiantamentos.map((item) => ([
+                        { text: String(item?.id ?? '-'), alignment: 'left' },
+                        { text: formatDateBR(item?.dt_adiantamento, true), alignment: 'left' },
+                        { text: formatCurrencyBR(item?.vl_adiantamento), alignment: 'right' }
+                    ]))
+                ]
+                : [[
+                    { text: 'Nenhum adiantamento vinculado a este recibo.', colSpan: 3, alignment: 'center', margin: [0, 6, 0, 6] },
+                    {},
+                    {}
+                ]];
+
+            const document = {
+                pageSize: 'A4',
+                pageMargins: [28, 28, 28, 36],
+                defaultStyle: {
+                    font: 'Roboto',
+                    fontSize: 9
+                },
+                content: [
+                    {
+                        columns: [
+                            [
+                                { text: nomeEntidade, bold: true, fontSize: 14 },
+                                { text: `Recibo de Comissao`, fontSize: 11, margin: [0, 2, 0, 0] }
+                            ],
+                            [
+                                { text: `Recibo Nº ${itemRecibo.num_recibo}`, alignment: 'right', bold: true, fontSize: 11 },
+                                { text: `Data: ${formatDateBR(itemRecibo.dt_recibo, true)}`, alignment: 'right', margin: [0, 2, 0, 0] }
+                            ]
+                        ],
+                        margin: [0, 0, 0, 18]
+                    },
+                    {
+                        canvas: [{ type: 'rect', x: 0, y: 0, w: 539, h: 92, lineColor: '#cfd4dc', r: 4 }],
+                        margin: [0, 0, 0, -92]
+                    },
+                    {
+                        margin: [14, 12, 14, 18],
+                        stack: [
+                            { text: `Recebi de ${nomeEntidade} a importancia liquida de ${formatCurrencyBR(valorLiquido)} referente ao pagamento de comissao do cobrador ${nomeCobrador}.`, lineHeight: 1.3 },
+                            { text: `Tipo de recibo: ${String(itemRecibo?.tp_recibo || 'COMISSAO COBRADOR')}`, margin: [0, 10, 0, 0] },
+                            { text: `Valor bruto da comissao: ${formatCurrencyBR(valorRecibo)}`, margin: [0, 4, 0, 0] },
+                            { text: `Adiantamentos abatidos: ${formatCurrencyBR(valorAdiantado)}`, margin: [0, 4, 0, 0] },
+                            { text: `Valor liquido recebido: ${formatCurrencyBR(valorLiquido)}`, margin: [0, 4, 0, 0], bold: true }
+                        ]
+                    },
+                    {
+                        columns: [
+                            { text: `Cobrador: ${nomeCobrador}`, bold: true },
+                            { text: `Entidade: ${nomeEntidade}`, alignment: 'right' }
+                        ],
+                        margin: [0, 0, 0, 8]
+                    },
+                    {
+                        text: 'Pagamentos vinculados',
+                        bold: true,
+                        fontSize: 10,
+                        margin: [0, 8, 0, 6]
+                    },
+                    {
+                        layout: {
+                            hLineWidth: (i) => (i === 1 ? 0.8 : 0.2),
+                            vLineWidth: () => 0,
+                            hLineColor: () => '#cfd4dc',
+                            paddingLeft: () => 3,
+                            paddingRight: () => 3,
+                            paddingTop: (i) => (i === 0 ? 4 : 3),
+                            paddingBottom: () => 3
+                        },
+                        table: {
+                            headerRows: Array.isArray(rowsPagamentos) && rowsPagamentos.length > 0 ? 1 : 0,
+                            widths: ['14%', '*', '18%', '18%'],
+                            body: pagamentosBody
+                        }
+                    },
+                    {
+                        text: 'Adiantamentos vinculados',
+                        bold: true,
+                        fontSize: 10,
+                        margin: [0, 14, 0, 6]
+                    },
+                    {
+                        layout: {
+                            hLineWidth: (i) => (i === 1 ? 0.8 : 0.2),
+                            vLineWidth: () => 0,
+                            hLineColor: () => '#cfd4dc',
+                            paddingLeft: () => 3,
+                            paddingRight: () => 3,
+                            paddingTop: (i) => (i === 0 ? 4 : 3),
+                            paddingBottom: () => 3
+                        },
+                        table: {
+                            headerRows: Array.isArray(rowsAdiantamentos) && rowsAdiantamentos.length > 0 ? 1 : 0,
+                            widths: ['16%', '54%', '30%'],
+                            body: adiantamentosBody
+                        }
+                    },
+                    {
+                        margin: [0, 16, 0, 0],
+                        columns: [
+                            [
+                                { text: `Total recebido em cobrancas: ${formatCurrencyBR(totalPagamentos)}` },
+                                { text: `Total de comissao: ${formatCurrencyBR(totalComissao)}`, margin: [0, 4, 0, 0] },
+                                { text: `Total de adiantamentos: ${formatCurrencyBR(totalAdiantamentos)}`, margin: [0, 4, 0, 0] },
+                                { text: `Liquido do recibo: ${formatCurrencyBR(valorLiquido)}`, margin: [0, 4, 0, 0], bold: true }
+                            ],
+                            [
+                                { text: '________________________________________', alignment: 'center', margin: [0, 26, 0, 0] },
+                                { text: nomeCobrador, alignment: 'center', margin: [0, 4, 0, 0], bold: true },
+                                { text: 'Assinatura do cobrador', alignment: 'center', fontSize: 8, color: '#4a5568' }
+                            ]
+                        ]
+                    }
+                ],
+                footer(currentPage, pageCount) {
+                    return {
+                        margin: [28, 0, 28, 16],
+                        text: `Pagina ${currentPage} de ${pageCount}`,
+                        alignment: 'right',
+                        fontSize: 7
+                    };
+                }
+            };
+
+            await sendPdfResponse(res, `recibo-comissao-${num_recibo}.pdf`, document);
+
+        } catch (error) {
+
+            if (!res.headersSent) {
+                res.status(Number(error.statusCode || 500)).json({
+                    err: Number(error.statusCode || 500),
+                    msg: error.message,
+                    status: Number(error.statusCode || 500),
+                    data: []
+                });
+            }
+
+            GravarLog('ControllerComissoes.ImprimirReciboCobrador', error.stack);
+        }
+
+        void await db.Close();
     }
 
     static async SalvarReciboCobrador(req,res) {
@@ -983,11 +1168,15 @@ export class ControllerComissoes {
 
             const pagamentos = new Pagamentos(db.connection,entidade_negocio);
 
-            const quey = `SELECT pg.id_venda,pg.dt_pagamento,cl.nom_cliente,pg.vl_pagamento from tb_pagamentos pg
+            const quey = `SELECT pg.id_venda,cl.nom_cliente,SUM(pg.vl_pagamento) as vl_pagamento,
+            SUM(pg.vl_pagamento * (cb.comissao/100)) as vl_comissao 
+            FROM tb_pagamentos pg
             LEFT JOIN tb_vendas vd ON vd.id = pg.id_venda AND vd.entidade_negocio = pg.entidade_negocio
             LEFT JOIN tb_clientes cl ON cl.cpf_cliente = vd.cpf_cliente
+            LEFT JOIN tb_cobradores cb ON cb.id = pg.id_cobrador AND cb.entidade_negocio = pg.entidade_negocio
             WHERE pg.entidade_negocio = :entidade_negocio AND pg.id_cobrador = :id_cobrador 
-            AND (pg.dt_pagamento >= :dt_ini AND pg.dt_pagamento <= :dt_fim) AND pg.num_recibo IS NULL`
+            AND (pg.dt_pagamento >= :dt_ini AND pg.dt_pagamento <= :dt_fim) AND pg.num_recibo IS NULL
+            GROUP BY pg.id_venda,cl.nom_cliente`
             
             resdata.data.vendas = await pagamentos.ExecuteQuery(quey,{
                 entidade_negocio,
@@ -1011,7 +1200,369 @@ export class ControllerComissoes {
         res.status(resdata.status).json(resdata);
     }
 
-    static async ListarComissoesPagasPorRecibo(req,res) {
+    /*********************************************************
+    * Recibos de Pagamentos Comissões Vendedor
+    **********************************************************/
+    static async EditarReciboVendedor(req,res) {
+
+        const db = new Database('dbcred');
+
+        const resdata = {
+            err: 0,
+            status: 200,
+            msg: '',
+            data: []
+        }
+
+        try {
+
+            void await db.Connect();
+            
+            const entidade_negocio = obterEntidadeNegocio(req);
+            const num_recibo = String(req.params.num_recibo);
+
+            if (!num_recibo) {
+                const error = new Error('Numero do Recibo invalido.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            const comissoes = new Comissoes(db.connection, entidade_negocio);
+
+            const data = await comissoes.FindById(num_recibo);
+
+            if (!comissoes.found) {
+                const error = new Error('Numero de Recibo nao encontrado.');
+                error.statusCode = 404;
+                throw error;
+            }
+
+            resdata.data = data;
+
+        } catch (error) {
+            
+            resdata.err = Number(error.statusCode || 500);
+            resdata.msg = error.message;
+            resdata.status = Number(error.statusCode || 500);
+
+            if (resdata.status === 500) {
+                GravarLog('ControllerCobranca.ListarHistoricoAdiantamentos', error.stack);
+            }   
+
+        }
+
+        void await db.Close();
+
+        res.status(resdata.status).json(resdata);
+
+    }
+
+    static async SalvarReciboVendedor(req,res) {
+
+        const db = new Database('dbcred');
+
+        const resdata = {
+            err: 0,
+            status: 200,
+            msg: '',
+            data: []
+        }
+
+        try {
+
+            void await db.Connect();
+            void await db.Begin();
+
+            const entidade_negocio = obterEntidadeNegocio(req);
+            const body = req.body || {};
+
+            const num_recibo = String(body.num_recibo || '').trim();
+            const id_vendedor = Number(body.id_vendedor || 0);
+            const dt_recibo = String(body.dt_recibo || '').trim();
+            const tp_recibo = String(body.tp_recibo || '').trim();
+            const vl_recibo = parseFloat(body.vl_recibo || 0);
+            const vl_adiant = parseFloat(body.vl_adiant || 0);
+
+            if (!id_vendedor || id_vendedor <= 0) {
+                const error = new Error('ID do Vendedor invalido.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (!dt_recibo) {
+                const error = new Error('Data do recibo nao informada.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (!tp_recibo) {
+                const error = new Error('Tipo de recibo nao informado.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (vl_recibo <= 0) {
+                const error = new Error('Valor do recibo deve ser maior que zero.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            const comissoes = new Comissoes(db.connection, entidade_negocio);
+
+            void await comissoes.FindById(num_recibo);
+
+            comissoes.dt_recibo = dt_recibo;
+            comissoes.tp_recibo = tp_recibo;
+            comissoes.vl_recibo = vl_recibo;
+            comissoes.vl_adiant = vl_adiant;
+            comissoes.id_colaborador = id_vendedor;
+
+            await comissoes.Save();
+
+            const updated_vendas = `UPDATE tb_vendas SET num_recibo = :num_recibo 
+            WHERE entidade_negocio = :entidade_negocio AND id_vendedor = :id_vendedor AND num_recibo IS NULL`;
+
+            void await db.connection.execute(updated_pagamentos,{entidade_negocio,id_vendedor,num_recibo: comissoes.num_recibo});
+
+            const updated_adiantamentos = `UPDATE tb_adiantamentos SET num_recibo = :num_recibo 
+            WHERE entidade_negocio = :entidade_negocio AND id_vendedor = :id_vendedor AND num_recibo IS NULL`;
+
+            void await db.connection.execute(updated_adiantamentos,{entidade_negocio,id_vendedor,num_recibo: comissoes.num_recibo});
+
+            void await db.Commit();
+
+            resdata.data = {
+                num_recibo: comissoes.num_recibo,
+                id_cobrador: comissoes.id_colaborador
+            };
+
+            resdata.msg = comissoes.found ? 'Comissao atualizada com sucesso.' : 'Comissao registrada com sucesso.';
+
+        } catch (error) {
+
+            void await db.RollBack();
+
+            resdata.err = Number(error.statusCode || 500);
+            resdata.msg = error.message;
+            resdata.status = Number(error.statusCode || 500);
+
+            GravarLog('ControllerComissoes.SalvarReciboCobrador', error.stack);
+
+        }
+
+        void await db.Close();
+
+        res.status(resdata.status).json(resdata);
+    }
+
+    static async ExcluirReciboVendedor(req,res) {
+
+        const db = new Database('dbcred');
+
+        const resdata = {
+            err: 0,
+            status: 200,
+            msg: '',
+            data: []
+        }
+
+        try {
+
+            const entidade_negocio = obterEntidadeNegocio(req);
+            const num_recibo = String(req.params.num_recibo || '').trim();
+            const id_vendedor = Number(req.params.id_vendedor || 0);
+
+            if (!num_recibo) {
+                const error = new Error('Numero de recibo invalido.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (!id_vendedor || id_vendedor <= 0) {
+                const error = new Error('ID do Vendedor invalido.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            void await db.Connect();
+            void await db.Begin();
+
+            const comissoes = new Comissoes(db.connection, entidade_negocio);
+
+            void await comissoes.FindById(num_recibo);
+
+            if (!comissoes.found) {
+                const error = new Error('Recibo nao encontrado.');
+                error.statusCode = 404;
+                throw error;
+            }
+
+            const updated_vendas = `UPDATE tb_vendas SET num_recibo = Null
+            WHERE entidade_negocio = :entidade_negocio AND id_vendedor = :id_vendedor AND num_recibo = :num_recibo`;
+
+            void await db.connection.execute(updated_vendas,{entidade_negocio,id_vendedor,num_recibo});
+
+            const updated_adiantamentos = `UPDATE tb_adiantamentos SET num_recibo = Null
+            WHERE entidade_negocio = :entidade_negocio AND id_vendedor = :id_vendedor AND num_recibo = :num_recibo`;
+
+            void await db.connection.execute(updated_adiantamentos,{entidade_negocio,id_vendedor,num_recibo});
+
+            await comissoes.Excluir();
+
+            void await db.Commit();
+
+            resdata.msg = 'Recibo excluido com sucesso.';
+
+        } catch (error) {
+
+            void await db.RollBack();
+
+            resdata.err = Number(error.statusCode || 500);
+            resdata.msg = error.message;
+            resdata.status = Number(error.statusCode || 500);
+
+            if (resdata.status === 500) {
+                GravarLog('ControllerComissoes.ExcluirReciboCobrador', error.stack);
+            }
+
+        }
+
+        void await db.Close();
+
+        res.status(resdata.status).json(resdata);
+    }
+
+    static async ListarComissoesVendedor(req,res) {
+
+        const db = new Database('dbcred');
+
+        const resdata = {
+            err: 0,
+            status: 200,
+            msg: '',
+            data: {
+                comissoes: [],
+                paginacao: {
+                    page: 1,
+                    limit: 50,
+                    total: 0,
+                    total_pages: 0
+                }
+            }
+        }
+
+        try {
+
+            const entidade_negocio = obterEntidadeNegocio(req);
+            const id_vendedor = Number(req.params.id_vendedor|| 0);
+
+            const dt_ini = String(req.query.dt_ini || '').trim();
+            const dt_fim = String(req.query.dt_fim || '').trim();
+            const page = Math.max(1, Number(req.query.page || 1));
+            const limit = Math.min(200, Math.max(1, Number(req.query.limit || 50)));
+            const offset = (page - 1) * limit;
+
+            if (!id_vendedor || id_vendedor <= 0) {
+                const error = new Error('ID do Vendedor invalido.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (!dt_ini || !dt_fim) {
+                const error = new Error('Informe data inicial e data final.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(dt_ini)) {
+                const error = new Error('Data inicial invalida.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(dt_fim)) {
+                const error = new Error('Data final invalida.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (dt_ini > dt_fim) {
+                const error = new Error('Data inicial nao pode ser maior que data final.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            const dtIniDate = new Date(`${dt_ini}T00:00:00Z`);
+            const dtFimDate = new Date(`${dt_fim}T00:00:00Z`);
+            const diffMs = dtFimDate.getTime() - dtIniDate.getTime();
+            const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+            if (diffDays >= 45) {
+                const error = new Error('Intervalo deve ser inferior a 45 dias.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            void await db.Connect();
+
+            const comissoes = new Comissoes(db.connection, entidade_negocio);
+
+            let query = `SELECT cm.num_recibo, cm.dt_recibo, cm.tp_recibo, cm.vl_recibo, cm.vl_adiant, 
+                        (cm.vl_recibo - cm.vl_adiant) as vl_comissao, vd.nom_vendedor
+                        FROM tb_comissoes cm
+                        LEFT JOIN tb_vendedores vd ON vd.entidade_negocio = cm.entidade_negocio AND vd.id = cm.id_colaborador
+                        WHERE cm.entidade_negocio = :entidade_negocio AND cm.id_colaborador = :id_vendedor
+                        AND cm.dt_recibo >= :dt_ini AND cm.dt_recibo <= :dt_fim
+                        ORDER BY cm.dt_recibo DESC, cm.num_recibo DESC
+                        LIMIT :limit OFFSET :offset`;
+
+            resdata.data.comissoes = await comissoes.ExecuteQuery(query, [
+                entidade_negocio,
+                id_vendedor,
+                dt_ini,
+                dt_fim,
+                limit,
+                offset
+            ]);
+
+            query = `SELECT COUNT(*) AS total FROM tb_comissoes 
+                    WHERE entidade_negocio = :entidade_negocio AND id_colaborador = :id_vendedor
+                    AND dt_recibo >= :dt_ini AND dt_recibo <= dt_fim`;
+
+            const [countResult] = await comissoes.ExecuteQuery(query, [
+                entidade_negocio,
+                id_vendedor,
+                dt_ini,
+                dt_fim
+            ]);
+
+            const total = Number(countResult?.total || 0);
+
+            resdata.data.paginacao = {
+                page,
+                limit,
+                total,
+                total_pages: total > 0 ? Math.ceil(total / limit) : 0
+            };
+
+        } catch (error) {
+
+            resdata.err = Number(error.statusCode || 500);
+            resdata.msg = error.message;
+            resdata.status = Number(error.statusCode || 500);
+
+            if (resdata.status === 500) {
+                GravarLog('ControllerComissoes.ListarComissoesVendedor', error.stack);
+            }
+
+        }
+
+        void await db.Close();
+
+        res.status(resdata.status).json(resdata);
+    }
+
+    static async ListarComissoesNaoPagasVendedor(req,res) {
 
         const db = new Database('dbcred'); 
 
@@ -1020,8 +1571,7 @@ export class ControllerComissoes {
             status: 200,
             msg: '',
             data: {
-                pagamentos: [],
-                adiantamentos:[]
+                vendas: []
             }
         }
 
@@ -1030,27 +1580,58 @@ export class ControllerComissoes {
             void await db.Connect();
             
             const entidade_negocio = obterEntidadeNegocio(req);
-            const num_rebibo = String(req.params.num_rebibo).trim();
-            
-            if (!num_rebibo || num_rebibo == '') {
-                const error = new Error('Numero do Recibo invalido')
+            const id_vendedor = Number(req.params.id_vendedor || 0);
+            const dt_ini = String(req.query.dt_ini || '').trim();
+            const dt_fim = String(req.query.dt_fim || '').trim();
+
+            if (!dt_ini || !dt_fim) {
+                const error = new Error('Informe data inicial e data final.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(dt_ini)) {
+                const error = new Error('Data inicial invalida.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(dt_fim)) {
+                const error = new Error('Data final invalida.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (dt_ini > dt_fim) {
+                const error = new Error('Data inicial nao pode ser maior que data final.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (!id_vendedor || id_vendedor <=0) {
+                const error = new Error('ID Vendedor invalido')
                 error.statusCode = 400;
                 throw error;
             }
 
             const pagamentos = new Pagamentos(db.connection,entidade_negocio);
 
-            let query = `SELECT pg.id_venda,pg.dt_pagamento,cl.nom_cliente,pg.vl_pagamento from tb_pagamentos pg
+            const quey = `SELECT pg.id_venda,cl.nom_cliente,SUM(pg.vl_pagamento) as vl_pagamento,
+            SUM(pg.vl_pagamento * (vr.comissao/100)) as vl_comissao 
+            FROM tb_pagamentos pg
             LEFT JOIN tb_vendas vd ON vd.id = pg.id_venda AND vd.entidade_negocio = pg.entidade_negocio
             LEFT JOIN tb_clientes cl ON cl.cpf_cliente = vd.cpf_cliente
-            WHERE pg.entidade_negocio = :entidade_negocio AND pg.num_recibo = :num_recibo`
+            LEFT JOIN tb_vendedores vr ON vr.id = pg.id_cobrador AND vr.entidade_negocio = pg.entidade_negocio
+            WHERE pg.entidade_negocio = :entidade_negocio AND pg.id_vendedor = :id_vendedor 
+            AND (pg.dt_pagamento >= :dt_ini AND pg.dt_pagamento <= :dt_fim) AND pg.num_recibo IS NULL
+            GROUP BY pg.id_venda,cl.nom_cliente`
             
-            resdata.data.pagamentos = await pagamentos.ExecuteQuery(query,{
+            resdata.data.vendas = await pagamentos.ExecuteQuery(quey,{
                 entidade_negocio,
-                num_rebibo
+                id_vendedor,
+                dt_ini,
+                dt_fim
             });
-
-            query = `SELECT  FROM tb_adiantamentos` 
 
         } catch (error) {
 

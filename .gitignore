@@ -1,4 +1,5 @@
 node_modules
+*.sql
 *.cjs
 *.env
 *.txt
@@ -13,6 +14,7 @@ coverage
 .DS_Store
 .vscode
 .idea
+*.txt
 *.log
 *.tmp
 *.bak
