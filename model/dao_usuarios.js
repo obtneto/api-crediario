@@ -75,9 +75,9 @@ export default class Usuarios {
 
         try {
             
-            let query = `SELECT * FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio AND usuario = :usuario`;
+            let query = `SELECT * FROM ${this.#tb_name} WHERE usuario = :usuario`;
             
-            const [rows] = await this.#conn.query(query,{entidade_negocio: this.#entidade_negocio,usuario});
+            const [rows] = await this.#conn.query(query,{usuario});
 
             if (rows) {
                 this.id = Number(rows.id);

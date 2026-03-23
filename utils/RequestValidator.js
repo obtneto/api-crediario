@@ -31,10 +31,20 @@ export const clienteSalvarSchema = z.object({
 });
 
 export const usuarioSalvarSchema = z.object({
+    id: z.coerce.number().int().nonnegative().optional(),
     usuario: z.string().min(1),
     nom_completo: z.string().min(1),
-    email: z.string().email().optional(),
-    id_perfil: z.number().int().nonnegative().optional(),
-    reset_password: z.boolean().optional(),
+    email: z.string().trim().email().optional(),
+    id_perfil: z.coerce.number().int().nonnegative().optional(),
+    reset_password: z.union([
+        z.boolean(),
+        z.coerce.number().int().min(0).max(1)
+    ]).transform((value) => {
+        if (typeof value === 'boolean') {
+            return value;
+        }
+
+        return Number(value) === 1;
+    }).optional(),
     password: z.string().optional()
 });

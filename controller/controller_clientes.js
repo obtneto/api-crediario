@@ -2,6 +2,7 @@ import Database from '../connections/dbconn.js';
 import Clientes from '../model/dao_clientes.js';
 import GravarLog from '../utils/GravarLog.js'; 
 import { validate, clienteSalvarSchema } from '../utils/RequestValidator.js';
+import enviarEmailResend from '../utils/EnvioEmail.js';
 
 export class ControllerClientes {
 
@@ -192,6 +193,13 @@ export class ControllerClientes {
             void await db.Commit();
 
             resdata.msg = "Cliente Salvo com sucesso.";    
+
+            /*await enviarEmailResend({
+                from: "Crediario <onboarding@resend.dev>",
+                to: 'obtneto@gmail.com',
+                subject: 'Teste',
+                html: '<p>Ola!</p>'
+            });*/
 
             
         } catch (error) {

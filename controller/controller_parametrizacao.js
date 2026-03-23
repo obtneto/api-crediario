@@ -642,7 +642,7 @@ export class ControllerUsuarios{
             let {id,usuario,nom_completo,email,id_perfil,reset_password,password} = req.body;
             const entidade = obterEntidadeNegocio(req);
 
-            const validated = validate(usuarioSalvarSchema, {usuario,nom_completo,email,id_perfil,reset_password,password});
+            const validated = validate(usuarioSalvarSchema, {id,usuario,nom_completo,email,id_perfil,reset_password,password});
             ({ id, usuario, nom_completo, email, id_perfil, reset_password, password } = validated);
 
             const passwordNormalizado = String(password || '').trim();
@@ -654,6 +654,12 @@ export class ControllerUsuarios{
             const usuarios = new Usuarios(db.connection, entidade);
 
             void await usuarios.FindByUser(usuario);
+
+            if (usuarios.found && id == 0) {
+                const error = new Error('Usuario já cadastrado.');
+                error.statusCode = 404;
+                throw error;
+            }
 
             const usuarioExistente = Boolean(usuarios.found);
 

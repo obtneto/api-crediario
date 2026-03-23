@@ -1,0 +1,90 @@
+[23/03/2026 21:36:31] ControllerUsuarios.Salvar: Error: Validation failed: [{"path":"reset_password","message":"Expected boolean, received number"}]
+    at validate (file:///home/ovidio.neto/Crediario/backend/utils/RequestValidator.js:7:23)
+    at Salvar (file:///home/ovidio.neto/Crediario/backend/controller/controller_parametrizacao.js:645:31)
+    at Layer.handleRequest (/home/ovidio.neto/Crediario/backend/node_modules/router/lib/layer.js:152:17)
+    at next (/home/ovidio.neto/Crediario/backend/node_modules/router/lib/route.js:157:13)
+    at Route.dispatch (/home/ovidio.neto/Crediario/backend/node_modules/router/lib/route.js:117:3)
+    at handle (/home/ovidio.neto/Crediario/backend/node_modules/router/index.js:435:11)
+    at Layer.handleRequest (/home/ovidio.neto/Crediario/backend/node_modules/router/lib/layer.js:152:17)
+    at /home/ovidio.neto/Crediario/backend/node_modules/router/index.js:295:15
+    at processParams (/home/ovidio.neto/Crediario/backend/node_modules/router/index.js:582:12)
+    at next (/home/ovidio.neto/Crediario/backend/node_modules/router/index.js:291:5)
+
+[23/03/2026 21:43:32] ControllerUsuarios.Salvar: Error: Usuario já cadastrado.
+    at Salvar (file:///home/ovidio.neto/Crediario/backend/controller/controller_parametrizacao.js:659:31)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+
+[23/03/2026 21:45:12] ControllerUsuarios.Salvar: Error: Usuario já cadastrado.
+    at Salvar (file:///home/ovidio.neto/Crediario/backend/controller/controller_parametrizacao.js:659:31)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+
+[23/03/2026 22:24:40] Erro ao salvar cliente: RESEND_FROM_EMAIL nao configurado.: undefined
+
+[23/03/2026 22:27:17] Erro ao salvar cliente: RESEND_FROM_EMAIL nao configurado.: undefined
+
+[23/03/2026 22:27:48] Erro ao salvar cliente: RESEND_FROM_EMAIL nao configurado.: undefined
+
+[23/03/2026 22:28:35] Erro ao salvar cliente: RESEND_FROM_EMAIL nao configurado.: undefined
+
+[23/03/2026 22:31:29] EnvioEmail.enviarEmailResend: Error: RESEND_API_KEY nao configurada.
+    at getResendClient (file:///home/ovidio.neto/Crediario/backend/utils/EnvioEmail.js:12:15)
+    at enviarEmailResend (file:///home/ovidio.neto/Crediario/backend/utils/EnvioEmail.js:130:24)
+    at Salvar (file:///home/ovidio.neto/Crediario/backend/controller/controller_clientes.js:197:19)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+
+[23/03/2026 22:31:29] Erro ao salvar cliente: RESEND_API_KEY nao configurada.: undefined
+
+[23/03/2026 22:31:57] EnvioEmail.enviarEmailResend: Error: RESEND_API_KEY nao configurada.
+    at getResendClient (file:///home/ovidio.neto/Crediario/backend/utils/EnvioEmail.js:12:15)
+    at enviarEmailResend (file:///home/ovidio.neto/Crediario/backend/utils/EnvioEmail.js:130:24)
+    at Salvar (file:///home/ovidio.neto/Crediario/backend/controller/controller_clientes.js:197:19)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+
+[23/03/2026 22:31:57] Erro ao salvar cliente: RESEND_API_KEY nao configurada.: undefined
+
+[23/03/2026 22:32:30] EnvioEmail.enviarEmailResend: Error: RESEND_API_KEY nao configurada.
+    at getResendClient (file:///home/ovidio.neto/Crediario/backend/utils/EnvioEmail.js:12:15)
+    at enviarEmailResend (file:///home/ovidio.neto/Crediario/backend/utils/EnvioEmail.js:130:24)
+    at Salvar (file:///home/ovidio.neto/Crediario/backend/controller/controller_clientes.js:197:19)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+
+[23/03/2026 22:32:30] Erro ao salvar cliente: RESEND_API_KEY nao configurada.: undefined
+
+[23/03/2026 22:32:46] EnvioEmail.enviarEmailResend: Error: RESEND_API_KEY nao configurada.
+    at getResendClient (file:///home/ovidio.neto/Crediario/backend/utils/EnvioEmail.js:12:15)
+    at enviarEmailResend (file:///home/ovidio.neto/Crediario/backend/utils/EnvioEmail.js:130:24)
+    at Salvar (file:///home/ovidio.neto/Crediario/backend/controller/controller_clientes.js:197:19)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+
+[23/03/2026 22:32:46] Erro ao salvar cliente: RESEND_API_KEY nao configurada.: undefined
+
+[23/03/2026 22:33:28] EnvioEmail.enviarEmailResend: Error: RESEND_API_KEY nao configurada.
+    at getResendClient (file:///home/ovidio.neto/Crediario/backend/utils/EnvioEmail.js:12:15)
+    at enviarEmailResend (file:///home/ovidio.neto/Crediario/backend/utils/EnvioEmail.js:130:24)
+    at Salvar (file:///home/ovidio.neto/Crediario/backend/controller/controller_clientes.js:197:19)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+
+[23/03/2026 22:33:28] Erro ao salvar cliente: RESEND_API_KEY nao configurada.: undefined
+
+[23/03/2026 22:33:50] EnvioEmail.enviarEmailResend: Error: RESEND_API_KEY nao configurada.
+    at getResendClient (file:///home/ovidio.neto/Crediario/backend/utils/EnvioEmail.js:12:15)
+    at enviarEmailResend (file:///home/ovidio.neto/Crediario/backend/utils/EnvioEmail.js:130:24)
+    at Salvar (file:///home/ovidio.neto/Crediario/backend/controller/controller_clientes.js:197:19)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+
+[23/03/2026 22:33:50] Erro ao salvar cliente: RESEND_API_KEY nao configurada.: undefined
+
+[23/03/2026 22:34:59] EnvioEmail.enviarEmailResend: Error: The mail.seudominio.com.br domain is not verified. Please, add and verify your domain on https://resend.com/domains
+    at enviarEmailResend (file:///home/ovidio.neto/Crediario/backend/utils/EnvioEmail.js:134:19)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async Salvar (file:///home/ovidio.neto/Crediario/backend/controller/controller_clientes.js:197:13)
+
+[23/03/2026 22:34:59] Erro ao salvar cliente: The mail.seudominio.com.br domain is not verified. Please, add and verify your domain on https://resend.com/domains: undefined
+
+[23/03/2026 22:35:07] EnvioEmail.enviarEmailResend: Error: The mail.seudominio.com.br domain is not verified. Please, add and verify your domain on https://resend.com/domains
+    at enviarEmailResend (file:///home/ovidio.neto/Crediario/backend/utils/EnvioEmail.js:134:19)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async Salvar (file:///home/ovidio.neto/Crediario/backend/controller/controller_clientes.js:197:13)
+
+[23/03/2026 22:35:07] Erro ao salvar cliente: The mail.seudominio.com.br domain is not verified. Please, add and verify your domain on https://resend.com/domains: undefined
+
