@@ -8,6 +8,91 @@ import Vendas from '../model/dao_vendas.js';
 import Comissoes from '../model/dao_comissoes.js';
 import {buildTableDocument, formatCurrencyBR, formatDateBR, sendPdfResponse} from '../utils/PdfReport.js';
 
+function buildReceiptSummaryBox({
+    descricao,
+    tipoRecibo,
+    detalhesExtras = [],
+    valorBruto,
+    valorAdiantado,
+    valorLiquido
+}) {
+    return {
+        margin: [0, 0, 0, 18],
+        layout: {
+            hLineWidth: () => 0.8,
+            vLineWidth: () => 0.8,
+            hLineColor: () => '#cfd4dc',
+            vLineColor: () => '#cfd4dc',
+            paddingLeft: () => 14,
+            paddingRight: () => 14,
+            paddingTop: () => 12,
+            paddingBottom: () => 12
+        },
+        table: {
+            widths: ['*'],
+            body: [[{
+                border: [true, true, true, true],
+                stack: [
+                    { text: descricao, lineHeight: 1.3 },
+                    { text: `Tipo de recibo: ${tipoRecibo}`, margin: [0, 10, 0, 0] },
+                    ...detalhesExtras.map((texto) => ({ text: texto, margin: [0, 4, 0, 0] })),
+                    { text: `Valor bruto da comissao: ${formatCurrencyBR(valorBruto)}`, margin: [0, 4, 0, 0] },
+                    { text: `Adiantamentos abatidos: ${formatCurrencyBR(valorAdiantado)}`, margin: [0, 4, 0, 0] },
+                    { text: `Valor liquido recebido: ${formatCurrencyBR(valorLiquido)}`, margin: [0, 4, 0, 0], bold: true }
+                ]
+            }]]
+        }
+    };
+}
+
+function buildReceiptTotalsAndSignature({
+    totals,
+    signatoryName,
+    signatoryLabel
+}) {
+    const hasTotals = Array.isArray(totals) && totals.length > 0;
+    const signatureBlock = {
+        width: 220,
+        stack: [
+            {
+                canvas: [
+                    { type: 'line', x1: 0, y1: 0, x2: 180, y2: 0, lineWidth: 0.8, lineColor: '#111827' }
+                ],
+                margin: [20, 26, 20, 0]
+            },
+            { text: signatoryName, alignment: 'center', margin: [0, 8, 0, 0], bold: true },
+            { text: signatoryLabel, alignment: 'center', fontSize: 8, color: '#4a5568' }
+        ]
+    };
+
+    if (!hasTotals) {
+        return {
+            margin: [0, 16, 0, 0],
+            stack: [
+                {
+                    columns: [
+                        { width: '*', text: '' },
+                        signatureBlock,
+                        { width: '*', text: '' }
+                    ]
+                }
+            ]
+        };
+    }
+
+    return {
+        margin: [0, 16, 0, 0],
+        columnGap: 24,
+        columns: [
+            {
+                width: '*',
+                stack: totals
+            },
+            signatureBlock
+        ]
+    };
+}
+
 export class ControllerComissoes {
 
     /*********************************************************
@@ -539,8 +624,7 @@ export class ControllerComissoes {
                     ]))
                 ]
                 : [[
-                    { text: 'Nenhum pagamento vinculado a este recibo.', colSpan: 5, alignment: 'center', margin: [0, 6, 0, 6] },
-                    {},
+                    { text: 'Nenhum pagamento vinculado a este recibo.', colSpan: 4, alignment: 'center', margin: [0, 6, 0, 6] },
                     {},
                     {},
                     {}
@@ -587,18 +671,16 @@ export class ControllerComissoes {
                         margin: [0, 0, 0, 18]
                     },
                     {
-                        canvas: [{ type: 'rect', x: 0, y: 0, w: 539, h: 92, lineColor: '#cfd4dc', r: 4 }],
-                        margin: [0, 0, 0, -92]
-                    },
-                    {
-                        margin: [14, 12, 14, 18],
-                        stack: [
-                            { text: `Recebi de ${nomeEntidade} a importancia liquida de ${formatCurrencyBR(valorLiquido)} referente ao pagamento de comissao do cobrador ${nomeCobrador}.`, lineHeight: 1.3 },
-                            { text: `Tipo de recibo: ${String(itemRecibo?.tp_recibo || 'COMISSAO COBRADOR')}`, margin: [0, 10, 0, 0] },
-                            { text: `Valor bruto da comissao: ${formatCurrencyBR(valorRecibo)}`, margin: [0, 4, 0, 0] },
-                            { text: `Adiantamentos abatidos: ${formatCurrencyBR(valorAdiantado)}`, margin: [0, 4, 0, 0] },
-                            { text: `Valor liquido recebido: ${formatCurrencyBR(valorLiquido)}`, margin: [0, 4, 0, 0], bold: true }
-                        ]
+                        ...buildReceiptSummaryBox({
+                            descricao: `Recebi de ${nomeEntidade} a importancia liquida de ${formatCurrencyBR(valorLiquido)} referente ao pagamento de comissao do cobrador ${nomeCobrador}.`,
+                            tipoRecibo: String(itemRecibo?.tp_recibo || 'COMISSAO COBRADOR'),
+                            detalhesExtras: [
+                                `Total recebido em cobrancas: ${formatCurrencyBR(totalPagamentos)}`
+                            ],
+                            valorBruto: valorRecibo,
+                            valorAdiantado,
+                            valorLiquido
+                        })
                     },
                     {
                         columns: [
@@ -652,20 +734,11 @@ export class ControllerComissoes {
                         }
                     },
                     {
-                        margin: [0, 16, 0, 0],
-                        columns: [
-                            [
-                                { text: `Total recebido em cobrancas: ${formatCurrencyBR(totalPagamentos)}` },
-                                { text: `Total de comissao: ${formatCurrencyBR(totalComissao)}`, margin: [0, 4, 0, 0] },
-                                { text: `Total de adiantamentos: ${formatCurrencyBR(totalAdiantamentos)}`, margin: [0, 4, 0, 0] },
-                                { text: `Liquido do recibo: ${formatCurrencyBR(valorLiquido)}`, margin: [0, 4, 0, 0], bold: true }
-                            ],
-                            [
-                                { text: '________________________________________', alignment: 'center', margin: [0, 26, 0, 0] },
-                                { text: nomeCobrador, alignment: 'center', margin: [0, 4, 0, 0], bold: true },
-                                { text: 'Assinatura do cobrador', alignment: 'center', fontSize: 8, color: '#4a5568' }
-                            ]
-                        ]
+                        ...buildReceiptTotalsAndSignature({
+                            totals: [],
+                            signatoryName: nomeCobrador,
+                            signatoryLabel: 'Assinatura do cobrador'
+                        })
                     }
                 ],
                 footer(currentPage, pageCount) {
@@ -744,7 +817,7 @@ export class ControllerComissoes {
 
             const itemEntidade = Array.isArray(entidade) ? entidade[0] : null;
             const nomeEntidade = String(itemEntidade?.nom_entidade || entidade_negocio);
-            const nomeCobrador = String(itemRecibo?.nom_cobrador || '-');
+            const nomeVendedor = String(itemRecibo?.nom_vendedor || '-');
             const valorRecibo = Number(itemRecibo?.vl_recibo || 0);
             const valorAdiantado = Number(itemRecibo?.vl_adiant || 0);
             const valorLiquido = valorRecibo - valorAdiantado;
@@ -784,7 +857,7 @@ export class ControllerComissoes {
             const vendasBody = Array.isArray(rowsVendas) && rowsVendas.length > 0
                 ? [
                     [
-                        { text: 'Vendas', bold: true, fontSize: 8, alignment: 'left' },
+                        { text: 'Venda', bold: true, fontSize: 8, alignment: 'left' },
                         //{ text: 'Data', bold: true, fontSize: 8, alignment: 'left' },
                         { text: 'Cliente', bold: true, fontSize: 8, alignment: 'left' },
                         { text: 'Valor', bold: true, fontSize: 8, alignment: 'right' },
@@ -799,8 +872,7 @@ export class ControllerComissoes {
                     ]))
                 ]
                 : [[
-                    { text: 'Nenhum pagamento vinculado a este recibo.', colSpan: 5, alignment: 'center', margin: [0, 6, 0, 6] },
-                    {},
+                    { text: 'Nenhuma venda vinculada a este recibo.', colSpan: 4, alignment: 'center', margin: [0, 6, 0, 6] },
                     {},
                     {},
                     {}
@@ -847,28 +919,26 @@ export class ControllerComissoes {
                         margin: [0, 0, 0, 18]
                     },
                     {
-                        canvas: [{ type: 'rect', x: 0, y: 0, w: 539, h: 92, lineColor: '#cfd4dc', r: 4 }],
-                        margin: [0, 0, 0, -92]
-                    },
-                    {
-                        margin: [14, 12, 14, 18],
-                        stack: [
-                            { text: `Recebi de ${nomeEntidade} a importancia liquida de ${formatCurrencyBR(valorLiquido)} referente ao pagamento de comissao do cobrador ${nomeCobrador}.`, lineHeight: 1.3 },
-                            { text: `Tipo de recibo: ${String(itemRecibo?.tp_recibo || 'COMISSAO COBRADOR')}`, margin: [0, 10, 0, 0] },
-                            { text: `Valor bruto da comissao: ${formatCurrencyBR(valorRecibo)}`, margin: [0, 4, 0, 0] },
-                            { text: `Adiantamentos abatidos: ${formatCurrencyBR(valorAdiantado)}`, margin: [0, 4, 0, 0] },
-                            { text: `Valor liquido recebido: ${formatCurrencyBR(valorLiquido)}`, margin: [0, 4, 0, 0], bold: true }
-                        ]
+                        ...buildReceiptSummaryBox({
+                            descricao: `Recebi de ${nomeEntidade} a importancia liquida de ${formatCurrencyBR(valorLiquido)} referente ao pagamento de comissao do vendedor ${nomeVendedor}.`,
+                            tipoRecibo: String(itemRecibo?.tp_recibo || 'COMISSAO VENDEDOR'),
+                            detalhesExtras: [
+                                `Total recebido em cobrancas: ${formatCurrencyBR(totalVendas)}`
+                            ],
+                            valorBruto: valorRecibo,
+                            valorAdiantado,
+                            valorLiquido
+                        })
                     },
                     {
                         columns: [
-                            { text: `Cobrador: ${nomeCobrador}`, bold: true },
+                            { text: `Vendedor: ${nomeVendedor}`, bold: true },
                             { text: `Entidade: ${nomeEntidade}`, alignment: 'right' }
                         ],
                         margin: [0, 0, 0, 8]
                     },
                     {
-                        text: 'Pagamentos vinculados',
+                        text: 'Vendas vinculados',
                         bold: true,
                         fontSize: 10,
                         margin: [0, 8, 0, 6]
@@ -912,20 +982,11 @@ export class ControllerComissoes {
                         }
                     },
                     {
-                        margin: [0, 16, 0, 0],
-                        columns: [
-                            [
-                                { text: `Total recebido em cobrancas: ${formatCurrencyBR(totalVendas)}` },
-                                { text: `Total de comissao: ${formatCurrencyBR(totalComissao)}`, margin: [0, 4, 0, 0] },
-                                { text: `Total de adiantamentos: ${formatCurrencyBR(totalAdiantamentos)}`, margin: [0, 4, 0, 0] },
-                                { text: `Liquido do recibo: ${formatCurrencyBR(valorLiquido)}`, margin: [0, 4, 0, 0], bold: true }
-                            ],
-                            [
-                                { text: '________________________________________', alignment: 'center', margin: [0, 26, 0, 0] },
-                                { text: nomeCobrador, alignment: 'center', margin: [0, 4, 0, 0], bold: true },
-                                { text: 'Assinatura do cobrador', alignment: 'center', fontSize: 8, color: '#4a5568' }
-                            ]
-                        ]
+                        ...buildReceiptTotalsAndSignature({
+                            totals: [],
+                            signatoryName: nomeVendedor,
+                            signatoryLabel: 'Assinatura do vendedor'
+                        })
                     }
                 ],
                 footer(currentPage, pageCount) {
