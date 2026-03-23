@@ -31,7 +31,7 @@ export class ControllerEstoque {
             const estoque = new Estoque(db.connection, entidade_negocio );
 
             const params = [entidade_negocio];
-            let query = `SELECT e.id_produto, p.nom_produto, p.mar_produto, p.und_produto, e.qt_reservada, e.qt_disponivel
+            let query = `SELECT e.id_produto, p.nom_produto, p.mar_produto, p.und_produto, p.estq_min, p.estq_max, e.qt_reservada, e.qt_disponivel
             FROM tb_estoque e
             LEFT JOIN tb_produtos p ON p.id = e.id_produto AND p.entidade_negocio = e.entidade_negocio
             WHERE e.entidade_negocio = ?`;
