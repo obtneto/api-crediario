@@ -12,7 +12,7 @@ export function validate(schema, data) {
 }
 
 export const authSessionSchema = z.object({
-    entidade_negocio: z.number().int().positive(),
+    entidade_negocio: z.number().int().positive().optional(),
     user: z.string().min(1).trim(),
     password: z.string().min(1)
 });

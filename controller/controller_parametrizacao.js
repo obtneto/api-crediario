@@ -58,24 +58,25 @@ function montarRespostaAutenticacao(usuario = {}, entidade = {}) {
     };
 }
 
-async function buscarUsuarioAutenticacao(usuarios, entidade_negocio, user) {
+async function buscarUsuariosAutenticacao(connection, user) {
 
     const query = `SELECT u.id, u.usuario, u.nom_completo, u.senha, u.reset_password, u.iniciais,
+        u.entidade_negocio,
         COALESCE(p.id, 0) AS perfil_id,
         COALESCE(p.selecionar, 0) AS selecionar,
         COALESCE(p.inserir, 0) AS inserir,
         COALESCE(p.atualizar, 0) AS atualizar,
-        COALESCE(p.excluir, 0) AS excluir
+        COALESCE(p.excluir, 0) AS excluir,
+        COALESCE(e.nom_entidade, '') AS nom_entidade,
+        COALESCE(e.com_rota_cobranca, 0) AS com_rota_cobranca
         FROM tb_usuarios u
         LEFT JOIN tb_perfis p ON p.id = u.id_perfil AND p.entidade_negocio = u.entidade_negocio
-        WHERE u.usuario = :user AND u.entidade_negocio = :entidade_negocio`;
+        LEFT JOIN tb_entidades e ON e.id = u.entidade_negocio
+        WHERE u.usuario = :user
+        ORDER BY u.entidade_negocio`;
 
-    const [usuario] = await usuarios.ExecuteQuery(query, {
-        user,
-        entidade_negocio
-    });
-
-    return usuario || null;
+    const usuarios = await connection.execute(query, { user });
+    return Array.isArray(usuarios) ? usuarios : [];
 }
 
 async function buscarEntidadeAuth(entidades, entidade_negocio) {
@@ -90,6 +91,27 @@ async function buscarEntidadeAuth(entidades, entidade_negocio) {
 
 function validarFormatoSenha(password = '') {
     return PASSWORD_REGEX.test(String(password || '').trim());
+}
+
+async function filtrarUsuariosPorSenha(usuarios = [], password = '') {
+    const candidatos = [];
+
+    for (const usuario of usuarios) {
+        const senhaResetada = Number(usuario?.reset_password || 0) === 1;
+        let senhaValida = false;
+
+        if (senhaResetada) {
+            senhaValida = password === SENHA_RESET_PADRAO;
+        } else {
+            senhaValida = await validarSenha(password, usuario?.senha);
+        }
+
+        if (senhaValida) {
+            candidatos.push(usuario);
+        }
+    }
+
+    return candidatos;
 }
 
 export class ControllerAuth {
@@ -107,17 +129,15 @@ export class ControllerAuth {
 
         try {
 
-            const entidade_negocio = Number(req.body?.entidade_negocio || 0);
+            const entidade_negocio_informada = Number(req.body?.entidade_negocio || 0);
             const user = String(req.body?.user || '').trim();
             const password = desencriptar(String(req.body?.password || '').trim());
 
-            validate(authSessionSchema, { entidade_negocio, user, password });
-
-            if (entidade_negocio <= 0) {
-                const error = new Error('Entidade de negocio invalida.');
-                error.statusCode = 400;
-                throw error;
-            }
+            validate(authSessionSchema, {
+                entidade_negocio: entidade_negocio_informada > 0 ? entidade_negocio_informada : undefined,
+                user,
+                password
+            });
 
             if (!user) {
                 const error = new Error('Informe o usuario.');
@@ -134,6 +154,49 @@ export class ControllerAuth {
             void await db.Connect();
 
             const entidades = new Entidades(db.connection);
+            const usuariosEncontrados = await buscarUsuariosAutenticacao(db.connection, user);
+
+            const usuariosFiltrados = entidade_negocio_informada > 0
+                ? usuariosEncontrados.filter((item) => Number(item?.entidade_negocio || 0) === entidade_negocio_informada)
+                : usuariosEncontrados;
+
+            if (!usuariosFiltrados.length) {
+                const error = new Error('Usuario ou senha invalidos.');
+                error.statusCode = 401;
+                throw error;
+            }
+
+            const usuariosComSenhaValida = await filtrarUsuariosPorSenha(usuariosFiltrados, password);
+
+            if (!usuariosComSenhaValida.length) {
+                const error = new Error('Usuario ou senha invalidos.');
+                error.statusCode = 401;
+                throw error;
+            }
+
+            if (entidade_negocio_informada <= 0 && usuariosComSenhaValida.length > 1) {
+                const entidadesDuplicadas = usuariosComSenhaValida
+                    .map((item) => String(item?.nom_entidade || `Entidade ${item?.entidade_negocio || ''}`).trim())
+                    .filter(Boolean)
+                    .join(', ');
+                const error = new Error(
+                    entidadesDuplicadas
+                        ? `Encontramos mais de uma conta compativel para este usuario nas entidades (${entidadesDuplicadas}). Contate o administrador para padronizar o login.`
+                        : 'Encontramos mais de uma conta compativel para este usuario. Contate o administrador para padronizar o login.'
+                );
+                error.statusCode = 409;
+                throw error;
+            }
+
+            const usuario = usuariosComSenhaValida[0] || null;
+
+            if (!usuario) {
+                const error = new Error('Usuario ou senha invalidos.');
+                error.statusCode = 401;
+                throw error;
+            }
+
+            const entidade_negocio = Number(usuario.entidade_negocio || entidade_negocio_informada || 0);
             const usuarios = new Usuarios(db.connection, entidade_negocio);
 
             const entidade = await buscarEntidadeAuth(entidades, entidade_negocio);
@@ -144,28 +207,7 @@ export class ControllerAuth {
                 throw error;
             }
 
-            const usuario = await buscarUsuarioAutenticacao(usuarios, entidade_negocio, user);
-
-            if (!usuario) {
-                const error = new Error('Usuario ou senha invalidos.');
-                error.statusCode = 401;
-                throw error;
-            }
-
             const senhaResetada = Number(usuario.reset_password || 0) === 1;
-            let senhaValida = false;
-
-            if (senhaResetada) {
-                senhaValida = password === SENHA_RESET_PADRAO;
-            } else {
-                senhaValida = await validarSenha(password, usuario.senha);
-            }
-
-            if (!senhaValida) {
-                const error = new Error('Usuario ou senha invalidos.');
-                error.statusCode = 401;
-                throw error;
-            }
 
             if (senhaPrecisaUpgrade(usuario.senha)) {
                 try {
