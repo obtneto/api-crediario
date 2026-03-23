@@ -8,8 +8,8 @@ temp
 tmp
 backup
 .sql
-logs
-Logs
+logs.*
+Logs/*.txt
 coverage
 .DS_Store
 .vscode
