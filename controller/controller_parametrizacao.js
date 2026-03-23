@@ -1629,7 +1629,7 @@ export class ControllerProdutos {
 
         try {
 
-            let {id,nom_produto,mar_produto,und_produto,prc_vista,prc_prazo,ativo} = req.body;
+            let {id,nom_produto,mar_produto,und_produto,prc_vista,prc_prazo,estq_max,estq_min,ativo} = req.body;
             const entidade_negocio = obterEntidadeNegocio(req);
             
             void await db.Connect();
@@ -1646,6 +1646,8 @@ export class ControllerProdutos {
             produtos.und_produto = und_produto;
             produtos.prc_vista = prc_vista;
             produtos.prc_prazo = prc_prazo;
+            produtos.estq_max = estq_max;
+            produtos.estq_min = estq_min;
             produtos.ativo = ativo;
 
             void await produtos.Save();

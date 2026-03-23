@@ -12,6 +12,8 @@ export default class Produtos {
         und_produto: '',
         prc_vista: 0,
         prc_prazo: 0,
+        estq_max: 0,
+        estq_min: 0,
         entidade_negocio: 0,
         ativo: 1
     }
@@ -52,6 +54,12 @@ export default class Produtos {
     set prc_prazo(prc_prazo) {this.#field.prc_prazo = parseFloat(prc_prazo)}
     get prc_prazo() {return parseFloat(this.#field.prc_prazo)}
 
+    set estq_max(estq_max) {this.#field.estq_max = Number(estq_max)}
+    get estq_max() {return Number(this.#field.estq_max)}
+
+    set estq_min(estq_min) {this.#field.estq_min = Number(estq_min)}
+    get estq_min() {return Number(this.#field.estq_min)}
+
     set ativo(ativo) {this.#field.ativo = Number(ativo)}
     get ativo() {return Number(this.#field.ativo)}
 
@@ -81,6 +89,8 @@ export default class Produtos {
                 this.und_produto = rows.und_produto;
                 this.prc_vista = rows.prc_vista;
                 this.prc_prazo = rows.prc_prazo;
+                this.estq_max = rows.estq_max;
+                this.estq_min = rows.estq_min;
                 this.ativo = rows.ativo;
                 
                 this.#found = true;
@@ -105,8 +115,9 @@ export default class Produtos {
             
             if (this.#found) {
 
-                query = `UPDATE ${this.#tb_name} SET nom_produto = :nom_produto, mar_produto = :mar_produto, und_produto = :und_produto, 
-                prc_vista = :prc_vista, prc_prazo = :prc_prazo, entidade_negocio = :entidade_negocio, ativo = :ativo
+                query = `UPDATE ${this.#tb_name} SET nom_produto = :nom_produto, mar_produto = :mar_produto, 
+                und_produto = :und_produto, prc_vista = :prc_vista, prc_prazo = :prc_prazo, 
+                estq_max = :estq_max, estq_min = :estq_min, ativo = :ativo
                 WHERE entidade_negocio = :entidade_negocio AND id = :id`;
 
             } else {
@@ -114,7 +125,8 @@ export default class Produtos {
                 this.id = await this.#newId();
 
                 query = `INSERT INTO ${this.#tb_name} SET nom_produto = :nom_produto, mar_produto = :mar_produto, und_produto = :und_produto, 
-                prc_vista = :prc_vista, prc_prazo = :prc_prazo, entidade_negocio = :entidade_negocio, ativo = :ativo, id = :id`
+                prc_vista = :prc_vista, prc_prazo = :prc_prazo, estq_max = :estq_max, estq_min = :estq_min,
+                entidade_negocio = :entidade_negocio, ativo = :ativo, id = :id`
             }
 
             return await this.#conn.query(query,this.#field);
@@ -153,6 +165,5 @@ export default class Produtos {
         }
 
     }
-
 
 }
