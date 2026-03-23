@@ -931,13 +931,6 @@ export class ControllerComissoes {
                         })
                     },
                     {
-                        columns: [
-                            { text: `Vendedor: ${nomeVendedor}`, bold: true },
-                            { text: `Entidade: ${nomeEntidade}`, alignment: 'right' }
-                        ],
-                        margin: [0, 0, 0, 8]
-                    },
-                    {
                         text: 'Vendas vinculados',
                         bold: true,
                         fontSize: 10,

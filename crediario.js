@@ -46,32 +46,49 @@ const defaultAllowedOrigins = [
 ];
 
 const envAllowedOrigins = String(process.env.CORS_ORIGIN || '');
-const allowedOrigins = (process.env.NODE_ENV === 'production' && !envAllowedOrigins)
-    ? []
-    : String(envAllowedOrigins || defaultAllowedOrigins.join(','))
-        .split(',')
-        .map((item) => item.trim())
-        .filter(Boolean);
+const allowedOrigins = String(envAllowedOrigins || defaultAllowedOrigins.join(','))
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+function isAllowedOrigin(origin) {
+    if (!origin) {
+        return true;
+    }
+
+    if (allowedOrigins.includes(origin)) {
+        return true;
+    }
+
+    try {
+        const { hostname } = new URL(origin);
+        return hostname === 'localhost' || hostname === '127.0.0.1';
+    } catch {
+        return false;
+    }
+}
+
+const corsOptions = {
+    origin: (origin, callback) => {
+        console.log('CORS check for origin:', origin);
+
+        if (isAllowedOrigin(origin)) {
+            console.log('CORS allowed for origin:', origin);
+            return callback(null, true);
+        }
+
+        console.log('CORS denied for origin:', origin);
+        return callback(new Error('Origem nao permitida pelo CORS.'));
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-entidade-negocio'],
+    exposedHeaders: ['x-crediario-token']
+};
 
 // Criar o middleware para permitir requisição externa
-app.use(
-    cors({
-        origin: (origin, callback) => {
-            console.log('CORS check for origin:', origin); // Debug log
-            if (!origin) return callback(null, true); // Allow requests with no origin (like mobile apps or curl requests)
-            if (origin.includes('localhost') || origin.includes('127.0.0.1') || origin.includes('192.168.0.7')) {
-                console.log('CORS allowed for origin:', origin);
-                return callback(null, true);
-            }
-            console.log('CORS denied for origin:', origin);
-            return callback(new Error('Origem nao permitida pelo CORS.'));
-        },
-        credentials: true,
-        methods: ['POST','GET','DELETE','OPTIONS'], // metodos permitidos
-        allowedHeaders: ['Content-Type','Authorization','x-entidade-negocio'], // headers permitidos
-        exposedHeaders: ['x-crediario-token']
-    })
-); 
+app.use(cors(corsOptions));
+app.options(/.*/, cors(corsOptions));
 
 app.use(router_param);
 app.use(router_vendas);
