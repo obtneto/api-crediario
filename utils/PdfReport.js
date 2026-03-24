@@ -185,7 +185,7 @@ export function buildTableDocument({
 export async function sendPdfResponse(res, filename, documentDefinition) {
     const buffer = await pdfMake.createPdf(documentDefinition).getBuffer();
     const safeFilename = String(filename || 'relatorio.pdf')
-        .replace(/[^\w.\-]+/g, '-')
+        .replace(/[^\w.-]+/g, '-')
         .replace(/-+/g, '-');
 
     res.setHeader('Content-Type', 'application/pdf');

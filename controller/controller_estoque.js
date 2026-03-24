@@ -315,7 +315,7 @@ export class ControllerEstoqMov {
             const estoque = new Estoque(db.connection,entidade_negocio)
             const estqmov = new Estoque_mov(db.connection,entidade_negocio);
 
-            const rows = estqmov.FindById(id,dt_mov);
+            void await estqmov.FindById(id,dt_mov);
 
             estqmov.dt_mov = dt_mov;
             estqmov.id_produto = id_produto;

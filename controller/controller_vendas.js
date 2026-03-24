@@ -7,7 +7,6 @@ import ItensVendas from '../model/dao_itens_vendas.js';
 import Entidades from '../model/dao_entidades.js';
 import Cobradores from '../model/dao_cobradores.js';
 import Rotas from '../model/dao_rotas.js';
-import Adiantamentos from '../model/dao_adiantamentos.js';
 import GravarLog from '../utils/GravarLog.js';
 import {obterEntidadeNegocio} from '../utils/CheckEntidades.js';
 import {buildTableDocument, formatCurrencyBR, formatDateBR, sendPdfResponse} from '../utils/PdfReport.js';

@@ -61,19 +61,17 @@ export default class Usuarios {
     get entidade_negocio() {return Number(this.#field.entidade_negocio)}
 
     async ExecuteQuery(query, params = {}) {
-        try {
+        
             const rows = await this.#conn.execute(query, params);
             return rows;
-        } catch (error) {
-            throw error;
-        }
+        
 
     }
 
     
     async FindByUser(usuario) {
 
-        try {
+        
             
             let query = `SELECT * FROM ${this.#tb_name} WHERE usuario = :usuario`;
             
@@ -95,15 +93,13 @@ export default class Usuarios {
 
             return this.#found ? this.#field : this.#found;
 
-        } catch (error) {
-            throw error;
-        }
+        
 
     }
     
     async FindById(id) {
 
-        try {
+        
             
             let query = `SELECT * FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio AND id = :id`;
             
@@ -126,15 +122,13 @@ export default class Usuarios {
             }
 
             return this.#found ? this.#field : this.#found;
-        } catch (error) {
-            throw error;
-        }
+        
 
     }
 
     async Save() {
-        try {
-            let query = null;
+        
+            let query;
 
             if (this.#found) {
                 query = `UPDATE tb_usuarios SET usuario = :usuario,nom_completo = :nom_completo, email = :email, 
@@ -149,37 +143,31 @@ export default class Usuarios {
             }
 
             return await this.#conn.query(query,this.#field);
-        } catch (error) {
-            throw error;
-        }
+        
 
     }
 
     async Excluir(id) {
         
-        try {
+        
             
             const query = `DELETE FROM ${this.#tb_name} WHERE entidade_negocio= :entidade_negocio AND id = :id`;
 
             void await this.#conn.query(query,{id,entidade_negocio: this.#field.entidade_negocio});
             
-        } catch (error) {
-            throw error;
-        }
+        
     }
 
     async #newId() {
 
-        try {
+        
             
             const query =  `SELECT IFNULL(MAX(id),0) + 1 as newid FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio`;
             const [rows] = await this.#conn.query(query,{entidade_negocio: this.#field.entidade_negocio});
 
             return Number(rows.newid);
 
-        } catch (error) {
-            throw error;
-        }
+        
 
     }
 

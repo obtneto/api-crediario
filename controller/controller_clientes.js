@@ -2,7 +2,6 @@ import Database from '../connections/dbconn.js';
 import Clientes from '../model/dao_clientes.js';
 import GravarLog from '../utils/GravarLog.js'; 
 import { validate, clienteSalvarSchema } from '../utils/RequestValidator.js';
-import enviarEmailResend from '../utils/EnvioEmail.js';
 
 export class ControllerClientes {
 

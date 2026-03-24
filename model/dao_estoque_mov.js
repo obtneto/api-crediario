@@ -57,17 +57,13 @@ export default class EstoqueMov {
     get entidade_negocio() {return this.#field.entidade_negocio}
 
     async ExecuteQuery(query, params = {}) {
-        try {
+        
             const rows = await this.#conn.execute(query, params);
             return rows;
-        } catch (error) {
-            throw error;
-        }
+        
     }
 
     async FindById(id, dt_mov) {
-
-        try {
 
             const query = `SELECT * FROM ${this.#tb_name}
             WHERE entidade_negocio = :entidade_negocio AND dt_mov = :dt_mov AND id = :id`;
@@ -89,17 +85,12 @@ export default class EstoqueMov {
 
             return this.#found ? this.#field : this.#found;
 
-        } catch (error) {
-            throw error;
-        }
 
     }
 
     async Save() {
 
-        try {
-
-            let query = null;
+            let query;
 
             if (this.#found) {
                 query = `UPDATE ${this.#tb_name} SET id_produto = :id_produto, tp_mov = :tp_mov,
@@ -118,30 +109,20 @@ export default class EstoqueMov {
 
             return await this.#conn.query(query,this.#field);
 
-        } catch (error) {
-            throw error;
-        }
 
     }
 
     async Excluir(id, dt_mov) {
-
-        try {
 
             const query = `DELETE FROM ${this.#tb_name}
             WHERE entidade_negocio = :entidade_negocio AND dt_mov = :dt_mov AND id = :id`;
 
             void await this.#conn.query(query,{id,dt_mov,entidade_negocio: this.#field.entidade_negocio});
 
-        } catch (error) {
-            throw error;
-        }
 
     }
 
     async #newId(dt_mov) {
-
-        try {
 
             const query = `SELECT IFNULL(MAX(id),0) + 1 as newid FROM ${this.#tb_name}
             WHERE entidade_negocio = :entidade_negocio AND dt_mov = :dt_mov`;
@@ -150,9 +131,6 @@ export default class EstoqueMov {
 
             return rows.newid;
 
-        } catch (error) {
-            throw error;
-        }
 
     }
 

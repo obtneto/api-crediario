@@ -53,19 +53,15 @@ export default class Adiantamentos {
     get entidade_negocio() {return Number(this.#field.entidade_negocio)}
 
     async ExecuteQuery(query, params = {}) {
-        try {
+        
             const rows = await this.#conn.execute(query, params);
             return rows;
-        } catch (error) {
-            throw error;
-        }
+        
 
     }
 
     async FindById(id) {
         
-        try {
-
             const query = `SELECT * FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio AND id = :id`;
 
             const [rows] = await this.#conn.query(query,{id,entidade_negocio: this.#entidade_negocio});
@@ -85,18 +81,13 @@ export default class Adiantamentos {
 
             return this.#found ? this.#field : this.#found;
 
-        } catch (error) {
-            throw error;
-        }
 
     }
 
     
     async Save() {
 
-        try {
-
-            let query = null;
+            let query;
 
             if (this.#found) {
                 query = `UPDATE ${this.#tb_name} SET id_vendedor = :id_vendedor,id_cobrador = :id_cobrador, dt_adiant = :dt_adiant, 
@@ -112,15 +103,12 @@ export default class Adiantamentos {
 
             return await this.#conn.query(query,this.#field);
 
-        } catch (error) {
-            throw error;
-        }
 
     }
 
     async Excluir() {
 
-        try {
+        
             
             const query = `DELETE FROM ${this.#tb_name} 
             WHERE entidade_negocio= :entidade_negocio AND id = :id`;
@@ -130,15 +118,11 @@ export default class Adiantamentos {
                 entidade_negocio: this.#field.entidade_negocio
             });
             
-        } catch (error) {
-            throw error;
-        }
+        
 
     }
 
     async #newId() {
-
-        try {
 
             const query =  `SELECT IFNULL(MAX(id),0) + 1 as newid FROM ${this.#tb_name} 
             WHERE entidade_negocio = :entidade_negocio`;
@@ -149,9 +133,6 @@ export default class Adiantamentos {
 
             return rows.newid;
             
-        } catch (error) {
-            throw error;
-        }
 
     }
 

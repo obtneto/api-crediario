@@ -105,7 +105,7 @@ export function criarMiddlewareSessao(rotasPublicasSemEntidade = ROTAS_PUBLICAS_
             req.auth = sessaoAtual;
 
             next();
-        } catch (error) {
+        } catch {
             return res.status(500).json({
                 err: 500,
                 msg: 'Nao foi possivel validar a sessao atual.',

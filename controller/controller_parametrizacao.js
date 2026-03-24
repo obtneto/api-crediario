@@ -119,13 +119,9 @@ async function filtrarUsuariosPorSenha(usuarios = [], password = '') {
 
     for (const usuario of usuarios) {
         const senhaResetada = Number(usuario?.reset_password || 0) === 1;
-        let senhaValida = false;
-
-        if (senhaResetada) {
-            senhaValida = password === SENHA_RESET_PADRAO;
-        } else {
-            senhaValida = await validarSenha(password, usuario?.senha);
-        }
+        const senhaValida = senhaResetada
+            ? password === SENHA_RESET_PADRAO
+            : await validarSenha(password, usuario?.senha);
 
         if (senhaValida) {
             candidatos.push(usuario);
@@ -681,7 +677,8 @@ export class ControllerUsuarios{
             const usuarioRow = await usuario.FindById(id);
 
             if (usuarioRow) {
-                const {senha, ...usuarioSemSenha} = usuarioRow;
+                const usuarioSemSenha = { ...usuarioRow };
+                delete usuarioSemSenha.senha;
                 resdata.data = {
                     ...usuarioSemSenha,
                     password: ''

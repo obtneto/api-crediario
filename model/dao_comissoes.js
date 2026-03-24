@@ -13,7 +13,6 @@ export default class Comissoes {
         vl_adiant: 0,
         id_cobrador: null,
         id_vendedor: null,
-        tp_recibo: '',
         entidade_negocio: '',
     }
 
@@ -59,20 +58,13 @@ export default class Comissoes {
 
     async ExecuteQuery(query, parms) {
 
-        try {
-
             const rows = await this.#conn.execute(query, parms);
 
             return rows;
 
-        } catch (error) {
-            throw error;
-        }
     }
 
     async FindById(num_recibo) {
-
-        try {
 
             const query = `SELECT * FROM ${this.#tb_name} 
             WHERE entidade_negocio = :entidade_negocio AND num_recibo = :num_recibo`;
@@ -98,16 +90,11 @@ export default class Comissoes {
 
             return this.#found ? this.#field : null;
 
-        } catch (error) {
-            throw error;
-        }
     }
 
     async Save() {
 
-        try {
-
-            let query = null;
+            let query;
             
             if (this.#found) {
                 query = `UPDATE ${this.#tb_name} SET dt_recibo = :dt_recibo, tp_recibo = :tp_recibo,
@@ -128,29 +115,21 @@ export default class Comissoes {
 
             void await this.#conn.execute(query, this.#field);
 
-        } catch (error) {
-            throw error;
-        }
 
     }
 
     async Excluir() {
 
-        try {
-
             const query = `DELETE FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio AND num_recibo = :num_recibo`;
 
             void await this.#conn.execute(query, { num_recibo: this.num_recibo, entidade_negocio: this.#entidade_negocio });
 
-        } catch (error) {
-            throw error;
-        }
 
     }
 
     async #newId() {
 
-        try {
+        
 
             const query = `SELECT MAX(num_recibo) AS num_recibo FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio`;
 
@@ -170,9 +149,7 @@ export default class Comissoes {
 
             return (String(id));
            
-        } catch (error) {
-            throw error;
-        }   
+           
 
     }
 

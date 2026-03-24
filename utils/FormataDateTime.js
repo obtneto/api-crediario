@@ -31,9 +31,9 @@ export function FormatDate(data,locales = 'pt-BR',timezone = 'UTC') {
     
 }
 
-export function FormatTime(hora,locales = 'pt-BR',timezone = 'UTC') {
+export function FormatTime(valorHora,locales = 'pt-BR',timezone = 'UTC') {
 
-    const hora  = new Date(hora);
+    const hora  = new Date(valorHora);
 
     const options_time = {
         hour: '2-digit',

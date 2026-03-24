@@ -77,7 +77,7 @@ export default class Produtos {
 
         let query = `SELECT * FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio AND id = :id`;
         
-        try {
+        
             
             const [rows] = await this.#conn.query(query,{id,entidade_negocio:this.#entidade_negocio});
 
@@ -101,18 +101,14 @@ export default class Produtos {
 
             return this.#found ? this.#field : this.#found;
 
-        } catch (error) {
-            throw error
-        }
+        
 
     }
 
     async Save() {
 
-        let query = null;
+        let query;
 
-        try {
-            
             if (this.#found) {
 
                 query = `UPDATE ${this.#tb_name} SET nom_produto = :nom_produto, mar_produto = :mar_produto, 
@@ -131,38 +127,32 @@ export default class Produtos {
 
             return await this.#conn.query(query,this.#field);
  
-        } catch (error) {
-            throw error
-        }
+        
         
     }
 
     async Excluir(id) {
 
-        try {
+        
             
             const query = `DELETE FROM ${this.#tb_name} WHERE entidade_negocio= :entidade_negocio AND id = :id`;
 
             void await this.#conn.query(query,{id,entidade_negocio: this.#field.entidade_negocio});
 
-        } catch (error) {
-            throw error
-        }
+        
 
     }
 
     async #newId() {
 
-        try {
+        
 
             const query =  `SELECT IFNULL(MAX(id),0) + 1 as newid FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio`;
             const [rows] = await this.#conn.query(query,{entidade_negocio: this.#field.entidade_negocio});
 
             return Number(rows.newid);
 
-         } catch (error) {
-            throw error
-        }
+         
 
     }
 

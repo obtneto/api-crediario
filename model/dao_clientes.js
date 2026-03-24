@@ -74,18 +74,14 @@ export default class Clientes {
 
     async ExecuteQuery(query, params = {}) {
         
-        try {
+        
             const rows = await this.#conn.execute(query, params);
             return rows;
-        } catch (error) {
-            throw error;
-        }
+        
 
     }
 
     async FindById(id) {
-
-        try {
 
             let query = `SELECT * FROM ${this.#tb_name} WHERE id = :id`;
 
@@ -114,15 +110,10 @@ export default class Clientes {
 
             return this.#found ? rows : this.#found;
 
-        } catch (error) {
-            throw error;
-        }
 
     }
 
     async FindByCpf(cpf) {
-
-        try {
 
             let query = `SELECT * FROM ${this.#tb_name} WHERE cpf_cliente = :cpf`;
 
@@ -151,17 +142,12 @@ export default class Clientes {
 
             return this.#found ? rows : this.#found;
 
-        } catch (error) {
-            throw error;
-        }
 
     }
 
     async Save() {
 
-        try {
-
-            let query = null;
+            let query;
 
             if (this.#found) {
                 query = `UPDATE ${this.#tb_name} SET cpf_cliente = :cpf_cliente, nom_cliente = :nom_cliente,nom_usual = :nom_usual,
@@ -181,27 +167,22 @@ export default class Clientes {
 
             return await this.#conn.query(query,this.#field);
             
-        } catch (error) {
-            throw error;
-        }
     }
 
     async Excluir(id) {
         
-        try {
+        
             
             const query = `DELETE FROM ${this.#tb_name} WHERE id = :id`;
 
             void await this.#conn.query(query,{id});
             
-        } catch (error) {
-            throw error;
-        }
+        
     }
 
     async #newId() {
         
-        try {
+        
             
             const query =  `SELECT IFNULL(MAX(id),0) + 1 as newid FROM ${this.#tb_name}`;
             
@@ -209,9 +190,7 @@ export default class Clientes {
 
             return rows.newid;
             
-        } catch (error) {
-            throw error;
-        }
+        
 
     }
 

@@ -42,21 +42,19 @@ export default class TiposPagamentos {
 
     async ExecuteQuery(query, params = {}) {
 
-        try {
+        
 
             const rows = await this.#conn.execute(query, params);
 
             return rows;
 
-        } catch (error) {
-            throw error;
-        }
+        
 
     }
 
     async FindById(id) {
 
-        try {
+        
             
             let query = `SELECT * FROM ${this.#tb_name} 
             WHERE entidade_negocio = :entidade_negocio AND id = :id`;
@@ -75,17 +73,15 @@ export default class TiposPagamentos {
             }
 
             return this.#found ? this.#field : this.#found;
-        } catch (error) {
-            throw error;
-        }
+        
 
     }
 
     async Save() {
 
-        try {
+        
             
-            let query = null;
+            let query;
 
             if (this.#found) {
                 query = `UPDATE ${this.#tb_name} SET nom_tipo = :nom_tipo, ativo = :ativo 
@@ -98,38 +94,32 @@ export default class TiposPagamentos {
 
             return await this.#conn.query(query,this.#field);
 
-        } catch (error) {
-            throw error;
-        }
+        
 
     }
 
     async Excluir(id) {
         
-        try {
+        
             
             const query = `DELETE FROM ${this.#tb_name} WHERE entidade_negocio= :entidade_negocio AND id = :id`;
 
             void  await this.#conn.query(query,{id,entidade_negocio: this.#field.entidade_negocio});
             
-        } catch (error) {
-            throw error;
-        }
+        
 
     }
 
     async #newId() {
 
-        try {
+        
             
             const query =  `SELECT IFNULL(MAX(id),0) + 1 as newid FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio`;
             const [rows] = await this.#conn.query(query,{entidade_negocio: this.#field.entidade_negocio});
 
             return Number(rows.newid);
 
-        } catch (error) {
-            throw error;
-        }
+        
 
     }
 

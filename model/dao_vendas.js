@@ -86,18 +86,16 @@ export default class Vendas {
 
     async ExecuteQuery(query, params = {}) {
         
-        try {
+        
             const rows = await this.#conn.execute(query, params);
             return rows;
-        } catch (error) {
-            throw error;
-        }
+        
 
     }
 
     async FindById(id) {
 
-        try {
+        
 
             let query = `SELECT * FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio AND id = :id`;
 
@@ -125,15 +123,13 @@ export default class Vendas {
 
             return this.#found ? this.#field : this.#found;
 
-        } catch (error) {
-            throw error;
-        }
+        
 
     }
 
     async FindByCpf(cpf_cliente,id_venda) {
 
-        try {
+        
 
             let query = `SELECT * FROM ${this.#tb_name} 
             WHERE entidade_negocio = :entidade_negocio AND id_venda = :id_venda AND cpf_cliente = :cpf`;
@@ -162,17 +158,15 @@ export default class Vendas {
 
             return this.#found ? this.#field : this.#found;
 
-        } catch (error) {
-            throw error;
-        }
+        
 
     }
 
     async Save() {
 
-        try {
+        
 
-            let query = null;
+            let query;
 
             if (this.#found) {
                 query = `UPDATE ${this.#tb_name} SET dt_venda = :dt_venda, id_vendedor = :id_vendedor, 
@@ -195,27 +189,23 @@ export default class Vendas {
 
             return await this.#conn.query(query,this.#field);
 
-        } catch (error) {
-            throw error;
-        }
+        
     }
 
     async Excluir(id) {
         
-        try {
+        
             
             const query = `DELETE FROM ${this.#tb_name} WHERE entidade_negocio= :entidade_negocio AND id = :id`;
 
             void await this.#conn.query(query,{id,entidade_negocio: this.#field.entidade_negocio});
             
-        } catch (error) {
-            throw error;
-        }
+        
     }
 
     async #newId() {
         
-        try {
+        
             
             const query_new_id =  `SELECT IFNULL(MAX(id),0) as newid FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio`;
             
@@ -234,9 +224,7 @@ export default class Vendas {
 
             return (String(id));
             
-        } catch (error) {
-            throw error;
-        }
+        
 
     }
 

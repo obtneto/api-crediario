@@ -87,7 +87,7 @@ function verifyToken(token = '') {
 
         // Compatibilidade com tokens antigos cujo payload era legível.
         return decoded;
-    } catch (error) {
+    } catch {
         return null;
     }
 }
@@ -145,7 +145,7 @@ function decryptPayload(value = '') {
         decrypted += decipher.final('utf8');
 
         return JSON.parse(decrypted);
-    } catch (error) {
+    } catch {
         return null;
     }
 }
@@ -230,4 +230,3 @@ export function limparSessaoHttpOnly(res) {
 export function getCurrentToken(req) {
     return _getCurrentToken(req);
 }
-

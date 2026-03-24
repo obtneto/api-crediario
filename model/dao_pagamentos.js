@@ -53,18 +53,16 @@ export default class Perfis {
     get entidade_negocio() {return Number(this.#field.entidade_negocio)}
 
     async ExecuteQuery(query, params = {}) {
-        try {
+        
             const rows = await this.#conn.execute(query, params);
             return rows;
-        } catch (error) {
-            throw error;
-        }
+        
 
     }
 
     async FindById(id_venda,id) {
         
-        try {
+        
             const query = `SELECT * FROM ${this.#tb_name} 
             WHERE entidade_negocio = :entidade_negocio AND id_venda = :id_venda AND id = :id`;
 
@@ -87,16 +85,14 @@ export default class Perfis {
 
             return this.#found ? this.#field : this.#found;
 
-        } catch (error) {
-            throw error;
-        }
+        
 
     }
 
     async Save() {
 
-        try {
-            let query = null;
+        
+            let query;
 
             if (this.#found) {
 
@@ -117,38 +113,29 @@ export default class Perfis {
             
             return await this.#conn.query(query,this.#field);
 
-        } catch (error) {
-            throw error;
-        }
+        
 
     }
 
     async Excluir() {
 
-        try {
+        
             
             const query = `DELETE FROM ${this.#tb_name} WHERE entidade_negocio= :entidade_negocio AND id_venda = :id_venda AND id = :id`;
 
             void await this.#conn.query(query,{id:this.#field.id,id_venda:this.#field.id_venda, entidade_negocio: this.#field.entidade_negocio});
             
-        } catch (error) {
-            throw error;
-        }
+        
 
     }
 
     async #newId() {
-
-        try {
 
             const query =  `SELECT IFNULL(MAX(id),0) + 1 as newid FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio AND id_venda = :id_venda`;
             const [rows] = await this.#conn.query(query,{entidade_negocio: this.#field.entidade_negocio, id_venda: this.#field.id_venda});
 
             return Number(rows.newid);
 
-        } catch (error) {
-            throw error;
-        }
 
     }
 

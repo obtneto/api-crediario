@@ -59,18 +59,14 @@ export default class Entidades {
     get ativo() { return Number(this.#field.ativo)}
 
     async ExecuteQuery(query, params = {}) {
-        try {
+        
             const rows = await this.#conn.execute(query, params);
             return rows;
-        } catch (error) {
-            throw error;
-        }
+        
 
     }
 
     async FindById(id) {
-
-        try {
 
             const query = `SELECT * FROM tb_entidades WHERE id = :id`;
 
@@ -93,15 +89,12 @@ export default class Entidades {
             }
 
             return this.#found ? this.#field : this.#found;
-        } catch (error) {
-            throw error;
-        }
 
     }
 
     async Save() {
-        try {
-            let query = null;
+        
+            let query;
 
             if (this.#found) {
                 query = `UPDATE tb_entidades SET 
@@ -122,21 +115,17 @@ export default class Entidades {
             const [rows] = await this.#conn.query(query,this.#field);
 
             return rows;
-        } catch (error) {
-            throw error;
-        }
+        
 
     }
 
     async newId() {
-        try {
+        
             const query =  `SELECT IFNULL(MAX(id),0) + 1 as newid FROM tb_entidades`;
             const [rows] = await this.#conn.query(query);
 
             return rows.newid;
-        } catch (error) {
-            throw error;
-        }
+        
 
     }
 

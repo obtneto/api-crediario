@@ -45,17 +45,13 @@ export default class ItensVendas {
     get entidade_negocio() {return this.#field.entidade_negocio}
 
     async ExecuteQuery(query, params = {}) {
-        try {
+        
             const rows = await this.#conn.execute(query, params);
             return rows;
-        } catch (error) {
-            throw error;
-        }
+        
     }
 
     async FindById(id,id_venda) {
-
-        try {
 
             const query = `SELECT * FROM ${this.#tb_name}
             WHERE entidade_negocio = :entidade_negocio AND id_venda = :id_venda AND id = :id`;
@@ -74,14 +70,9 @@ export default class ItensVendas {
 
             return this.#found ? this.#field : this.#found;
 
-        } catch (error) {
-            throw error;
-        }
     }
 
     async FindByVenda(id_venda) {
-
-        try {
 
             const query = `SELECT * FROM ${this.#tb_name}
             WHERE entidade_negocio = :entidade_negocio AND id_venda = :id_venda
@@ -91,16 +82,11 @@ export default class ItensVendas {
 
             return rows;
 
-        } catch (error) {
-            throw error;
-        }
     }
 
     async Save() {
 
-        try {
-
-            let query = null;
+            let query;
 
             if (this.#found) {
                 query = `UPDATE ${this.#tb_name} SET qt_produto = :qt_produto,id_produto = :id_produto 
@@ -117,14 +103,9 @@ export default class ItensVendas {
 
             return await this.#conn.query(query,this.#field);
 
-        } catch (error) {
-            throw error;
-        }
     }
 
     async Excluir() {
-
-        try {
 
             const query = `DELETE FROM ${this.#tb_name}
             WHERE entidade_negocio = :entidade_negocio AND id_venda = :id_venda AND id = :id`;
@@ -135,14 +116,9 @@ export default class ItensVendas {
                 id_venda:this.#field.id_venda
             });
 
-        } catch (error) {
-            throw error;
-        }
     }
 
     async #newId() {
-
-        try {
 
             const query = `SELECT IFNULL(MAX(id),0) + 1 as newid FROM ${this.#tb_name}
             WHERE entidade_negocio = :entidade_negocio AND id_venda = :id_venda`;
@@ -151,9 +127,6 @@ export default class ItensVendas {
 
             return Number(rows.newid);
 
-        } catch (error) {
-            throw error;
-        }
     }
 
 }

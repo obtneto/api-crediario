@@ -604,14 +604,6 @@ export class ControllerComissoes {
                 ? rowsPagamentos.reduce((acc, item) => acc + Number(item?.vl_pagamento || 0), 0)
                 : 0;
 
-            const totalComissao = Array.isArray(rowsPagamentos)
-                ? rowsPagamentos.reduce((acc, item) => acc + Number(item?.vl_comissao || 0), 0)
-                : 0;
-
-            const totalAdiantamentos = Array.isArray(rowsAdiantamentos)
-                ? rowsAdiantamentos.reduce((acc, item) => acc + Number(item?.vl_adiantamento || 0), 0)
-                : 0;
-
             const pagamentosBody = Array.isArray(rowsPagamentos) && rowsPagamentos.length > 0
                 ? [
                     [
@@ -850,14 +842,6 @@ export class ControllerComissoes {
 
             const totalVendas = Array.isArray(rowsVendas)
                 ? rowsVendas.reduce((acc, item) => acc + Number(item?.val_tot_venda || 0), 0)
-                : 0;
-
-            const totalComissao = Array.isArray(rowsVendas)
-                ? rowsVendas.reduce((acc, item) => acc + Number(item?.vl_comissao || 0), 0)
-                : 0;
-
-            const totalAdiantamentos = Array.isArray(rowsAdiantamentos)
-                ? rowsAdiantamentos.reduce((acc, item) => acc + Number(item?.vl_adiantamento || 0), 0)
                 : 0;
 
             const vendasBody = Array.isArray(rowsVendas) && rowsVendas.length > 0

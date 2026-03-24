@@ -42,21 +42,19 @@ export default class Estoque {
 
     async ExecuteQuery(query, params = {}) {
 
-        try {
+        
 
             const rows = await this.#conn.execute(query, params);
 
             return rows;
 
-        } catch (error) {
-            throw error;
-        }
+        
 
     }
 
     async FindById(id_produto) {
         
-        try {
+        
 
             const query = `SELECT * FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio AND id_produto = :id_produto`;
 
@@ -73,17 +71,15 @@ export default class Estoque {
             }
 
             return this.#found ? this.#field : this.#found;
-        } catch (error) {
-            throw error;
-        }
+        
 
     }
 
     async Save() {
 
-        try {
+        
             
-            let query = null;
+            let query;
 
             if (this.#found) {
                 query = `UPDATE ${this.#tb_name} SET qt_reservada = :qt_reservada, qt_disponivel = :qt_disponivel
@@ -97,15 +93,13 @@ export default class Estoque {
 
             return await this.#conn.query(query,this.#field);
 
-        } catch (error) {
-            throw error;
-        }
+        
 
     }
 
     async Excluir() {
 
-        try {
+        
             
             const query = `DELETE FROM ${this.#tb_name} 
             WHERE entidade_negocio= :entidade_negocio AND id_produto = :id_produto`;
@@ -115,9 +109,7 @@ export default class Estoque {
                 id_produto: this.#field.id_produto
             });
             
-        } catch (error) {
-            throw error;
-        }
+        
 
     }
 

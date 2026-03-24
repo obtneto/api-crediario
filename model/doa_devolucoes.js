@@ -59,21 +59,14 @@ export default class Devolucoes{
 
     async ExecuteQuery(query, params = {}) {
         
-        try {
-
             const rows = await this.#conn.execute(query, params);
 
             return rows;
 
-        } catch (error) {
-            throw error;
-        }
 
     }
 
     async FindById(id) {
-
-        try {
 
             const query = `SELECT * FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio AND id = :id`;
 
@@ -96,17 +89,12 @@ export default class Devolucoes{
 
             return this.#found ? this.#fields : this.#found;
             
-        } catch (error) {
-            throw error;
-        }
 
     }
 
     async Save() {
 
-        try {
-
-            let query = null;
+            let query;
 
             if (this.#found) {
 
@@ -129,36 +117,26 @@ export default class Devolucoes{
 
             void await this.#conn.query(query,this.#fields);
             
-        } catch (error) {
-            throw error;
-        }
     }
 
     async Excluir(id) {
         
-        try {
+        
             
             const query = `DELETE FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio AND id = :id`;
 
             void await this.#conn.query(query,{entidade_negocio:this.entidade_negocio,id});
             
-        } catch (error) {
-            throw error;
-        }
+        
     }
 
     async #newId() {
-
-        try {
 
             const query =  `SELECT IFNULL(MAX(id),0) + 1 as newid FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio`;
             const [rows] = await this.#conn.query(query,{entidade_negocio: this.#fields.entidade_negocio});
 
             return Number(rows.newid);
 
-        } catch (error) {
-            throw error;
-        }
 
     }
 }
