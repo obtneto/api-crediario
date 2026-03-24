@@ -1,104 +1,11 @@
-[23/03/2026 21:36:31] ControllerUsuarios.Salvar: Error: Validation failed: [{"path":"reset_password","message":"Expected boolean, received number"}]
-    at validate (file:///home/ovidio.neto/Crediario/backend/utils/RequestValidator.js:7:23)
-    at Salvar (file:///home/ovidio.neto/Crediario/backend/controller/controller_parametrizacao.js:645:31)
-    at Layer.handleRequest (/home/ovidio.neto/Crediario/backend/node_modules/router/lib/layer.js:152:17)
-    at next (/home/ovidio.neto/Crediario/backend/node_modules/router/lib/route.js:157:13)
-    at Route.dispatch (/home/ovidio.neto/Crediario/backend/node_modules/router/lib/route.js:117:3)
-    at handle (/home/ovidio.neto/Crediario/backend/node_modules/router/index.js:435:11)
-    at Layer.handleRequest (/home/ovidio.neto/Crediario/backend/node_modules/router/lib/layer.js:152:17)
-    at /home/ovidio.neto/Crediario/backend/node_modules/router/index.js:295:15
-    at processParams (/home/ovidio.neto/Crediario/backend/node_modules/router/index.js:582:12)
-    at next (/home/ovidio.neto/Crediario/backend/node_modules/router/index.js:291:5)
-
-[23/03/2026 21:43:32] ControllerUsuarios.Salvar: Error: Usuario já cadastrado.
-    at Salvar (file:///home/ovidio.neto/Crediario/backend/controller/controller_parametrizacao.js:659:31)
-    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
-
-[23/03/2026 21:45:12] ControllerUsuarios.Salvar: Error: Usuario já cadastrado.
-    at Salvar (file:///home/ovidio.neto/Crediario/backend/controller/controller_parametrizacao.js:659:31)
-    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
-
-[23/03/2026 22:24:40] Erro ao salvar cliente: RESEND_FROM_EMAIL nao configurado.: undefined
-
-[23/03/2026 22:27:17] Erro ao salvar cliente: RESEND_FROM_EMAIL nao configurado.: undefined
-
-[23/03/2026 22:27:48] Erro ao salvar cliente: RESEND_FROM_EMAIL nao configurado.: undefined
-
-[23/03/2026 22:28:35] Erro ao salvar cliente: RESEND_FROM_EMAIL nao configurado.: undefined
-
-[23/03/2026 22:31:29] EnvioEmail.enviarEmailResend: Error: RESEND_API_KEY nao configurada.
-    at getResendClient (file:///home/ovidio.neto/Crediario/backend/utils/EnvioEmail.js:12:15)
-    at enviarEmailResend (file:///home/ovidio.neto/Crediario/backend/utils/EnvioEmail.js:130:24)
-    at Salvar (file:///home/ovidio.neto/Crediario/backend/controller/controller_clientes.js:197:19)
-    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
-
-[23/03/2026 22:31:29] Erro ao salvar cliente: RESEND_API_KEY nao configurada.: undefined
-
-[23/03/2026 22:31:57] EnvioEmail.enviarEmailResend: Error: RESEND_API_KEY nao configurada.
-    at getResendClient (file:///home/ovidio.neto/Crediario/backend/utils/EnvioEmail.js:12:15)
-    at enviarEmailResend (file:///home/ovidio.neto/Crediario/backend/utils/EnvioEmail.js:130:24)
-    at Salvar (file:///home/ovidio.neto/Crediario/backend/controller/controller_clientes.js:197:19)
-    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
-
-[23/03/2026 22:31:57] Erro ao salvar cliente: RESEND_API_KEY nao configurada.: undefined
-
-[23/03/2026 22:32:30] EnvioEmail.enviarEmailResend: Error: RESEND_API_KEY nao configurada.
-    at getResendClient (file:///home/ovidio.neto/Crediario/backend/utils/EnvioEmail.js:12:15)
-    at enviarEmailResend (file:///home/ovidio.neto/Crediario/backend/utils/EnvioEmail.js:130:24)
-    at Salvar (file:///home/ovidio.neto/Crediario/backend/controller/controller_clientes.js:197:19)
-    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
-
-[23/03/2026 22:32:30] Erro ao salvar cliente: RESEND_API_KEY nao configurada.: undefined
-
-[23/03/2026 22:32:46] EnvioEmail.enviarEmailResend: Error: RESEND_API_KEY nao configurada.
-    at getResendClient (file:///home/ovidio.neto/Crediario/backend/utils/EnvioEmail.js:12:15)
-    at enviarEmailResend (file:///home/ovidio.neto/Crediario/backend/utils/EnvioEmail.js:130:24)
-    at Salvar (file:///home/ovidio.neto/Crediario/backend/controller/controller_clientes.js:197:19)
-    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
-
-[23/03/2026 22:32:46] Erro ao salvar cliente: RESEND_API_KEY nao configurada.: undefined
-
-[23/03/2026 22:33:28] EnvioEmail.enviarEmailResend: Error: RESEND_API_KEY nao configurada.
-    at getResendClient (file:///home/ovidio.neto/Crediario/backend/utils/EnvioEmail.js:12:15)
-    at enviarEmailResend (file:///home/ovidio.neto/Crediario/backend/utils/EnvioEmail.js:130:24)
-    at Salvar (file:///home/ovidio.neto/Crediario/backend/controller/controller_clientes.js:197:19)
-    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
-
-[23/03/2026 22:33:28] Erro ao salvar cliente: RESEND_API_KEY nao configurada.: undefined
-
-[23/03/2026 22:33:50] EnvioEmail.enviarEmailResend: Error: RESEND_API_KEY nao configurada.
-    at getResendClient (file:///home/ovidio.neto/Crediario/backend/utils/EnvioEmail.js:12:15)
-    at enviarEmailResend (file:///home/ovidio.neto/Crediario/backend/utils/EnvioEmail.js:130:24)
-    at Salvar (file:///home/ovidio.neto/Crediario/backend/controller/controller_clientes.js:197:19)
-    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
-
-[23/03/2026 22:33:50] Erro ao salvar cliente: RESEND_API_KEY nao configurada.: undefined
-
-[23/03/2026 22:34:59] EnvioEmail.enviarEmailResend: Error: The mail.seudominio.com.br domain is not verified. Please, add and verify your domain on https://resend.com/domains
-    at enviarEmailResend (file:///home/ovidio.neto/Crediario/backend/utils/EnvioEmail.js:134:19)
-    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
-    at async Salvar (file:///home/ovidio.neto/Crediario/backend/controller/controller_clientes.js:197:13)
-
-[23/03/2026 22:34:59] Erro ao salvar cliente: The mail.seudominio.com.br domain is not verified. Please, add and verify your domain on https://resend.com/domains: undefined
-
-[23/03/2026 22:35:07] EnvioEmail.enviarEmailResend: Error: The mail.seudominio.com.br domain is not verified. Please, add and verify your domain on https://resend.com/domains
-    at enviarEmailResend (file:///home/ovidio.neto/Crediario/backend/utils/EnvioEmail.js:134:19)
-    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
-    at async Salvar (file:///home/ovidio.neto/Crediario/backend/controller/controller_clientes.js:197:13)
-
-[23/03/2026 22:35:07] Erro ao salvar cliente: The mail.seudominio.com.br domain is not verified. Please, add and verify your domain on https://resend.com/domains: undefined
-
-[24/03/2026 10:56:09] ControllerAuth.IniciarSessao: Error: Usuario ou senha invalidos.
-    at IniciarSessao (file:///home/ovidio.neto/Crediario/backend/controller/controller_parametrizacao.js:172:31)
-
-[24/03/2026 11:15:52] ControllerAuth.IniciarSessao: Error: Usuario ou senha invalidos.
-    at IniciarSessao (file:///home/ovidio.neto/Crediario/backend/controller/controller_parametrizacao.js:172:31)
-
-[24/03/2026 17:29:27] ControllerVendedores.Listar: SqlError: (conn:549, no: 1226, SQLState: 42000) User 'obtneto' has exceeded the 'max_user_connections' resource (current value: 5)
+[24/03/2026 21:14:17] ControllerStaffEntidades.AtualizarStatus: SqlError: (conn:51, no: 1054, SQLState: 42S22) Unknown column 'NaN' in 'SET'
+sql: UPDATE tb_entidades SET 
+                nom_entidade = :nom_entidade, nom_responsavel = :nom_responsavel, cel_whatsapp_bussiness = :cel_whatsapp_bussiness, 
+                num_cnpj = :num_cnpj, cel_contato = :cel_contato, com_rota_cobranca = :com_rota_co...
     at Module.createError (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/misc/errors.js:66:10)
     at PacketNodeEncoded.readError (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/io/packet.js:595:19)
-    at Authentication.handshakeResult (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/handshake/authentication.js:196:32)
-    at Authentication.onPacketReceive (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/handshake/authentication.js:50:17)
+    at Query.handleErrorPacket (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/parser.js:92:24)
+    at Query.readResponsePacket (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/parser.js:70:21)
     at PacketInputStream.receivePacketBasic (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/io/packet-input-stream.js:94:9)
     at PacketInputStream.onData (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/io/packet-input-stream.js:151:20)
     at Socket.emit (node:events:508:28)
@@ -106,23 +13,6 @@
     at readableAddChunkPushByteMode (node:internal/streams/readable:514:3)
     at Readable.push (node:internal/streams/readable:394:5)
 
-[24/03/2026 18:46:18] ControllerAuth.IniciarSessao: Error: Usuario ou senha invalidos.
-    at IniciarSessao (file:///home/ovidio.neto/Crediario/backend/controller/controller_parametrizacao.js:172:31)
-    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
-
-[24/03/2026 20:03:43] ControllerAuth.IniciarSessao: Error: Usuario ou senha invalidos.
-    at IniciarSessao (file:///home/ovidio.neto/Crediario/backend/controller/controller_parametrizacao.js:172:31)
-    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
-
-[24/03/2026 20:04:10] ControllerAuth.IniciarSessao: Error: Usuario ou senha invalidos.
-    at IniciarSessao (file:///home/ovidio.neto/Crediario/backend/controller/controller_parametrizacao.js:172:31)
-    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
-
-[24/03/2026 20:04:44] ControllerAuth.AlterarSenha: ReferenceError: buscarUsuarioAutenticacao is not defined
-    at AlterarSenha (file:///home/ovidio.neto/Crediario/backend/controller/controller_parametrizacao.js:462:29)
-    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
-
-[24/03/2026 20:04:56] ControllerAuth.AlterarSenha: ReferenceError: buscarUsuarioAutenticacao is not defined
-    at AlterarSenha (file:///home/ovidio.neto/Crediario/backend/controller/controller_parametrizacao.js:462:29)
-    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+[24/03/2026 21:27:13] ControllerAuth.IniciarSessao: Error: Usuario ou senha invalidos.
+    at IniciarSessao (file:///home/ovidio.neto/Crediario/backend/controller/controller_parametrizacao.js:193:31)
 

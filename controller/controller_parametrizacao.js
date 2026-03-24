@@ -58,6 +58,20 @@ function montarRespostaAutenticacao(usuario = {}, entidade = {}) {
     };
 }
 
+function entidadeEstaAtiva(entidade = {}) {
+    return Number(entidade?.ativo || 0) === 1;
+}
+
+function garantirEntidadeAtiva(entidade = {}, mensagem = 'A entidade vinculada ao usuario esta bloqueada.') {
+    if (entidadeEstaAtiva(entidade)) {
+        return;
+    }
+
+    const error = new Error(mensagem);
+    error.statusCode = 403;
+    throw error;
+}
+
 async function buscarUsuariosAutenticacao(connection, user) {
 
     const query = `SELECT u.id, u.usuario, u.nom_completo, u.senha, u.reset_password, u.iniciais,
@@ -68,7 +82,8 @@ async function buscarUsuariosAutenticacao(connection, user) {
         COALESCE(p.atualizar, 0) AS atualizar,
         COALESCE(p.excluir, 0) AS excluir,
         COALESCE(e.nom_entidade, '') AS nom_entidade,
-        COALESCE(e.com_rota_cobranca, 0) AS com_rota_cobranca
+        COALESCE(e.com_rota_cobranca, 0) AS com_rota_cobranca,
+        COALESCE(e.ativo, 0) AS entidade_ativa
         FROM tb_usuarios u
         LEFT JOIN tb_perfis p ON p.id = u.id_perfil AND p.entidade_negocio = u.entidade_negocio
         LEFT JOIN tb_entidades e ON e.id = u.entidade_negocio
@@ -88,7 +103,7 @@ async function buscarUsuarioAutenticacao(connection, entidade_negocio, user) {
 async function buscarEntidadeAuth(entidades, entidade_negocio) {
     
     const [entidade] = await entidades.ExecuteQuery(
-        `SELECT id, nom_entidade, com_rota_cobranca FROM tb_entidades WHERE id = :id`,
+        `SELECT id, nom_entidade, com_rota_cobranca, ativo FROM tb_entidades WHERE id = :id`,
         { id: entidade_negocio }
     );
 
@@ -180,8 +195,18 @@ export class ControllerAuth {
                 throw error;
             }
 
-            if (entidade_negocio_informada <= 0 && usuariosComSenhaValida.length > 1) {
-                const entidadesDuplicadas = usuariosComSenhaValida
+            const usuariosComEntidadeAtiva = usuariosComSenhaValida.filter(
+                (item) => Number(item?.entidade_ativa || 0) === 1
+            );
+
+            if (!usuariosComEntidadeAtiva.length) {
+                const error = new Error('A entidade vinculada ao usuario esta bloqueada. Procure o administrador.');
+                error.statusCode = 403;
+                throw error;
+            }
+
+            if (entidade_negocio_informada <= 0 && usuariosComEntidadeAtiva.length > 1) {
+                const entidadesDuplicadas = usuariosComEntidadeAtiva
                     .map((item) => String(item?.nom_entidade || `Entidade ${item?.entidade_negocio || ''}`).trim())
                     .filter(Boolean)
                     .join(', ');
@@ -194,7 +219,7 @@ export class ControllerAuth {
                 throw error;
             }
 
-            const usuario = usuariosComSenhaValida[0] || null;
+            const usuario = usuariosComEntidadeAtiva[0] || null;
 
             if (!usuario) {
                 const error = new Error('Usuario ou senha invalidos.');
@@ -212,6 +237,8 @@ export class ControllerAuth {
                 error.statusCode = 404;
                 throw error;
             }
+
+            garantirEntidadeAtiva(entidade, 'A entidade vinculada ao usuario esta bloqueada. Procure o administrador.');
 
             const senhaResetada = Number(usuario.reset_password || 0) === 1;
 
@@ -255,6 +282,7 @@ export class ControllerAuth {
     }
 
     static async SessaoAtual(req, res) {
+        const db = new Database('dbcred');
 
         const resdata = {
             err: 0,
@@ -273,28 +301,68 @@ export class ControllerAuth {
             return res.status(resdata.status).json(resdata);
         }
 
-        const sessaoRenovada = renovarSessaoHttpOnly(res, sessao);
-        const payload = sessaoRenovada?.payload || sessao;
+        try {
+            void await db.Connect();
 
-        resdata.data = {
-            authenticated: true,
-            user: String(payload.user || ''),
-            firstname: String(payload.firstname || ''),
-            fullname: String(payload.fullname || payload.user || ''),
-            type_perfil: Number(payload.type_perfil || 0),
-            entidade: Number(payload.entidade_negocio || 0),
-            entidade_negocio: Number(payload.entidade_negocio || 0),
-            name_entidade: String(payload.name_entidade || ''),
-            com_rota_cobranca: Number(payload.com_rota_cobranca || 0),
-            perfil: {
-                selecionar: Number(payload?.perfil?.selecionar || 0),
-                inserir: Number(payload?.perfil?.inserir || 0),
-                atualizar: Number(payload?.perfil?.atualizar || 0),
-                excluir: Number(payload?.perfil?.excluir || 0)
-            },
-            token: String(sessaoRenovada?.token || ''),
-            reset_password: Number(payload.reset_password || 0)
-        };
+            const entidades = new Entidades(db.connection);
+            const entidade = await buscarEntidadeAuth(entidades, Number(sessao.entidade_negocio || 0));
+
+            if (!entidade) {
+                limparSessaoHttpOnly(res);
+                resdata.msg = 'Entidade de negocio nao encontrada.';
+                resdata.data = {
+                    authenticated: false
+                };
+                return res.status(resdata.status).json(resdata);
+            }
+
+            garantirEntidadeAtiva(entidade, 'A entidade vinculada ao usuario esta bloqueada. Faca login novamente.');
+
+            const sessaoAtualizada = {
+                ...sessao,
+                name_entidade: String(entidade.nom_entidade || ''),
+                com_rota_cobranca: Number(entidade.com_rota_cobranca || 0)
+            };
+            const sessaoRenovada = renovarSessaoHttpOnly(res, sessaoAtualizada);
+            const payload = sessaoRenovada?.payload || sessaoAtualizada;
+
+            resdata.data = {
+                authenticated: true,
+                user: String(payload.user || ''),
+                firstname: String(payload.firstname || ''),
+                fullname: String(payload.fullname || payload.user || ''),
+                type_perfil: Number(payload.type_perfil || 0),
+                entidade: Number(payload.entidade_negocio || 0),
+                entidade_negocio: Number(payload.entidade_negocio || 0),
+                name_entidade: String(payload.name_entidade || ''),
+                com_rota_cobranca: Number(payload.com_rota_cobranca || 0),
+                perfil: {
+                    selecionar: Number(payload?.perfil?.selecionar || 0),
+                    inserir: Number(payload?.perfil?.inserir || 0),
+                    atualizar: Number(payload?.perfil?.atualizar || 0),
+                    excluir: Number(payload?.perfil?.excluir || 0)
+                },
+                token: String(sessaoRenovada?.token || ''),
+                reset_password: Number(payload.reset_password || 0)
+            };
+        } catch (error) {
+            if (Number(error.statusCode || 0) === 403) {
+                limparSessaoHttpOnly(res);
+                resdata.msg = error.message;
+                resdata.data = {
+                    authenticated: false
+                };
+                return res.status(resdata.status).json(resdata);
+            }
+
+            resdata.err = Number(error.statusCode || 500);
+            resdata.msg = error.message;
+            resdata.status = Number(error.statusCode || 500);
+
+            GravarLog('ControllerAuth.SessaoAtual', error.stack);
+        } finally {
+            void await db.Close();
+        }
 
         return res.status(resdata.status).json(resdata);
     }
@@ -358,6 +426,8 @@ export class ControllerAuth {
                 error.statusCode = 404;
                 throw error;
             }
+
+            garantirEntidadeAtiva(entidade, 'A entidade vinculada ao usuario esta bloqueada. Procure o administrador.');
 
             const usuarios = new Usuarios(db.connection, entidade_negocio);
             const usuario = await buscarUsuarioAutenticacao(db.connection, entidade_negocio, user);
@@ -463,6 +533,8 @@ export class ControllerAuth {
                 error.statusCode = 404;
                 throw error;
             }
+
+            garantirEntidadeAtiva(entidade, 'A entidade vinculada ao usuario esta bloqueada. Procure o administrador.');
 
             const usuarios = new Usuarios(db.connection, entidade_negocio);
             const usuario = await buscarUsuarioAutenticacao(db.connection, entidade_negocio, user);
@@ -854,7 +926,7 @@ export class ControllerEntidades{
 
         try {
 
-            const {id,nom_entidade,nom_responsavel,num_cnpj,cel_contato,percent_desconto_cobranca,percent_desconto_venda,cel_whatsapp_bussiness} = req.body;
+            const {id,nom_entidade,nom_responsavel,num_cnpj,cel_contato,percent_desconto_cobranca,percent_desconto_venda,cel_whatsapp_bussiness,ativo} = req.body;
             
             void await db.Connect();
 
@@ -872,6 +944,7 @@ export class ControllerEntidades{
             entidades.cel_whatsapp_bussiness = cel_whatsapp_bussiness;
             entidades.percent_desconto_venda = percent_desconto_venda;
             entidades.percent_desconto_cobranca = percent_desconto_cobranca;
+            entidades.ativo = ativo;
            
             void await entidades.Save();
 

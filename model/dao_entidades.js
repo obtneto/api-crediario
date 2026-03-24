@@ -107,7 +107,7 @@ export default class Entidades {
                 query = `UPDATE tb_entidades SET 
                 nom_entidade = :nom_entidade, nom_responsavel = :nom_responsavel, cel_whatsapp_bussiness = :cel_whatsapp_bussiness, 
                 num_cnpj = :num_cnpj, cel_contato = :cel_contato, com_rota_cobranca = :com_rota_cobranca,
-                percent_desconto_venda = :percent_desconto_venda, percent_desconto_cobranca = :percent_desconto_cobranca,ativo = :ativo
+                percent_desconto_venda = :percent_desconto_venda, percent_desconto_cobranca = :percent_desconto_cobranca, ativo = :ativo
                 WHERE id = :id`;
             } else {
                 query = `INSERT INTO tb_entidades SET 
@@ -116,7 +116,7 @@ export default class Entidades {
                 cel_whatsapp_bussiness = :cel_whatsapp_bussiness,
                 percent_desconto_venda = :percent_desconto_venda,
                 percent_desconto_cobranca = :percent_desconto_cobranca,
-                com_rota_cobranca = :com_rota_cobranca, id = :id,ativo = :ativo`
+                com_rota_cobranca = :com_rota_cobranca, id = :id, ativo = :ativo`
             }
 
             const [rows] = await this.#conn.query(query,this.#field);

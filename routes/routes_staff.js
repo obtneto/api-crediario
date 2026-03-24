@@ -12,5 +12,6 @@ router.post('/auth/logout', ControllerStaffAuth.EncerrarSessao);
 
 router.get('/entidades', ControllerStaffEntidades.Listar);
 router.post('/entidades', ControllerStaffEntidades.Salvar);
+router.post('/entidades/:id/ativo', ControllerStaffEntidades.AtualizarStatus);
 
 export default router;

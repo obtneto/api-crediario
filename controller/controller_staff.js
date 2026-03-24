@@ -35,6 +35,14 @@ function safeCompare(leftValue = '', rightValue = '') {
     return crypto.timingSafeEqual(left, right);
 }
 
+function normalizarAtivo(value, fallback = 1) {
+    if (value === undefined || value === null || value === '') {
+        return Number(fallback) === 1 ? 1 : 0;
+    }
+
+    return Number(value) === 1 ? 1 : 0;
+}
+
 export class ControllerStaffAuth {
 
     static async IniciarSessao(req, res) {
@@ -175,7 +183,7 @@ export class ControllerStaffEntidades {
             const entidades = new Entidades(db.connection);
             let query = `SELECT id, nom_entidade, nom_responsavel, num_cnpj, cel_contato,
                                 cel_whatsapp_bussiness, percent_desconto_venda,
-                                percent_desconto_cobranca, com_rota_cobranca
+                                percent_desconto_cobranca, com_rota_cobranca, ativo
                          FROM tb_entidades`;
             const params = {};
 
@@ -203,6 +211,7 @@ export class ControllerStaffEntidades {
     }
 
     static async Salvar(req, res) {
+        
         const db = new Database('dbcred');
 
         const resdata = {
@@ -225,6 +234,7 @@ export class ControllerStaffEntidades {
             const percent_desconto_venda = Number(body.percent_desconto_venda || 0);
             const percent_desconto_cobranca = Number(body.percent_desconto_cobranca || 0);
             const com_rota_cobranca = Number(body.com_rota_cobranca || 0) === 1 ? 1 : 0;
+            let ativo = 1;
 
             if (!nom_entidade) {
                 const error = new Error('Informe o nome da entidade.');
@@ -241,6 +251,8 @@ export class ControllerStaffEntidades {
                 void await entidades.FindById(id);
             }
 
+            ativo = normalizarAtivo(body.ativo, id > 0 ? entidades.ativo : 1);
+
             entidades.id = id > 0 ? id : await entidades.newId();
             entidades.nom_entidade = nom_entidade;
             entidades.nom_responsavel = nom_responsavel;
@@ -250,6 +262,7 @@ export class ControllerStaffEntidades {
             entidades.percent_desconto_venda = percent_desconto_venda;
             entidades.percent_desconto_cobranca = percent_desconto_cobranca;
             entidades.com_rota_cobranca = com_rota_cobranca;
+            entidades.ativo = ativo;
 
             void await entidades.Save();
             void await db.Commit();
@@ -264,6 +277,69 @@ export class ControllerStaffEntidades {
             resdata.status = Number(error.statusCode || 500);
 
             GravarLog('ControllerStaffEntidades.Salvar', error.stack);
+        }
+
+        void await db.Close();
+
+        return res.status(resdata.status).json(resdata);
+    }
+
+    static async AtualizarStatus(req, res) {
+        const db = new Database('dbcred');
+
+        const resdata = {
+            err: 0,
+            msg: '',
+            status: 200,
+            data: {
+                id: 0,
+                ativo: 0
+            }
+        };
+
+        try {
+            const id = Number(req.params?.id || 0);
+            const ativo = normalizarAtivo(req.body?.ativo, 0);
+
+            if (id <= 0) {
+                const error = new Error('Entidade invalida para atualizar o status.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            void await db.Connect();
+            void await db.Begin();
+
+            const entidades = new Entidades(db.connection);
+            const entidade = await entidades.FindById(id);
+
+            if (!entidade) {
+                const error = new Error('Entidade nao encontrada.');
+                error.statusCode = 404;
+                throw error;
+            }
+
+            void await entidades.ExecuteQuery(
+                'UPDATE tb_entidades SET ativo = :ativo WHERE id = :id',
+                { id, ativo }
+            );
+            void await db.Commit();
+
+            resdata.msg = ativo === 1
+                ? 'Entidade reativada com sucesso.'
+                : 'Entidade bloqueada com sucesso.';
+            resdata.data = {
+                id,
+                ativo
+            };
+        } catch (error) {
+            void await db.RollBack();
+
+            resdata.err = Number(error.statusCode || 500);
+            resdata.msg = error.message;
+            resdata.status = Number(error.statusCode || 500);
+
+            GravarLog('ControllerStaffEntidades.AtualizarStatus', error.stack);
         }
 
         void await db.Close();
