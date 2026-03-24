@@ -7,6 +7,8 @@ const router = Router();
 router.use(criarMiddlewareSessao());
 
 router.get('/listar_cobrancas/:id/:com_rota_cobranca',ControllerCobranca.ListarCobrancas);
+router.get('/listar_cobrancas_periodo/:com_rota_cobranca',ControllerCobranca.ListarCobrancasPeriodo);
+router.get('/imprimir_cobrancas_periodo/:com_rota_cobranca',ControllerCobranca.ImprimirResumoPeriodo);
 router.get('/listar_pagamentos/:id_venda',ControllerCobranca.ListarPagamentos);
 router.post('/salvar_pagamento',ControllerCobranca.SalvarPagamento);
 router.get('/excluir_pagamento/:id_pagamento/:id_venda',ControllerCobranca.ExcluirPagamento);

@@ -94,3 +94,15 @@
 [24/03/2026 11:15:52] ControllerAuth.IniciarSessao: Error: Usuario ou senha invalidos.
     at IniciarSessao (file:///home/ovidio.neto/Crediario/backend/controller/controller_parametrizacao.js:172:31)
 
+[24/03/2026 17:29:27] ControllerVendedores.Listar: SqlError: (conn:549, no: 1226, SQLState: 42000) User 'obtneto' has exceeded the 'max_user_connections' resource (current value: 5)
+    at Module.createError (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/misc/errors.js:66:10)
+    at PacketNodeEncoded.readError (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/io/packet.js:595:19)
+    at Authentication.handshakeResult (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/handshake/authentication.js:196:32)
+    at Authentication.onPacketReceive (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/cmd/handshake/authentication.js:50:17)
+    at PacketInputStream.receivePacketBasic (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/io/packet-input-stream.js:94:9)
+    at PacketInputStream.onData (file:///home/ovidio.neto/Crediario/backend/node_modules/mariadb/lib/io/packet-input-stream.js:151:20)
+    at Socket.emit (node:events:508:28)
+    at addChunk (node:internal/streams/readable:563:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:514:3)
+    at Readable.push (node:internal/streams/readable:394:5)
+

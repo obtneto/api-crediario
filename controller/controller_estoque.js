@@ -122,6 +122,7 @@ export class ControllerEstoque {
 
             const document = buildTableDocument({
                 title: 'RELATORIO DE ESTOQUE',
+                organizationName: entidade?.nom_entidade || String(entidade_negocio),
                 subtitle,
                 widths: ['8%', '34%', '18%', '10%', '15%', '15%'],
                 body,

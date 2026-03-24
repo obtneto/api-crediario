@@ -811,7 +811,7 @@ export class ControllerEntidades{
 
         try {
 
-            const {id,nom_entidade,nom_responsavel,num_cnpj,cel_contato} = req.body;
+            const {id,nom_entidade,nom_responsavel,num_cnpj,cel_contato,percent_desconto_cobranca,percent_desconto_venda,cel_whatsapp_bussiness} = req.body;
             
             void await db.Connect();
 
@@ -826,6 +826,9 @@ export class ControllerEntidades{
             entidades.nom_responsavel = nom_responsavel;
             entidades.num_cnpj = num_cnpj;
             entidades.cel_contato = cel_contato;
+            entidades.cel_whatsapp_bussiness = cel_whatsapp_bussiness;
+            entidades.percent_desconto_venda = percent_desconto_venda;
+            entidades.percent_desconto_cobranca = percent_desconto_cobranca;
            
             void await entidades.Save();
 
@@ -2258,6 +2261,3 @@ export class ControllerTiposPagamentos{
 
     }
 }
-
-
-

@@ -66,25 +66,58 @@ export function formatDateBR(value, includeTime = false) {
 
 export function buildTableDocument({
     title,
+    organizationName = '',
+    description = 'Relatorio gerencial',
     subtitle = '',
     widths = ['*'],
     body = [],
     orientation = 'portrait'
 }) {
+    const generatedAt = formatDateBR(new Date(), true);
+
     return {
         pageSize: 'A4',
         pageOrientation: orientation,
-        pageMargins: [18, 56, 18, 44],
+        pageMargins: [18, 84, 18, 40],
         defaultStyle: {
             font: 'Roboto',
             fontSize: 8
         },
         header: () => ({
             margin: [18, 12, 18, 0],
-            stack: [
-                { text: title || 'RELATORIO', style: 'reportName' },
-                ...(subtitle ? [{ text: subtitle, style: 'reportSubtitle' }] : [])
-            ]
+            table: {
+                widths: ['*'],
+                body: [[
+                    {
+                        fillColor: '#f7faff',
+                        stack: [
+                            {
+                                columns: [
+                                    {
+                                        stack: [
+                                            { text: String(organizationName || 'CREDIARIO'), style: 'reportBrand' },
+                                            { text: String(description || 'Relatorio gerencial'), style: 'reportHint' }
+                                        ]
+                                    },
+                                    { text: generatedAt, style: 'reportMeta', alignment: 'right' }
+                                ]
+                            },
+                            { text: title || 'RELATORIO', style: 'reportName' },
+                            ...(subtitle ? [{ text: subtitle, style: 'reportSubtitle' }] : [])
+                        ]
+                    }
+                ]]
+            },
+            layout: {
+                hLineWidth: () => 1,
+                vLineWidth: () => 1,
+                hLineColor: () => '#d6e3f5',
+                vLineColor: () => '#d6e3f5',
+                paddingLeft: () => 14,
+                paddingRight: () => 14,
+                paddingTop: () => 12,
+                paddingBottom: () => 10
+            }
         }),
         content: [
             {
@@ -106,24 +139,44 @@ export function buildTableDocument({
         ],
         footer(currentPage, pageCount) {
             return {
-                margin: [18, 0, 18, 22],
-                text: `Pagina ${currentPage} de ${pageCount}`,
-                alignment: 'right',
-                fontSize: 7
+                margin: [18, 0, 18, 16],
+                columns: [
+                    { text: `Emitido em ${generatedAt}`, style: 'footerMeta' },
+                    { text: `Pagina ${currentPage} de ${pageCount}`, alignment: 'right', style: 'footerMeta' }
+                ]
             };
         },
         styles: {
-            reportName: {
-                fontSize: 10,
+            reportBrand: {
+                fontSize: 7,
                 bold: true,
-                alignment: 'center',
-                margin: [0, 4, 0, 2]
+                color: '#1f4f96',
+                characterSpacing: 1.4
+            },
+            reportHint: {
+                fontSize: 7,
+                color: '#64748b',
+                margin: [0, 2, 0, 0]
+            },
+            reportMeta: {
+                fontSize: 7,
+                color: '#516174',
+                margin: [0, 1, 0, 0]
+            },
+            reportName: {
+                fontSize: 12,
+                bold: true,
+                color: '#10213d',
+                margin: [0, 10, 0, 3]
             },
             reportSubtitle: {
                 fontSize: 8,
-                alignment: 'center',
                 color: '#4a5568',
-                margin: [0, 0, 0, 2]
+                margin: [0, 0, 0, 1]
+            },
+            footerMeta: {
+                fontSize: 7,
+                color: '#64748b'
             }
         }
     };

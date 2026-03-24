@@ -232,6 +232,11 @@ export class ControllerComissoes {
             }
 
             const total = rows.reduce((acc, item) => acc + Number(item?.vl_adiantamento || 0), 0);
+            const entidades = new Entidades(db.connection, entidade_negocio);
+            const [entidade] = await entidades.ExecuteQuery(
+                `SELECT id, nom_entidade FROM tb_entidades WHERE id = ?`,
+                [entidade_negocio]
+            );
             const subtitle = `${labelDestino}: ${nomeDestino} | Total: ${formatCurrencyBR(total)}`;
             const body = [
                 [
@@ -250,6 +255,7 @@ export class ControllerComissoes {
 
             const document = buildTableDocument({
                 title: 'RELATORIO DE ADIANTAMENTOS',
+                organizationName: entidade?.nom_entidade || String(entidade_negocio),
                 subtitle,
                 widths: ['12%', '36%', '30%', '22%'],
                 body

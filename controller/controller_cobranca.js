@@ -5,6 +5,7 @@ import Entidades from '../model/dao_entidades.js';
 import Vendas from '../model/dao_vendas.js';
 import Pagamentos from '../model/dao_pagamentos.js';
 import Adiantamentos from '../model/dao_adiantamentos.js';
+import {buildTableDocument, formatCurrencyBR, formatDateBR, sendPdfResponse} from '../utils/PdfReport.js';
 
 export class ControllerCobranca {
 
@@ -152,6 +153,282 @@ export class ControllerCobranca {
         void await db.Close();
 
         res.status(resdata.status).json(resdata);
+
+    }
+
+    static async ListarCobrancasPeriodo(req, res) {
+
+        const db = new Database('dbcred');
+
+        const resdata = {
+            err: 0,
+            status: 200,
+            msg: '',
+            data: {
+                cobrancas: [],
+                entidades: [],
+                resumo: {
+                    quantidade: 0,
+                    total_recebido: 0
+                },
+                paginacao: {
+                    page: 1,
+                    limit: 50,
+                    total: 0,
+                    total_pages: 0
+                }
+            }
+        };
+
+        try {
+            const entidade_negocio = obterEntidadeNegocio(req);
+            const com_rota_cobranca = Number(req.params.com_rota_cobranca || 0);
+            const fieldname = com_rota_cobranca === 1 ? 'id_rota' : 'id_cobrador';
+            const responsavelJoin = com_rota_cobranca === 1
+                ? 'LEFT JOIN tb_rotas resp ON resp.id = v.id_rota AND resp.entidade_negocio = v.entidade_negocio'
+                : 'LEFT JOIN tb_cobradores resp ON resp.id = v.id_cobrador AND resp.entidade_negocio = v.entidade_negocio';
+            const responsavelNameField = com_rota_cobranca === 1 ? 'resp.nom_rota' : 'resp.nom_cobrador';
+            const dt_ini = String(req.query.dt_ini || '').trim();
+            const dt_fim = String(req.query.dt_fim || '').trim();
+            const page = Math.max(1, Number(req.query.page || 1));
+            const limit = Math.min(200, Math.max(1, Number(req.query.limit || 50)));
+            const offset = (page - 1) * limit;
+
+            if (!dt_ini || !dt_fim) {
+                const error = new Error('Informe data inicial e data final.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(dt_ini)) {
+                const error = new Error('Data inicial invalida.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(dt_fim)) {
+                const error = new Error('Data final invalida.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (dt_ini > dt_fim) {
+                const error = new Error('Data inicial nao pode ser maior que data final.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            const dtIniDate = new Date(`${dt_ini}T00:00:00Z`);
+            const dtFimDate = new Date(`${dt_fim}T00:00:00Z`);
+            const diffMs = dtFimDate.getTime() - dtIniDate.getTime();
+            const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+            if (diffDays >= 45) {
+                const error = new Error('Intervalo deve ser inferior a 45 dias.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            void await db.Connect();
+
+            const cobrancas = new Vendas(db.connection, entidade_negocio);
+            const entidades = new Entidades(db.connection, entidade_negocio);
+
+            const whereClause = [
+                'pg.entidade_negocio = ?',
+                'pg.dt_pagamento >= ?',
+                'pg.dt_pagamento <= ?',
+                `v.${fieldname} IS NOT NULL`,
+                'v.marca_venda IS NULL'
+            ];
+            
+            const params = [entidade_negocio, dt_ini, dt_fim];
+
+            let query = `SELECT pg.id AS id_pagamento, pg.id_venda, pg.dt_pagamento, pg.vl_pagamento, pg.num_recibo,
+                                v.${fieldname} AS id_responsavel, ${responsavelNameField} AS nom_responsavel,
+                                c.cpf_cliente, c.nom_cliente, c.nom_usual, c.end_cliente, c.bai_cliente, c.cid_cliente, c.uf_cliente,
+                                v.val_tot_venda,
+                                COALESCE(pg_total.total_pago_venda, 0) AS val_total_pago,
+                                GREATEST(v.val_tot_venda - COALESCE(pg_total.total_pago_venda, 0), 0) AS saldo_pagar
+                         FROM tb_pagamentos pg
+                         INNER JOIN tb_vendas v ON v.id = pg.id_venda AND v.entidade_negocio = pg.entidade_negocio
+                         LEFT JOIN tb_clientes c ON c.cpf_cliente = v.cpf_cliente
+                         LEFT JOIN (
+                             SELECT entidade_negocio, id_venda, COALESCE(SUM(vl_pagamento), 0) AS total_pago_venda
+                             FROM tb_pagamentos
+                             GROUP BY entidade_negocio, id_venda
+                         ) pg_total ON pg_total.entidade_negocio = v.entidade_negocio AND pg_total.id_venda = v.id
+                         ${responsavelJoin}
+                         WHERE ${whereClause.join(' AND ')}
+                         ORDER BY pg.dt_pagamento DESC, pg.id DESC
+                         LIMIT ? OFFSET ?`;
+
+            resdata.data.cobrancas = await cobrancas.ExecuteQuery(query, [...params, limit, offset]);
+
+            query = `SELECT COUNT(*) AS total,
+                            COALESCE(SUM(pg.vl_pagamento), 0) AS total_recebido
+                     FROM tb_pagamentos pg
+                     INNER JOIN tb_vendas v ON v.id = pg.id_venda AND v.entidade_negocio = pg.entidade_negocio
+                     WHERE ${whereClause.join(' AND ')}`;
+
+            const resumoBase = await cobrancas.ExecuteQuery(query, params);
+            const resumoAtual = Array.isArray(resumoBase) && resumoBase[0] ? resumoBase[0] : {};
+            const total = Number(resumoAtual?.total || 0);
+            const totalRecebido = Number(resumoAtual?.total_recebido || 0);
+
+            query = `SELECT id,nom_entidade FROM tb_entidades WHERE id = ?`;
+            resdata.data.entidades = await entidades.ExecuteQuery(query, [entidade_negocio]);
+            resdata.data.resumo = {
+                quantidade: total,
+                total_recebido: totalRecebido
+            };
+            resdata.data.paginacao = {
+                page,
+                limit,
+                total,
+                total_pages: total > 0 ? Math.ceil(total / limit) : 0
+            };
+        } catch (error) {
+            resdata.err = Number(error.statusCode || 500);
+            resdata.msg = error.message;
+            resdata.status = Number(error.statusCode || 500);
+
+            GravarLog('ControllerCobranca.ListarCobrancasPeriodo', error.stack);
+        }
+
+        void await db.Close();
+
+        res.status(resdata.status).json(resdata);
+
+    }
+
+    static async ImprimirResumoPeriodo(req, res) {
+
+        const db = new Database('dbcred');
+
+        try {
+            const entidade_negocio = obterEntidadeNegocio(req);
+            const com_rota_cobranca = Number(req.params.com_rota_cobranca || 0);
+            const fieldname = com_rota_cobranca === 1 ? 'id_rota' : 'id_cobrador';
+            const responsavelJoin = com_rota_cobranca === 1
+                ? 'LEFT JOIN tb_rotas resp ON resp.id = v.id_rota AND resp.entidade_negocio = v.entidade_negocio'
+                : 'LEFT JOIN tb_cobradores resp ON resp.id = v.id_cobrador AND resp.entidade_negocio = v.entidade_negocio';
+            const responsavelNameField = com_rota_cobranca === 1 ? 'resp.nom_rota' : 'resp.nom_cobrador';
+            const responsavelLabel = com_rota_cobranca === 1 ? 'Rota' : 'Cobrador';
+            const dt_ini = String(req.query.dt_ini || '').trim();
+            const dt_fim = String(req.query.dt_fim || '').trim();
+
+            if (!dt_ini || !dt_fim) {
+                const error = new Error('Informe data inicial e data final.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(dt_ini)) {
+                const error = new Error('Data inicial invalida.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(dt_fim)) {
+                const error = new Error('Data final invalida.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (dt_ini > dt_fim) {
+                const error = new Error('Data inicial nao pode ser maior que data final.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            const dtIniDate = new Date(`${dt_ini}T00:00:00Z`);
+            const dtFimDate = new Date(`${dt_fim}T00:00:00Z`);
+            const diffMs = dtFimDate.getTime() - dtIniDate.getTime();
+            const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+            if (diffDays >= 45) {
+                const error = new Error('Intervalo deve ser inferior a 45 dias.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            void await db.Connect();
+
+            const cobrancas = new Vendas(db.connection, entidade_negocio);
+            const entidades = new Entidades(db.connection, entidade_negocio);
+            const query = `SELECT v.${fieldname} AS id_responsavel,
+                                  COALESCE(${responsavelNameField}, 'Sem responsavel') AS nom_responsavel,
+                                  COUNT(pg.id) AS qt_pagamentos,
+                                  COALESCE(SUM(pg.vl_pagamento), 0) AS total_recebido
+                           FROM tb_pagamentos pg
+                           INNER JOIN tb_vendas v ON v.id = pg.id_venda AND v.entidade_negocio = pg.entidade_negocio
+                           ${responsavelJoin}
+                           WHERE pg.entidade_negocio = ?
+                             AND pg.dt_pagamento >= ?
+                             AND pg.dt_pagamento <= ?
+                             AND v.${fieldname} IS NOT NULL
+                             AND v.marca_venda IS NULL
+                           GROUP BY v.${fieldname}, ${responsavelNameField}
+                           ORDER BY total_recebido DESC, nom_responsavel ASC`;
+
+            const rows = await cobrancas.ExecuteQuery(query, [entidade_negocio, dt_ini, dt_fim]);
+
+            if (!Array.isArray(rows) || rows.length === 0) {
+                const error = new Error('Nao ha dados para impressao.');
+                error.statusCode = 404;
+                throw error;
+            }
+
+            const [entidade] = await entidades.ExecuteQuery(
+                `SELECT id, nom_entidade FROM tb_entidades WHERE id = ?`,
+                [entidade_negocio]
+            );
+            const totalQt = rows.reduce((acc, item) => acc + Number(item?.qt_pagamentos || 0), 0);
+            const totalRecebido = rows.reduce((acc, item) => acc + Number(item?.total_recebido || 0), 0);
+            const subtitle = `Periodo: ${formatDateBR(dt_ini)} a ${formatDateBR(dt_fim)}`;
+            const body = [
+                [
+                    { text: responsavelLabel, bold: true, fontSize: 9, alignment: 'left' },
+                    { text: 'Qtd. pagamentos', bold: true, fontSize: 9, alignment: 'right' },
+                    { text: 'Total recebido', bold: true, fontSize: 9, alignment: 'right' }
+                ],
+                ...rows.map((item) => ([
+                    { text: String(item?.nom_responsavel || 'Sem responsavel'), alignment: 'left' },
+                    { text: String(Number(item?.qt_pagamentos || 0)), alignment: 'right' },
+                    { text: formatCurrencyBR(item?.total_recebido), alignment: 'right' }
+                ])),
+                [
+                    { text: 'TOTAL GERAL', bold: true, alignment: 'left' },
+                    { text: String(totalQt), bold: true, alignment: 'right' },
+                    { text: formatCurrencyBR(totalRecebido), bold: true, alignment: 'right' }
+                ]
+            ];
+
+            const document = buildTableDocument({
+                title: 'RELATORIO DE COBRANCA POR RESPONSAVEL',
+                organizationName: entidade?.nom_entidade || String(entidade_negocio),
+                subtitle,
+                widths: ['52%', '18%', '30%'],
+                body,
+                orientation: 'portrait'
+            });
+
+            await sendPdfResponse(res, `relatorio-cobranca-${dt_ini}-${dt_fim}.pdf`, document);
+        } catch (error) {
+            if (!res.headersSent) {
+                res.status(Number(error.statusCode || 500)).json({
+                    err: Number(error.statusCode || 500),
+                    msg: error.message,
+                    status: Number(error.statusCode || 500),
+                    data: []
+                });
+            }
+
+            GravarLog('ControllerCobranca.ImprimirResumoPeriodo', error.stack);
+        }
+
+        void await db.Close();
 
     }
 

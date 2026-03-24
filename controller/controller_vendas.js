@@ -10,7 +10,7 @@ import Rotas from '../model/dao_rotas.js';
 import Adiantamentos from '../model/dao_adiantamentos.js';
 import GravarLog from '../utils/GravarLog.js';
 import {obterEntidadeNegocio} from '../utils/CheckEntidades.js';
-import {buildTableDocument, formatDateBR, sendPdfResponse} from '../utils/PdfReport.js';
+import {buildTableDocument, formatCurrencyBR, formatDateBR, sendPdfResponse} from '../utils/PdfReport.js';
 
 export class ControllerDistribuicao{
 
@@ -404,6 +404,11 @@ export class ControllerDistribuicao{
                 throw error;
             }
 
+            const entidades = new Entidades(db.connection, entidade_negocio);
+            const [entidade] = await entidades.ExecuteQuery(
+                `SELECT id, nom_entidade FROM tb_entidades WHERE id = ?`,
+                [entidade_negocio]
+            );
             const vendedor = String(rows[0]?.nom_vendedor || '-');
             const periodo = dt_ini && dt_fim ? `Periodo: ${formatDateBR(dt_ini)} a ${formatDateBR(dt_fim)}` : '';
             const filtroProduto = pesq ? `Filtro: ${pesq}` : '';
@@ -426,6 +431,7 @@ export class ControllerDistribuicao{
 
             const document = buildTableDocument({
                 title: 'RELATORIO DE DISTRIBUICAO',
+                organizationName: entidade?.nom_entidade || String(entidade_negocio),
                 subtitle,
                 widths: ['16%', '52%', '12%', '20%'],
                 body
@@ -796,6 +802,245 @@ export class ControllerVendas {
         void await db.Close();
 
         res.status(resdata.status).json(resdata);
+
+    }
+
+    static async ListarPeriodo(req,res) {
+
+        const db = new Database('dbcred');
+
+        const resdata = {
+            err: 0,
+            msg: '',
+            status: 200,
+            data: {
+                vendas: [],
+                entidades: [],
+                resumo: {
+                    quantidade: 0,
+                    total_geral: 0
+                },
+                paginacao: {
+                    page: 1,
+                    limit: 50,
+                    total: 0,
+                    total_pages: 0
+                }
+            }
+        };
+
+        try {
+            const entidade_negocio = obterEntidadeNegocio(req);
+            const dt_ini = String(req.query.dt_ini || '').trim();
+            const dt_fim = String(req.query.dt_fim || '').trim();
+            const page = Math.max(1, Number(req.query.page || 1));
+            const limit = Math.min(200, Math.max(1, Number(req.query.limit || 50)));
+            const offset = (page - 1) * limit;
+
+            if (!dt_ini || !dt_fim) {
+                const error = new Error('Informe data inicial e data final.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(dt_ini)) {
+                const error = new Error('Data inicial invalida.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(dt_fim)) {
+                const error = new Error('Data final invalida.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (dt_ini > dt_fim) {
+                const error = new Error('Data inicial nao pode ser maior que data final.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            const dtIniDate = new Date(`${dt_ini}T00:00:00Z`);
+            const dtFimDate = new Date(`${dt_fim}T00:00:00Z`);
+            const diffMs = dtFimDate.getTime() - dtIniDate.getTime();
+            const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+            if (diffDays > 45) {
+                const error = new Error('Intervalo maximo permitido e de 45 dias.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            void await db.Connect();
+
+            const vendas = new Vendas(db.connection, entidade_negocio);
+            const entidades = new Entidades(db.connection, entidade_negocio);
+            const whereClause = ['v.entidade_negocio = ?', 'v.dt_venda >= ?', 'v.dt_venda <= ?'];
+            const params = [entidade_negocio, dt_ini, dt_fim];
+
+            let query = `SELECT v.id, v.dt_venda, v.id_vendedor, vd.nom_vendedor, v.cpf_cliente, c.nom_cliente, c.nom_usual,
+                                c.end_cliente, c.bai_cliente, c.cid_cliente, c.uf_cliente, v.val_tot_venda, v.referencia,
+                                v.situacao, v.num_recibo, tp.nom_tipo
+                         FROM tb_vendas v
+                         LEFT JOIN tb_clientes c ON c.cpf_cliente = v.cpf_cliente
+                         LEFT JOIN tb_tipos_pagamentos tp ON tp.id = v.id_tipo_pag AND tp.entidade_negocio = v.entidade_negocio
+                         LEFT JOIN tb_vendedores vd ON vd.id = v.id_vendedor AND vd.entidade_negocio = v.entidade_negocio
+                         WHERE ${whereClause.join(' AND ')}
+                         ORDER BY v.dt_venda DESC, v.id DESC
+                         LIMIT ? OFFSET ?`;
+
+            resdata.data.vendas = await vendas.ExecuteQuery(query, [...params, limit, offset]);
+
+            query = `SELECT COUNT(*) AS total,
+                            COALESCE(SUM(v.val_tot_venda), 0) AS total_geral
+                     FROM tb_vendas v
+                     WHERE ${whereClause.join(' AND ')}`;
+
+            const resumoResult = await vendas.ExecuteQuery(query, params);
+            const resumoAtual = Array.isArray(resumoResult) && resumoResult[0] ? resumoResult[0] : {};
+            const total = Number(resumoAtual?.total || 0);
+
+            query = `SELECT id,nom_entidade FROM tb_entidades WHERE id = ?`;
+            resdata.data.entidades = await entidades.ExecuteQuery(query, [entidade_negocio]);
+            resdata.data.resumo = {
+                quantidade: total,
+                total_geral: Number(resumoAtual?.total_geral || 0)
+            };
+            resdata.data.paginacao = {
+                page,
+                limit,
+                total,
+                total_pages: total > 0 ? Math.ceil(total / limit) : 0
+            };
+        } catch (error) {
+            resdata.err = Number(error.statusCode || 500);
+            resdata.msg = error.message;
+            resdata.status = Number(error.statusCode || 500);
+
+            GravarLog('ControllerVendas.ListarPeriodo', error.stack);
+        }
+
+        void await db.Close();
+
+        res.status(resdata.status).json(resdata);
+
+    }
+
+    static async ImprimirResumoPeriodo(req,res) {
+
+        const db = new Database('dbcred');
+
+        try {
+            const entidade_negocio = obterEntidadeNegocio(req);
+            const dt_ini = String(req.query.dt_ini || '').trim();
+            const dt_fim = String(req.query.dt_fim || '').trim();
+
+            if (!dt_ini || !dt_fim) {
+                const error = new Error('Informe data inicial e data final.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(dt_ini)) {
+                const error = new Error('Data inicial invalida.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(dt_fim)) {
+                const error = new Error('Data final invalida.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (dt_ini > dt_fim) {
+                const error = new Error('Data inicial nao pode ser maior que data final.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            const dtIniDate = new Date(`${dt_ini}T00:00:00Z`);
+            const dtFimDate = new Date(`${dt_fim}T00:00:00Z`);
+            const diffMs = dtFimDate.getTime() - dtIniDate.getTime();
+            const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+            if (diffDays > 45) {
+                const error = new Error('Intervalo maximo permitido e de 45 dias.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            void await db.Connect();
+
+            const vendas = new Vendas(db.connection, entidade_negocio);
+            const query = `SELECT v.id_vendedor, COALESCE(vd.nom_vendedor, 'Sem vendedor') AS nom_vendedor,
+                                  COUNT(*) AS qt_vendas, COALESCE(SUM(v.val_tot_venda), 0) AS total_vendido
+                           FROM tb_vendas v
+                           LEFT JOIN tb_vendedores vd ON vd.id = v.id_vendedor AND vd.entidade_negocio = v.entidade_negocio
+                           WHERE v.entidade_negocio = ?
+                             AND v.dt_venda >= ?
+                             AND v.dt_venda <= ?
+                           GROUP BY v.id_vendedor, vd.nom_vendedor
+                           ORDER BY total_vendido DESC, nom_vendedor ASC`;
+
+            const rows = await vendas.ExecuteQuery(query, [entidade_negocio, dt_ini, dt_fim]);
+
+            if (!Array.isArray(rows) || rows.length === 0) {
+                const error = new Error('Nao ha dados para impressao.');
+                error.statusCode = 404;
+                throw error;
+            }
+
+            const entidades = new Entidades(db.connection, entidade_negocio);
+            const [entidade] = await entidades.ExecuteQuery(
+                `SELECT id, nom_entidade FROM tb_entidades WHERE id = ?`,
+                [entidade_negocio]
+            );
+            const totalQtVendas = rows.reduce((acc, item) => acc + Number(item?.qt_vendas || 0), 0);
+            const totalGeral = rows.reduce((acc, item) => acc + Number(item?.total_vendido || 0), 0);
+            const subtitle = `Periodo: ${formatDateBR(dt_ini)} a ${formatDateBR(dt_fim)}`;
+            const body = [
+                [
+                    { text: 'Vendedor', bold: true, fontSize: 9, alignment: 'left' },
+                    { text: 'Qtd. vendas', bold: true, fontSize: 9, alignment: 'right' },
+                    { text: 'Total vendido', bold: true, fontSize: 9, alignment: 'right' }
+                ],
+                ...rows.map((item) => ([
+                    { text: String(item?.nom_vendedor || 'Sem vendedor'), alignment: 'left' },
+                    { text: String(Number(item?.qt_vendas || 0)), alignment: 'right' },
+                    { text: formatCurrencyBR(item?.total_vendido), alignment: 'right' }
+                ])),
+                [
+                    { text: 'TOTAL GERAL', bold: true, alignment: 'left' },
+                    { text: String(totalQtVendas), bold: true, alignment: 'right' },
+                    { text: formatCurrencyBR(totalGeral), bold: true, alignment: 'right' }
+                ]
+            ];
+
+            const document = buildTableDocument({
+                title: 'RELATORIO DE VENDAS POR VENDEDOR',
+                organizationName: entidade?.nom_entidade || String(entidade_negocio),
+                subtitle,
+                widths: ['52%', '18%', '30%'],
+                body
+            });
+
+            await sendPdfResponse(res, `relatorio-vendas-${dt_ini}-${dt_fim}.pdf`, document);
+        } catch (error) {
+            if (!res.headersSent) {
+                res.status(Number(error.statusCode || 500)).json({
+                    err: Number(error.statusCode || 500),
+                    msg: error.message,
+                    status: Number(error.statusCode || 500),
+                    data: []
+                });
+            }
+
+            GravarLog('ControllerVendas.ImprimirResumoPeriodo', error.stack);
+        }
+
+        void await db.Close();
 
     }
 
