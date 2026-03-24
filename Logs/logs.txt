@@ -88,3 +88,9 @@
 
 [23/03/2026 22:35:07] Erro ao salvar cliente: The mail.seudominio.com.br domain is not verified. Please, add and verify your domain on https://resend.com/domains: undefined
 
+[24/03/2026 10:56:09] ControllerAuth.IniciarSessao: Error: Usuario ou senha invalidos.
+    at IniciarSessao (file:///home/ovidio.neto/Crediario/backend/controller/controller_parametrizacao.js:172:31)
+
+[24/03/2026 11:15:52] ControllerAuth.IniciarSessao: Error: Usuario ou senha invalidos.
+    at IniciarSessao (file:///home/ovidio.neto/Crediario/backend/controller/controller_parametrizacao.js:172:31)
+

@@ -35,25 +35,33 @@ export function formatDateBR(value, includeTime = false) {
         return '-';
     }
 
-    const date = new Date(text.includes('T') ? text : text.replace(' ', 'T'));
+    if (/^\d{4}-\d{2}-\d{2}$/.test(text)) {
+        const [year, month, day] = text.split('-');
+        return `${day}/${month}/${year}`;
+    }
+
+    const normalizedText = text.includes('T') ? text : text.replace(' ', 'T');
+    const date = new Date(normalizedText);
 
     if (Number.isNaN(date.getTime())) {
         return text;
     }
 
-    return date.toLocaleString('pt-BR', includeTime ? {
+    return includeTime
+        ? date.toLocaleString('pt-BR', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            timeZone: 'America/Maceio'
+        })
+        : date.toLocaleDateString('pt-BR', {
         day: '2-digit',
         month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        timeZone: 'America/Maceio'
-    } : {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        timeZone: 'America/Maceio'
-    });
+            year: 'numeric',
+            timeZone: 'America/Maceio'
+        });
 }
 
 export function buildTableDocument({

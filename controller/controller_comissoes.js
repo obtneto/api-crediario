@@ -665,7 +665,7 @@ export class ControllerComissoes {
                             ],
                             [
                                 { text: `Recibo Nº ${itemRecibo.num_recibo}`, alignment: 'right', bold: true, fontSize: 11 },
-                                { text: `Data: ${formatDateBR(itemRecibo.dt_recibo, true)}`, alignment: 'right', margin: [0, 2, 0, 0] }
+                                { text: `Data: ${formatDateBR(itemRecibo.dt_recibo)}`, alignment: 'right', margin: [0, 2, 0, 0] }
                             ]
                         ],
                         margin: [0, 0, 0, 18]
@@ -913,7 +913,7 @@ export class ControllerComissoes {
                             ],
                             [
                                 { text: `Recibo Nº ${itemRecibo.num_recibo}`, alignment: 'right', bold: true, fontSize: 11 },
-                                { text: `Data: ${formatDateBR(itemRecibo.dt_recibo, true)}`, alignment: 'right', margin: [0, 2, 0, 0] }
+                                { text: `Data: ${formatDateBR(itemRecibo.dt_recibo)}`, alignment: 'right', margin: [0, 2, 0, 0] }
                             ]
                         ],
                         margin: [0, 0, 0, 18]
@@ -923,7 +923,7 @@ export class ControllerComissoes {
                             descricao: `Recebi de ${nomeEntidade} a importancia liquida de ${formatCurrencyBR(valorLiquido)} referente ao pagamento de comissao do vendedor ${nomeVendedor}.`,
                             tipoRecibo: String(itemRecibo?.tp_recibo || 'COMISSAO VENDEDOR'),
                             detalhesExtras: [
-                                `Total recebido em cobrancas: ${formatCurrencyBR(totalVendas)}`
+                                `Total recebido em vendas: ${formatCurrencyBR(totalVendas)}`
                             ],
                             valorBruto: valorRecibo,
                             valorAdiantado,
