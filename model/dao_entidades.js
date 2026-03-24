@@ -12,7 +12,8 @@ export default class Entidades {
         com_rota_cobranca: 0,
         cel_whatsapp_bussiness: null,
         percent_desconto_venda: 0,
-        percent_desconto_cobranca: 0
+        percent_desconto_cobranca: 0,
+        ativo: 0
     }
 
     constructor(connection) {
@@ -54,6 +55,9 @@ export default class Entidades {
     set com_rota_cobranca(com_rota_cobranca) {this.#field.com_rota_cobranca = com_rota_cobranca}
     get com_rota_cobranca() {return this.#field.com_rota_cobranca}
 
+    set ativo(ativo) {this.#field.ativo = Number(ativo)}
+    get ativo() { return Number(this.#field.ativo)}
+
     async ExecuteQuery(query, params = {}) {
         try {
             const rows = await this.#conn.execute(query, params);
@@ -82,6 +86,7 @@ export default class Entidades {
                 this.com_rota_cobranca = rows.com_rota_cobranca;
                 this.percent_desconto_venda = rows.percent_desconto_venda;
                 this.percent_desconto_cobranca = rows.percent_desconto_cobranca;
+                this.ativo = rows.ativo;
                 this.#found = true;
             } else {
                 this.#found = false;
@@ -102,7 +107,7 @@ export default class Entidades {
                 query = `UPDATE tb_entidades SET 
                 nom_entidade = :nom_entidade, nom_responsavel = :nom_responsavel, cel_whatsapp_bussiness = :cel_whatsapp_bussiness, 
                 num_cnpj = :num_cnpj, cel_contato = :cel_contato, com_rota_cobranca = :com_rota_cobranca,
-                percent_desconto_venda = :percent_desconto_venda, percent_desconto_cobranca = :percent_desconto_cobranca
+                percent_desconto_venda = :percent_desconto_venda, percent_desconto_cobranca = :percent_desconto_cobranca,ativo = :ativo
                 WHERE id = :id`;
             } else {
                 query = `INSERT INTO tb_entidades SET 
@@ -111,7 +116,7 @@ export default class Entidades {
                 cel_whatsapp_bussiness = :cel_whatsapp_bussiness,
                 percent_desconto_venda = :percent_desconto_venda,
                 percent_desconto_cobranca = :percent_desconto_cobranca,
-                com_rota_cobranca = :com_rota_cobranca, id = :id`
+                com_rota_cobranca = :com_rota_cobranca, id = :id,ativo = :ativo`
             }
 
             const [rows] = await this.#conn.query(query,this.#field);

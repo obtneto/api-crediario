@@ -106,3 +106,23 @@
     at readableAddChunkPushByteMode (node:internal/streams/readable:514:3)
     at Readable.push (node:internal/streams/readable:394:5)
 
+[24/03/2026 18:46:18] ControllerAuth.IniciarSessao: Error: Usuario ou senha invalidos.
+    at IniciarSessao (file:///home/ovidio.neto/Crediario/backend/controller/controller_parametrizacao.js:172:31)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+
+[24/03/2026 20:03:43] ControllerAuth.IniciarSessao: Error: Usuario ou senha invalidos.
+    at IniciarSessao (file:///home/ovidio.neto/Crediario/backend/controller/controller_parametrizacao.js:172:31)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+
+[24/03/2026 20:04:10] ControllerAuth.IniciarSessao: Error: Usuario ou senha invalidos.
+    at IniciarSessao (file:///home/ovidio.neto/Crediario/backend/controller/controller_parametrizacao.js:172:31)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+
+[24/03/2026 20:04:44] ControllerAuth.AlterarSenha: ReferenceError: buscarUsuarioAutenticacao is not defined
+    at AlterarSenha (file:///home/ovidio.neto/Crediario/backend/controller/controller_parametrizacao.js:462:29)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+
+[24/03/2026 20:04:56] ControllerAuth.AlterarSenha: ReferenceError: buscarUsuarioAutenticacao is not defined
+    at AlterarSenha (file:///home/ovidio.neto/Crediario/backend/controller/controller_parametrizacao.js:462:29)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+

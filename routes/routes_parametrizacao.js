@@ -23,7 +23,7 @@ router.get('/auth/session',ControllerAuth.SessaoAtual);
 router.post('/auth/logout',ControllerAuth.EncerrarSessao);
 router.post('/auth/change-password',ControllerAuth.AlterarSenha);
 router.get('/listar_entidades_publico',ControllerEntidades.Listar);
-router.get('/listar_entidades',ControllerEntidades.Listar);
+router.get('/listar_entidades',ControllerEntidades.ListarAtivos);
 
 /**** Usuarios ****/
 router.get('/listar_usuarios/:pesq/',ControllerUsuarios.Listar);

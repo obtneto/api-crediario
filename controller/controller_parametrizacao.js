@@ -79,6 +79,12 @@ async function buscarUsuariosAutenticacao(connection, user) {
     return Array.isArray(usuarios) ? usuarios : [];
 }
 
+async function buscarUsuarioAutenticacao(connection, entidade_negocio, user) {
+    const usuarios = await buscarUsuariosAutenticacao(connection, user);
+
+    return usuarios.find((item) => Number(item?.entidade_negocio || 0) === Number(entidade_negocio || 0)) || null;
+}
+
 async function buscarEntidadeAuth(entidades, entidade_negocio) {
     
     const [entidade] = await entidades.ExecuteQuery(
@@ -354,7 +360,7 @@ export class ControllerAuth {
             }
 
             const usuarios = new Usuarios(db.connection, entidade_negocio);
-            const usuario = await buscarUsuarioAutenticacao(usuarios, entidade_negocio, user);
+            const usuario = await buscarUsuarioAutenticacao(db.connection, entidade_negocio, user);
 
             if (!usuario) {
                 const error = new Error('Usuario nao encontrado.');
@@ -459,7 +465,7 @@ export class ControllerAuth {
             }
 
             const usuarios = new Usuarios(db.connection, entidade_negocio);
-            const usuario = await buscarUsuarioAutenticacao(usuarios, entidade_negocio, user);
+            const usuario = await buscarUsuarioAutenticacao(db.connection, entidade_negocio, user);
 
             if (!usuario) {
                 const error = new Error('Usuario nao encontrado.');
@@ -754,6 +760,43 @@ export class ControllerUsuarios{
 }
 
 export class ControllerEntidades{
+
+    static async ListarAtivos(req,res) {
+
+        const db = new Database('dbcred');
+
+        const resdata = {
+            err: 0,
+            msg: '',
+            status: 200,
+            data: []
+        }
+
+        try {
+            void await db.Connect();
+
+            const entidades = new Entidades(db.connection);
+            const id = obterEntidadeNegocio(req);
+
+            let query = `SELECT id,nom_entidade,nom_responsavel,num_cnpj,cel_contato
+            FROM tb_entidades WHERE ativo = 1 AND id = :id`;
+            
+            resdata.data = await entidades.ExecuteQuery(query, {id});
+
+        } catch (error) {
+
+            resdata.err = 500;
+            resdata.msg = error.message;
+            resdata.status = 500;
+
+            GravarLog('ControllerEntidades.Listar', error.stack);
+        }
+
+        void await db.Close();
+
+        res.status(resdata.status).json(resdata);
+
+    }
 
     static async Listar(req,res) {
 

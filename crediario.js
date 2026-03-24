@@ -6,6 +6,7 @@ import router_estoque from './routes/routes_estoque.js';
 import route_clientes from './routes/routes_clientes.js';
 import route_cobranca from './routes/routes_cobranca.js';
 import route_comissoes from './routes/routes_comissoes.js';
+import route_staff from './routes/routes_staff.js';
 
 import {config} from 'dotenv';
 import helmet from 'helmet';
@@ -83,13 +84,14 @@ const corsOptions = {
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'x-entidade-negocio'],
-    exposedHeaders: ['x-crediario-token']
+    exposedHeaders: ['x-crediario-token', 'x-crediario-staff-token']
 };
 
 // Criar o middleware para permitir requisição externa
 app.use(cors(corsOptions));
 app.options(/.*/, cors(corsOptions));
 
+app.use('/staff', route_staff);
 app.use(router_param);
 app.use(router_vendas);
 app.use(router_estoque);
