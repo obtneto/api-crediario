@@ -60,73 +60,70 @@ export default class Entidades {
 
     async ExecuteQuery(query, params = {}) {
         
-            const rows = await this.#conn.execute(query, params);
-            return rows;
+        const rows = await this.#conn.execute(query, params);
+        return rows;
         
-
     }
 
     async FindById(id) {
 
-            const query = `SELECT * FROM tb_entidades WHERE id = :id`;
+        const query = `SELECT * FROM tb_entidades WHERE id = :id`;
 
-            const [rows] = await this.#conn.query(query,{id});
+        const [rows] = await this.#conn.query(query,{id});
 
-            if (rows) {
-                this.id = rows.id;
-                this.nom_entidade = rows.nom_entidade;
-                this.nom_responsavel = rows.nom_responsavel;
-                this.num_cnpj = rows.num_cnpj;
-                this.cel_contato = rows.cel_contato;
-                this.cel_whatsapp_bussiness = rows.cel_whatsapp_bussiness;
-                this.com_rota_cobranca = rows.com_rota_cobranca;
-                this.percent_desconto_venda = rows.percent_desconto_venda;
-                this.percent_desconto_cobranca = rows.percent_desconto_cobranca;
-                this.ativo = rows.ativo;
-                this.#found = true;
-            } else {
-                this.#found = false;
-            }
+        if (rows) {
+            this.id = rows.id;
+            this.nom_entidade = rows.nom_entidade;
+            this.nom_responsavel = rows.nom_responsavel;
+            this.num_cnpj = rows.num_cnpj;
+            this.cel_contato = rows.cel_contato;
+            this.cel_whatsapp_bussiness = rows.cel_whatsapp_bussiness;
+            this.com_rota_cobranca = rows.com_rota_cobranca;
+            this.percent_desconto_venda = rows.percent_desconto_venda;
+            this.percent_desconto_cobranca = rows.percent_desconto_cobranca;
+            this.ativo = rows.ativo;
+            this.#found = true;
+        } else {
+            this.#found = false;
+        }
 
-            return this.#found ? this.#field : this.#found;
+        return this.#found ? this.#field : this.#found;
 
     }
 
     async Save() {
         
-            let query;
+        let query;
 
-            if (this.#found) {
-                query = `UPDATE tb_entidades SET 
-                nom_entidade = :nom_entidade, nom_responsavel = :nom_responsavel, cel_whatsapp_bussiness = :cel_whatsapp_bussiness, 
-                num_cnpj = :num_cnpj, cel_contato = :cel_contato, com_rota_cobranca = :com_rota_cobranca,
-                percent_desconto_venda = :percent_desconto_venda, percent_desconto_cobranca = :percent_desconto_cobranca, ativo = :ativo
-                WHERE id = :id`;
-            } else {
-                query = `INSERT INTO tb_entidades SET 
-                nom_entidade = :nom_entidade, nom_responsavel = :nom_responsavel, 
-                num_cnpj = :num_cnpj, cel_contato = :cel_contato,
-                cel_whatsapp_bussiness = :cel_whatsapp_bussiness,
-                percent_desconto_venda = :percent_desconto_venda,
-                percent_desconto_cobranca = :percent_desconto_cobranca,
-                com_rota_cobranca = :com_rota_cobranca, id = :id, ativo = :ativo`
-            }
+        if (this.#found) {
+            query = `UPDATE tb_entidades SET 
+            nom_entidade = :nom_entidade, nom_responsavel = :nom_responsavel, cel_whatsapp_bussiness = :cel_whatsapp_bussiness, 
+            num_cnpj = :num_cnpj, cel_contato = :cel_contato, com_rota_cobranca = :com_rota_cobranca,
+            percent_desconto_venda = :percent_desconto_venda, percent_desconto_cobranca = :percent_desconto_cobranca, ativo = :ativo
+            WHERE id = :id`;
+        } else {
+            query = `INSERT INTO tb_entidades SET 
+            nom_entidade = :nom_entidade, nom_responsavel = :nom_responsavel, 
+            num_cnpj = :num_cnpj, cel_contato = :cel_contato,
+            cel_whatsapp_bussiness = :cel_whatsapp_bussiness,
+            percent_desconto_venda = :percent_desconto_venda,
+            percent_desconto_cobranca = :percent_desconto_cobranca,
+            com_rota_cobranca = :com_rota_cobranca, id = :id, ativo = :ativo`
+        }
 
-            const [rows] = await this.#conn.query(query,this.#field);
+        const [rows] = await this.#conn.query(query,this.#field);
 
-            return rows;
+        return rows;
         
-
     }
 
     async newId() {
         
-            const query =  `SELECT IFNULL(MAX(id),0) + 1 as newid FROM tb_entidades`;
-            const [rows] = await this.#conn.query(query);
+        const query =  `SELECT IFNULL(MAX(id),0) + 1 as newid FROM tb_entidades`;
+        const [rows] = await this.#conn.query(query);
 
-            return rows.newid;
+        return rows.newid;
         
-
     }
 
 }

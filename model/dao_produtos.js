@@ -76,32 +76,28 @@ export default class Produtos {
     async FindById(id) {
 
         let query = `SELECT * FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio AND id = :id`;
-        
-        
             
-            const [rows] = await this.#conn.query(query,{id,entidade_negocio:this.#entidade_negocio});
+        const [rows] = await this.#conn.query(query,{id,entidade_negocio:this.#entidade_negocio});
 
-            if (rows) {
+        if (rows) {
 
-                this.id = rows.id;
-                this.nom_produto = rows.nom_produto;
-                this.mar_produto = rows.mar_produto;
-                this.und_produto = rows.und_produto;
-                this.prc_vista = rows.prc_vista;
-                this.prc_prazo = rows.prc_prazo;
-                this.estq_max = rows.estq_max;
-                this.estq_min = rows.estq_min;
-                this.ativo = rows.ativo;
-                
-                this.#found = true;
+            this.id = rows.id;
+            this.nom_produto = rows.nom_produto;
+            this.mar_produto = rows.mar_produto;
+            this.und_produto = rows.und_produto;
+            this.prc_vista = rows.prc_vista;
+            this.prc_prazo = rows.prc_prazo;
+            this.estq_max = rows.estq_max;
+            this.estq_min = rows.estq_min;
+            this.ativo = rows.ativo;
+            
+            this.#found = true;
 
-            } else {
-                this.#found = false;
-            }
+        } else {
+            this.#found = false;
+        }
 
-            return this.#found ? this.#field : this.#found;
-
-        
+        return this.#found ? this.#field : this.#found;
 
     }
 
@@ -109,50 +105,40 @@ export default class Produtos {
 
         let query;
 
-            if (this.#found) {
+        if (this.#found) {
 
-                query = `UPDATE ${this.#tb_name} SET nom_produto = :nom_produto, mar_produto = :mar_produto, 
-                und_produto = :und_produto, prc_vista = :prc_vista, prc_prazo = :prc_prazo, 
-                estq_max = :estq_max, estq_min = :estq_min, ativo = :ativo
-                WHERE entidade_negocio = :entidade_negocio AND id = :id`;
+            query = `UPDATE ${this.#tb_name} SET nom_produto = :nom_produto, mar_produto = :mar_produto, 
+            und_produto = :und_produto, prc_vista = :prc_vista, prc_prazo = :prc_prazo, 
+            estq_max = :estq_max, estq_min = :estq_min, ativo = :ativo
+            WHERE entidade_negocio = :entidade_negocio AND id = :id`;
 
-            } else {
+        } else {
 
-                this.id = await this.#newId();
+            this.id = await this.#newId();
 
-                query = `INSERT INTO ${this.#tb_name} SET nom_produto = :nom_produto, mar_produto = :mar_produto, und_produto = :und_produto, 
-                prc_vista = :prc_vista, prc_prazo = :prc_prazo, estq_max = :estq_max, estq_min = :estq_min,
-                entidade_negocio = :entidade_negocio, ativo = :ativo, id = :id`
-            }
+            query = `INSERT INTO ${this.#tb_name} SET nom_produto = :nom_produto, mar_produto = :mar_produto, und_produto = :und_produto, 
+            prc_vista = :prc_vista, prc_prazo = :prc_prazo, estq_max = :estq_max, estq_min = :estq_min,
+            entidade_negocio = :entidade_negocio, ativo = :ativo, id = :id`
+        }
 
-            return await this.#conn.query(query,this.#field);
- 
-        
+        return await this.#conn.query(query,this.#field);
         
     }
 
     async Excluir(id) {
-
-        
             
-            const query = `DELETE FROM ${this.#tb_name} WHERE entidade_negocio= :entidade_negocio AND id = :id`;
+        const query = `DELETE FROM ${this.#tb_name} WHERE entidade_negocio= :entidade_negocio AND id = :id`;
 
-            void await this.#conn.query(query,{id,entidade_negocio: this.#field.entidade_negocio});
-
-        
+        void await this.#conn.query(query,{id,entidade_negocio: this.#field.entidade_negocio});
 
     }
 
     async #newId() {
 
-        
+        const query =  `SELECT IFNULL(MAX(id),0) + 1 as newid FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio`;
+        const [rows] = await this.#conn.query(query,{entidade_negocio: this.#field.entidade_negocio});
 
-            const query =  `SELECT IFNULL(MAX(id),0) + 1 as newid FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio`;
-            const [rows] = await this.#conn.query(query,{entidade_negocio: this.#field.entidade_negocio});
-
-            return Number(rows.newid);
-
-         
+        return Number(rows.newid);
 
     }
 

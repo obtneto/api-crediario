@@ -58,98 +58,93 @@ export default class Comissoes {
 
     async ExecuteQuery(query, parms) {
 
-            const rows = await this.#conn.execute(query, parms);
+        const rows = await this.#conn.execute(query, parms);
 
-            return rows;
+        return rows;
 
     }
 
     async FindById(num_recibo) {
 
-            const query = `SELECT * FROM ${this.#tb_name} 
-            WHERE entidade_negocio = :entidade_negocio AND num_recibo = :num_recibo`;
+        const query = `SELECT * FROM ${this.#tb_name} 
+        WHERE entidade_negocio = :entidade_negocio AND num_recibo = :num_recibo`;
 
-            const [rows] = await this.#conn.query(query, { 
-                num_recibo, 
-                entidade_negocio: this.#entidade_negocio 
-            });
-            
-            if (rows) {
-                this.num_recibo = rows.num_recibo;
-                this.dt_recibo = rows.dt_recibo;
-                this.tp_recibo = rows.tp_recibo;
-                this.vl_recibo = rows.vl_recibo;
-                this.vl_adiant = rows.vl_adiant;
-                this.id_cobrador = rows.id_cobrador;
-                this.id_vendedor = rows.id_vendedor;
+        const [rows] = await this.#conn.query(query, { 
+            num_recibo, 
+            entidade_negocio: this.#entidade_negocio 
+        });
+        
+        if (rows) {
+            this.num_recibo = rows.num_recibo;
+            this.dt_recibo = rows.dt_recibo;
+            this.tp_recibo = rows.tp_recibo;
+            this.vl_recibo = rows.vl_recibo;
+            this.vl_adiant = rows.vl_adiant;
+            this.id_cobrador = rows.id_cobrador;
+            this.id_vendedor = rows.id_vendedor;
 
-                this.#found = true;
-            } else {
-                this.#found = false;
-            }
+            this.#found = true;
+        } else {
+            this.#found = false;
+        }
 
-            return this.#found ? this.#field : null;
+        return this.#found ? this.#field : null;
 
     }
 
     async Save() {
 
-            let query;
-            
-            if (this.#found) {
-                query = `UPDATE ${this.#tb_name} SET dt_recibo = :dt_recibo, tp_recibo = :tp_recibo,
-                vl_recibo = :vl_recibo, vl_adiant = :vl_adiant, id_cobrador = :id_cobrador, id_vendedor = :id_vendedor
-                WHERE entidade_negocio = :entidade_negocio AND num_recibo = :num_recibo`;
-            } else {
+        let query;
+        
+        if (this.#found) {
+            query = `UPDATE ${this.#tb_name} SET dt_recibo = :dt_recibo, tp_recibo = :tp_recibo,
+            vl_recibo = :vl_recibo, vl_adiant = :vl_adiant, id_cobrador = :id_cobrador, id_vendedor = :id_vendedor
+            WHERE entidade_negocio = :entidade_negocio AND num_recibo = :num_recibo`;
+        } else {
 
-                this.num_recibo = await this.#newId();
+            this.num_recibo = await this.#newId();
 
-                query = `INSERT INTO ${this.#tb_name} (num_recibo, dt_recibo, tp_recibo, vl_recibo, 
-                vl_adiant, id_cobrador,id_vendedor, entidade_negocio) 
-                VALUES (:num_recibo, :dt_recibo, :tp_recibo, :vl_recibo, :vl_adiant, :id_cobrador,:id_vendedor, 
-                :entidade_negocio)`;
-            }
+            query = `INSERT INTO ${this.#tb_name} (num_recibo, dt_recibo, tp_recibo, vl_recibo, 
+            vl_adiant, id_cobrador,id_vendedor, entidade_negocio) 
+            VALUES (:num_recibo, :dt_recibo, :tp_recibo, :vl_recibo, :vl_adiant, :id_cobrador,:id_vendedor, 
+            :entidade_negocio)`;
+        }
 
-            if (this.#field.id_cobrador === 0 ) this.#field.id_cobrador = null;
-            if (this.#field.id_vendedor === 0 ) this.#field.id_vendedor = null;
+        if (this.#field.id_cobrador === 0 ) this.#field.id_cobrador = null;
+        if (this.#field.id_vendedor === 0 ) this.#field.id_vendedor = null;
 
-            void await this.#conn.execute(query, this.#field);
+        void await this.#conn.execute(query, this.#field);
 
 
     }
 
     async Excluir() {
 
-            const query = `DELETE FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio AND num_recibo = :num_recibo`;
+        const query = `DELETE FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio AND num_recibo = :num_recibo`;
 
-            void await this.#conn.execute(query, { num_recibo: this.num_recibo, entidade_negocio: this.#entidade_negocio });
-
+        void await this.#conn.execute(query, { num_recibo: this.num_recibo, entidade_negocio: this.#entidade_negocio });
 
     }
 
     async #newId() {
 
-        
+        const query = `SELECT MAX(num_recibo) AS num_recibo FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio`;
 
-            const query = `SELECT MAX(num_recibo) AS num_recibo FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio`;
+        const [rows] = await this.#conn.query(query, { entidade_negocio: this.#entidade_negocio });
 
-            const [rows] = await this.#conn.query(query, { entidade_negocio: this.#entidade_negocio });
+        const query_check_ano = "SELECT ano_corrente FROM tb_check_ano WHERE id = 1";
 
-            const query_check_ano = "SELECT ano_corrente FROM tb_check_ano WHERE id = 1";
+        const [rows_check] = await this.#conn.query(query_check_ano);
 
-            const [rows_check] = await this.#conn.query(query_check_ano);
+        const ano_corrente = rows_check.ano_corrente;
+        const ano_novo = new Date(this.#field.dt_recibo).getFullYear();
 
-            const ano_corrente = rows_check.ano_corrente;
-            const ano_novo = new Date(this.#field.dt_recibo).getFullYear();
+        const entidade = String(this.#entidade_negocio).padStart(3, '0');
 
-            const entidade = String(this.#entidade_negocio).padStart(3, '0');
+        const id = ano_novo > ano_corrente ? String(ano_novo) + entidade + '1'.padStart(3, '0') : 
+        String(ano_novo) + entidade + String(Number(String(rows.num_recibo).substring(8,10)) + 1).padStart(3, '0');
 
-            const id = ano_novo > ano_corrente ? String(ano_novo) + entidade + '1'.padStart(3, '0') : 
-                String(ano_novo) + entidade + String(Number(String(rows.num_recibo).substring(8,10)) + 1).padStart(3, '0');
-
-            return (String(id));
-           
-           
+        return (String(id));  
 
     }
 

@@ -58,79 +58,75 @@ export default class EstoqueMov {
 
     async ExecuteQuery(query, params = {}) {
         
-            const rows = await this.#conn.execute(query, params);
-            return rows;
+        const rows = await this.#conn.execute(query, params);
+        return rows;
         
     }
 
     async FindById(id, dt_mov) {
 
-            const query = `SELECT * FROM ${this.#tb_name}
-            WHERE entidade_negocio = :entidade_negocio AND dt_mov = :dt_mov AND id = :id`;
+        const query = `SELECT * FROM ${this.#tb_name}
+        WHERE entidade_negocio = :entidade_negocio AND dt_mov = :dt_mov AND id = :id`;
 
-            const [rows] = await this.#conn.query(query,{id,dt_mov,entidade_negocio: this.#entidade_negocio});
+        const [rows] = await this.#conn.query(query,{id,dt_mov,entidade_negocio: this.#entidade_negocio});
 
-            if (rows) {
-                this.id = Number(rows.id)    ;
-                this.dt_mov = rows.dt_mov;
-                this.id_produto = Number(rows.id_produto);
-                this.tp_mov = rows.tp_mov;
-                this.qt_mov = Number(rows.qt_mov)    ;
-                this.nr_documento = rows.nr_documento;
-                this.descricao = rows.descricao;
-                this.#found = true;
-            } else {
-                this.#found = false;
-            }
+        if (rows) {
+            this.id = Number(rows.id)    ;
+            this.dt_mov = rows.dt_mov;
+            this.id_produto = Number(rows.id_produto);
+            this.tp_mov = rows.tp_mov;
+            this.qt_mov = Number(rows.qt_mov)    ;
+            this.nr_documento = rows.nr_documento;
+            this.descricao = rows.descricao;
+            this.#found = true;
+        } else {
+            this.#found = false;
+        }
 
-            return this.#found ? this.#field : this.#found;
-
+        return this.#found ? this.#field : this.#found;
 
     }
 
     async Save() {
 
-            let query;
+        let query;
 
-            if (this.#found) {
-                query = `UPDATE ${this.#tb_name} SET id_produto = :id_produto, tp_mov = :tp_mov,
-                qt_mov = :qt_mov, nr_documento = :nr_documento, descricao = :descricao
-                WHERE entidade_negocio = :entidade_negocio AND dt_mov = :dt_mov AND id = :id`;
-            } else {
+        if (this.#found) {
+            query = `UPDATE ${this.#tb_name} SET id_produto = :id_produto, tp_mov = :tp_mov,
+            qt_mov = :qt_mov, nr_documento = :nr_documento, descricao = :descricao
+            WHERE entidade_negocio = :entidade_negocio AND dt_mov = :dt_mov AND id = :id`;
+        } else {
 
-                this.id = await this.#newId(this.#field.dt_mov);
+            this.id = await this.#newId(this.#field.dt_mov);
 
-                query = `INSERT INTO ${this.#tb_name} SET id = :id, dt_mov = :dt_mov, id_produto = :id_produto,
-                tp_mov = :tp_mov, qt_mov = :qt_mov, nr_documento = :nr_documento,
-                descricao = :descricao, entidade_negocio = :entidade_negocio`;
-            }
+            query = `INSERT INTO ${this.#tb_name} SET id = :id, dt_mov = :dt_mov, id_produto = :id_produto,
+            tp_mov = :tp_mov, qt_mov = :qt_mov, nr_documento = :nr_documento,
+            descricao = :descricao, entidade_negocio = :entidade_negocio`;
+        }
 
-            if (this.#field.id_produto === 0) this.#field.id_produto = null;
+        if (this.#field.id_produto === 0) this.#field.id_produto = null;
 
-            return await this.#conn.query(query,this.#field);
-
+        return await this.#conn.query(query,this.#field);
 
     }
 
     async Excluir(id, dt_mov) {
 
-            const query = `DELETE FROM ${this.#tb_name}
-            WHERE entidade_negocio = :entidade_negocio AND dt_mov = :dt_mov AND id = :id`;
+        const query = `DELETE FROM ${this.#tb_name}
+        WHERE entidade_negocio = :entidade_negocio AND dt_mov = :dt_mov AND id = :id`;
 
-            void await this.#conn.query(query,{id,dt_mov,entidade_negocio: this.#field.entidade_negocio});
-
+        void await this.#conn.query(query,{id,dt_mov,entidade_negocio: this.#field.entidade_negocio});
 
     }
 
     async #newId(dt_mov) {
 
-            const query = `SELECT IFNULL(MAX(id),0) + 1 as newid FROM ${this.#tb_name}
-            WHERE entidade_negocio = :entidade_negocio AND dt_mov = :dt_mov`;
+        const query = `SELECT IFNULL(MAX(id),0) + 1 as newid FROM ${this.#tb_name}
+        WHERE entidade_negocio = :entidade_negocio AND dt_mov = :dt_mov`;
 
-            const [rows] = await this.#conn.query(query,{entidade_negocio: this.#field.entidade_negocio,dt_mov});
+        const [rows] = await this.#conn.query(query,{entidade_negocio: this.#field.entidade_negocio,dt_mov});
 
-            return rows.newid;
-
+        return rows.newid;
 
     }
 

@@ -54,88 +54,79 @@ export default class Perfis {
 
     async ExecuteQuery(query, params = {}) {
         
-            const rows = await this.#conn.execute(query, params);
-            return rows;
+        const rows = await this.#conn.execute(query, params);
+        return rows;
         
-
     }
 
     async FindById(id_venda,id) {
         
         
-            const query = `SELECT * FROM ${this.#tb_name} 
-            WHERE entidade_negocio = :entidade_negocio AND id_venda = :id_venda AND id = :id`;
+        const query = `SELECT * FROM ${this.#tb_name} 
+        WHERE entidade_negocio = :entidade_negocio AND id_venda = :id_venda AND id = :id`;
 
-            const [rows] = await this.#conn.query(query,{id,id_venda,entidade_negocio: this.#entidade_negocio});
+        const [rows] = await this.#conn.query(query,{id,id_venda,entidade_negocio: this.#entidade_negocio});
 
-            if (rows) {
-                
-                this.id = Number(rows.id);
-                this.id_venda = String(rows.id_venda);
-                this.dt_pagamento = String(rows.dt_pagamento);
-                this.vl_pagamento = parseFloat(rows.vl_pagamento);
-                this.id_cobrador = Number(rows.id_cobrador);
-                this.num_recibo = String(rows.num_recibo);
+        if (rows) {
+            
+            this.id = Number(rows.id);
+            this.id_venda = String(rows.id_venda);
+            this.dt_pagamento = String(rows.dt_pagamento);
+            this.vl_pagamento = parseFloat(rows.vl_pagamento);
+            this.id_cobrador = Number(rows.id_cobrador);
+            this.num_recibo = String(rows.num_recibo);
 
-                this.#found = true;
-                
-            } else {
-                this.#found = false;
-            }
+            this.#found = true;
+            
+        } else {
+            this.#found = false;
+        }
 
-            return this.#found ? this.#field : this.#found;
-
-        
+        return this.#found ? this.#field : this.#found;
 
     }
 
     async Save() {
 
         
-            let query;
+        let query;
 
-            if (this.#found) {
+        if (this.#found) {
 
-                query = `UPDATE ${this.#tb_name} SET dt_pagamento = :dt_pagamento, vl_pagamento = :vl_pagamento, 
-                id_cobrador = :id_cobrador, num_recibo = :num_recibo
-                WHERE entidade_negocio = :entidade_negocio AND id_venda = :id_venda AND id = :id`;
-                
-            } else {
-
-                this.id = await this.#newId();
-
-                query = `INSERT INTO ${this.#tb_name} SET dt_pagamento = :dt_pagamento, vl_pagamento = :vl_pagamento, 
-                id_cobrador = :id_cobrador,num_recibo = :num_recibo, id_venda = :id_venda, 
-                id = :id, entidade_negocio = :entidade_negocio`
-            }
-
-            if (this.#field.id_cobrador === 0) this.#field.id_cobrador = null;
+            query = `UPDATE ${this.#tb_name} SET dt_pagamento = :dt_pagamento, vl_pagamento = :vl_pagamento, 
+            id_cobrador = :id_cobrador, num_recibo = :num_recibo
+            WHERE entidade_negocio = :entidade_negocio AND id_venda = :id_venda AND id = :id`;
             
-            return await this.#conn.query(query,this.#field);
+        } else {
 
+            this.id = await this.#newId();
+
+            query = `INSERT INTO ${this.#tb_name} SET dt_pagamento = :dt_pagamento, vl_pagamento = :vl_pagamento, 
+            id_cobrador = :id_cobrador,num_recibo = :num_recibo, id_venda = :id_venda, 
+            id = :id, entidade_negocio = :entidade_negocio`
+        }
+
+        if (this.#field.id_cobrador === 0) this.#field.id_cobrador = null;
         
+        return await this.#conn.query(query,this.#field);
 
     }
 
     async Excluir() {
 
-        
-            
-            const query = `DELETE FROM ${this.#tb_name} WHERE entidade_negocio= :entidade_negocio AND id_venda = :id_venda AND id = :id`;
+        const query = `DELETE FROM ${this.#tb_name} 
+        WHERE entidade_negocio= :entidade_negocio AND id_venda = :id_venda AND id = :id`;
 
-            void await this.#conn.query(query,{id:this.#field.id,id_venda:this.#field.id_venda, entidade_negocio: this.#field.entidade_negocio});
-            
-        
+        void await this.#conn.query(query,{id:this.#field.id,id_venda:this.#field.id_venda, entidade_negocio: this.#field.entidade_negocio}); 
 
     }
 
     async #newId() {
 
-            const query =  `SELECT IFNULL(MAX(id),0) + 1 as newid FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio AND id_venda = :id_venda`;
-            const [rows] = await this.#conn.query(query,{entidade_negocio: this.#field.entidade_negocio, id_venda: this.#field.id_venda});
+        const query =  `SELECT IFNULL(MAX(id),0) + 1 as newid FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio AND id_venda = :id_venda`;
+        const [rows] = await this.#conn.query(query,{entidade_negocio: this.#field.entidade_negocio, id_venda: this.#field.id_venda});
 
-            return Number(rows.newid);
-
+        return Number(rows.newid);
 
     }
 

@@ -62,112 +62,96 @@ export default class Usuarios {
 
     async ExecuteQuery(query, params = {}) {
         
-            const rows = await this.#conn.execute(query, params);
-            return rows;
-        
+        const rows = await this.#conn.execute(query, params);
+        return rows;
 
     }
 
     
     async FindByUser(usuario) {
 
+        let query = `SELECT * FROM ${this.#tb_name} WHERE usuario = :usuario`;
         
-            
-            let query = `SELECT * FROM ${this.#tb_name} WHERE usuario = :usuario`;
-            
-            const [rows] = await this.#conn.query(query,{usuario});
+        const [rows] = await this.#conn.query(query,{usuario});
 
-            if (rows) {
-                this.id = Number(rows.id);
-                this.usuario = String(rows.usuario);
-                this.nom_completo = String(rows.nom_completo);
-                this.email = String(rows.email);
-                this.senha = String(rows.senha);
-                this.reset_password = Number(rows.reset_password)
-                this.iniciais = String(rows.iniciais);
-                this.id_perfil = Number(rows.id_perfil);
-                this.#found = true;
-            } else {
-                this.#found = false;
-            }
+        if (rows) {
+            this.id = Number(rows.id);
+            this.usuario = String(rows.usuario);
+            this.nom_completo = String(rows.nom_completo);
+            this.email = String(rows.email);
+            this.senha = String(rows.senha);
+            this.reset_password = Number(rows.reset_password)
+            this.iniciais = String(rows.iniciais);
+            this.id_perfil = Number(rows.id_perfil);
+            this.#found = true;
+        } else {
+            this.#found = false;
+        }
 
-            return this.#found ? this.#field : this.#found;
-
-        
+        return this.#found ? this.#field : this.#found;
 
     }
     
     async FindById(id) {
-
-        
             
-            let query = `SELECT * FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio AND id = :id`;
-            
-            console.log(this.#entidade_negocio)
-
-            const [rows] = await this.#conn.query(query,({entidade_negocio:this.#entidade_negocio,id}));
-
-            if (rows) {
-                this.id = Number(rows.id);
-                this.usuario = String(rows.usuario);
-                this.nom_completo = String(rows.nom_completo);
-                this.email = String(rows.email);
-                this.senha = String(rows.senha);
-                this.reset_password = Number(rows.reset_password)
-                this.iniciais = String(rows.iniciais);
-                this.id_perfil = Number(rows.id_perfil);
-                this.#found = true;
-            } else {
-                this.#found = false;
-            }
-
-            return this.#found ? this.#field : this.#found;
+        let query = `SELECT * FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio AND id = :id`;
         
+        console.log(this.#entidade_negocio)
+
+        const [rows] = await this.#conn.query(query,({entidade_negocio:this.#entidade_negocio,id}));
+
+        if (rows) {
+            this.id = Number(rows.id);
+            this.usuario = String(rows.usuario);
+            this.nom_completo = String(rows.nom_completo);
+            this.email = String(rows.email);
+            this.senha = String(rows.senha);
+            this.reset_password = Number(rows.reset_password)
+            this.iniciais = String(rows.iniciais);
+            this.id_perfil = Number(rows.id_perfil);
+            this.#found = true;
+        } else {
+            this.#found = false;
+        }
+
+        return this.#found ? this.#field : this.#found;
 
     }
 
     async Save() {
         
-            let query;
+        let query;
 
-            if (this.#found) {
-                query = `UPDATE tb_usuarios SET usuario = :usuario,nom_completo = :nom_completo, email = :email, 
-                senha = :senha, entidade_negocio = :entidade_negocio, id_perfil = :id_perfil, reset_password = :reset_password, 
-                iniciais = :iniciais WHERE entidade_negocio = :entidade_negocio AND id = :id`;
-            } else {
-                this.id = await this.#newId();
+        if (this.#found) {
+            query = `UPDATE tb_usuarios SET usuario = :usuario,nom_completo = :nom_completo, email = :email, 
+            senha = :senha, entidade_negocio = :entidade_negocio, id_perfil = :id_perfil, reset_password = :reset_password, 
+            iniciais = :iniciais WHERE entidade_negocio = :entidade_negocio AND id = :id`;
+        } else {
+            this.id = await this.#newId();
 
-                query = `INSERT INTO tb_usuarios SET usuario = :usuario, nom_completo = :nom_completo, email = :email, 
-                senha = :senha, entidade_negocio = :entidade_negocio, id_perfil = :id_perfil, reset_password = :reset_password, iniciais = :iniciais, 
-                id = :id`
-            }
+            query = `INSERT INTO tb_usuarios SET usuario = :usuario, nom_completo = :nom_completo, email = :email, 
+            senha = :senha, entidade_negocio = :entidade_negocio, id_perfil = :id_perfil, reset_password = :reset_password, iniciais = :iniciais, 
+            id = :id`
+        }
 
-            return await this.#conn.query(query,this.#field);
+        return await this.#conn.query(query,this.#field);
         
-
     }
 
     async Excluir(id) {
         
-        
-            
-            const query = `DELETE FROM ${this.#tb_name} WHERE entidade_negocio= :entidade_negocio AND id = :id`;
+        const query = `DELETE FROM ${this.#tb_name} WHERE entidade_negocio= :entidade_negocio AND id = :id`;
 
-            void await this.#conn.query(query,{id,entidade_negocio: this.#field.entidade_negocio});
-            
-        
+        void await this.#conn.query(query,{id,entidade_negocio: this.#field.entidade_negocio});
+    
     }
 
     async #newId() {
 
-        
-            
-            const query =  `SELECT IFNULL(MAX(id),0) + 1 as newid FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio`;
-            const [rows] = await this.#conn.query(query,{entidade_negocio: this.#field.entidade_negocio});
+        const query =  `SELECT IFNULL(MAX(id),0) + 1 as newid FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio`;
+        const [rows] = await this.#conn.query(query,{entidade_negocio: this.#field.entidade_negocio});
 
-            return Number(rows.newid);
-
-        
+        return Number(rows.newid);
 
     }
 

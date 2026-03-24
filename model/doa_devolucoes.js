@@ -59,84 +59,79 @@ export default class Devolucoes{
 
     async ExecuteQuery(query, params = {}) {
         
-            const rows = await this.#conn.execute(query, params);
+        const rows = await this.#conn.execute(query, params);
 
-            return rows;
-
+        return rows;
 
     }
 
     async FindById(id) {
 
-            const query = `SELECT * FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio AND id = :id`;
+        const query = `SELECT * FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio AND id = :id`;
 
-            const rows = await this.#conn.query(query,{entidade_negocio: this.#fields.entidade_negocio,id});
+        const rows = await this.#conn.query(query,{entidade_negocio: this.#fields.entidade_negocio,id});
 
-            if (rows[0]) {
-                this.id = rows[0].id;
-                this.id_venda = rows[0].id_venda;
-                this.id_produto = rows[0].id_produto;
-                this.id_vendedor = rows[0].id_vendedor;
-                this.dt_devolucao = rows[0].dt_devolucao;
-                this.qt_devolucao = rows[0].qt_devolucao;
-                this.vl_unit_devo = rows[0].vl_tot_devo;
-                this.vl_tot_devo = rows[0].vl_tot_devo;
-                this.#found = true;
-            }
-            else {
-                this.#found = false;
-            }
+        if (rows[0]) {
+            this.id = rows[0].id;
+            this.id_venda = rows[0].id_venda;
+            this.id_produto = rows[0].id_produto;
+            this.id_vendedor = rows[0].id_vendedor;
+            this.dt_devolucao = rows[0].dt_devolucao;
+            this.qt_devolucao = rows[0].qt_devolucao;
+            this.vl_unit_devo = rows[0].vl_tot_devo;
+            this.vl_tot_devo = rows[0].vl_tot_devo;
+            this.#found = true;
+        }
+        else {
+            this.#found = false;
+        }
 
-            return this.#found ? this.#fields : this.#found;
+        return this.#found ? this.#fields : this.#found;
             
-
     }
 
     async Save() {
 
-            let query;
+        let query;
 
-            if (this.#found) {
+        if (this.#found) {
 
-                query = `UPDATE ${this.#tb_name} SET id_produto = :id_produto,id_vendedor = :id_vendedor, dt_devoluao = :dt_devoluao, 
-                qt_devolucao = :qt_devolucao, vl_tot_devo = :vl_tot_devo, vl_tot_devo = :vl_tot_devo, id_venda = :id_venda  
-                WHERE entidade_negocio = :entidade_negocio AND id = :id`;
-            } else {
-                
-                this.id = await this.#newId();
+            query = `UPDATE ${this.#tb_name} SET id_produto = :id_produto,id_vendedor = :id_vendedor, dt_devoluao = :dt_devoluao, 
+            qt_devolucao = :qt_devolucao, vl_tot_devo = :vl_tot_devo, vl_tot_devo = :vl_tot_devo, id_venda = :id_venda  
+            WHERE entidade_negocio = :entidade_negocio AND id = :id`;
+        } else {
+            
+            this.id = await this.#newId();
 
-                query = `INSERT INTO ${this.#tb_name} SET id_produto = :id_produto,id_vendedor = :id_vendedor, dt_devoluao = :dt_devoluao, 
-                qt_devolucao = :qt_devolucao, vl_tot_devo = :vl_tot_devo, vl_tot_devo = :vl_tot_devo, id_venda = :id_venda,  
-                entidade_negocio = :entidade_negocio, id = :id`
+            query = `INSERT INTO ${this.#tb_name} SET id_produto = :id_produto,id_vendedor = :id_vendedor, dt_devoluao = :dt_devoluao, 
+            qt_devolucao = :qt_devolucao, vl_tot_devo = :vl_tot_devo, vl_tot_devo = :vl_tot_devo, id_venda = :id_venda,  
+            entidade_negocio = :entidade_negocio, id = :id`
 
-            }
+        }
 
-            if (this.#fields.id_produto === 0) this.#fields.id_produto = null;
-            if (this.#fields.id_vendedor === 0) this.#fields.id_vendedor = null;
-            if (this.#fields.id_venda === '') this.#fields.id_venda = null;
+        if (this.#fields.id_produto === 0) this.#fields.id_produto = null;
+        if (this.#fields.id_vendedor === 0) this.#fields.id_vendedor = null;
+        if (this.#fields.id_venda === '') this.#fields.id_venda = null;
 
-            void await this.#conn.query(query,this.#fields);
+        void await this.#conn.query(query,this.#fields);
             
     }
 
     async Excluir(id) {
-        
-        
             
-            const query = `DELETE FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio AND id = :id`;
+        const query = `DELETE FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio AND id = :id`;
 
-            void await this.#conn.query(query,{entidade_negocio:this.entidade_negocio,id});
+        void await this.#conn.query(query,{entidade_negocio:this.entidade_negocio,id});
             
         
     }
 
     async #newId() {
 
-            const query =  `SELECT IFNULL(MAX(id),0) + 1 as newid FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio`;
-            const [rows] = await this.#conn.query(query,{entidade_negocio: this.#fields.entidade_negocio});
+        const query =  `SELECT IFNULL(MAX(id),0) + 1 as newid FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio`;
+        const [rows] = await this.#conn.query(query,{entidade_negocio: this.#fields.entidade_negocio});
 
-            return Number(rows.newid);
-
+        return Number(rows.newid);
 
     }
 }

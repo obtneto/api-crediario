@@ -46,86 +46,86 @@ export default class ItensVendas {
 
     async ExecuteQuery(query, params = {}) {
         
-            const rows = await this.#conn.execute(query, params);
-            return rows;
+        const rows = await this.#conn.execute(query, params);
+        return rows;
         
     }
 
     async FindById(id,id_venda) {
 
-            const query = `SELECT * FROM ${this.#tb_name}
-            WHERE entidade_negocio = :entidade_negocio AND id_venda = :id_venda AND id = :id`;
+        const query = `SELECT * FROM ${this.#tb_name}
+        WHERE entidade_negocio = :entidade_negocio AND id_venda = :id_venda AND id = :id`;
 
-            const [rows] = await this.#conn.query(query,{id,id_venda,entidade_negocio: this.#entidade_negocio});
+        const [rows] = await this.#conn.query(query,{id,id_venda,entidade_negocio: this.#entidade_negocio});
 
-            if (rows) {
-                this.id_produto = Number(rows.id_produto);
-                this.id = Number(rows.id);
-                this.qt_produto = Number(rows.qt_produto);
-                this.id_venda = String(rows.id_venda);
-                this.#found = true;
-            } else {
-                this.#found = false;
-            }
+        if (rows) {
+            this.id_produto = Number(rows.id_produto);
+            this.id = Number(rows.id);
+            this.qt_produto = Number(rows.qt_produto);
+            this.id_venda = String(rows.id_venda);
+            this.#found = true;
+        } else {
+            this.#found = false;
+        }
 
-            return this.#found ? this.#field : this.#found;
+        return this.#found ? this.#field : this.#found;
 
     }
 
     async FindByVenda(id_venda) {
 
-            const query = `SELECT * FROM ${this.#tb_name}
-            WHERE entidade_negocio = :entidade_negocio AND id_venda = :id_venda
-            ORDER BY id_produto ASC, id ASC`;
+        const query = `SELECT * FROM ${this.#tb_name}
+        WHERE entidade_negocio = :entidade_negocio AND id_venda = :id_venda
+        ORDER BY id_produto ASC, id ASC`;
 
-            const rows = await this.#conn.query(query,{id_venda,entidade_negocio: this.#entidade_negocio});
+        const rows = await this.#conn.query(query,{id_venda,entidade_negocio: this.#entidade_negocio});
 
-            return rows;
+        return rows;
 
     }
 
     async Save() {
 
-            let query;
+        let query;
 
-            if (this.#found) {
-                query = `UPDATE ${this.#tb_name} SET qt_produto = :qt_produto,id_produto = :id_produto 
-                WHERE entidade_negocio = :entidade_negocio AND id_venda = :id_venda AND id = :id`;
-            } else {
+        if (this.#found) {
+            query = `UPDATE ${this.#tb_name} SET qt_produto = :qt_produto,id_produto = :id_produto 
+            WHERE entidade_negocio = :entidade_negocio AND id_venda = :id_venda AND id = :id`;
+        } else {
 
-                this.id = await this.#newId();
+            this.id = await this.#newId();
 
-                query = `INSERT INTO ${this.#tb_name} SET entidade_negocio = :entidade_negocio, id_produto = :id_produto,
-                id = :id, qt_produto = :qt_produto, id_venda = :id_venda`;
-            }
+            query = `INSERT INTO ${this.#tb_name} SET entidade_negocio = :entidade_negocio, id_produto = :id_produto,
+            id = :id, qt_produto = :qt_produto, id_venda = :id_venda`;
+        }
 
-            if(this.#field.id_produto === 0) this.#field.id_produto = null;
+        if(this.#field.id_produto === 0) this.#field.id_produto = null;
 
-            return await this.#conn.query(query,this.#field);
+        return await this.#conn.query(query,this.#field);
 
     }
 
     async Excluir() {
 
-            const query = `DELETE FROM ${this.#tb_name}
-            WHERE entidade_negocio = :entidade_negocio AND id_venda = :id_venda AND id = :id`;
+        const query = `DELETE FROM ${this.#tb_name}
+        WHERE entidade_negocio = :entidade_negocio AND id_venda = :id_venda AND id = :id`;
 
-            void await this.#conn.query(query,{
-                id:this.#field.id,
-                entidade_negocio: this.#field.entidade_negocio,
-                id_venda:this.#field.id_venda
-            });
+        void await this.#conn.query(query,{
+            id:this.#field.id,
+            entidade_negocio: this.#field.entidade_negocio,
+            id_venda:this.#field.id_venda
+        });
 
     }
 
     async #newId() {
 
-            const query = `SELECT IFNULL(MAX(id),0) + 1 as newid FROM ${this.#tb_name}
-            WHERE entidade_negocio = :entidade_negocio AND id_venda = :id_venda`;
+        const query = `SELECT IFNULL(MAX(id),0) + 1 as newid FROM ${this.#tb_name}
+        WHERE entidade_negocio = :entidade_negocio AND id_venda = :id_venda`;
 
-            const [rows] = await this.#conn.query(query,{entidade_negocio: this.#field.entidade_negocio,id_venda: this.#field.id_venda});
+        const [rows] = await this.#conn.query(query,{entidade_negocio: this.#field.entidade_negocio,id_venda: this.#field.id_venda});
 
-            return Number(rows.newid);
+        return Number(rows.newid);
 
     }
 

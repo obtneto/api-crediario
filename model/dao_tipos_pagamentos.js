@@ -42,84 +42,65 @@ export default class TiposPagamentos {
 
     async ExecuteQuery(query, params = {}) {
 
-        
+        const rows = await this.#conn.execute(query, params);
 
-            const rows = await this.#conn.execute(query, params);
-
-            return rows;
-
-        
+        return rows;
 
     }
 
     async FindById(id) {
-
-        
             
-            let query = `SELECT * FROM ${this.#tb_name} 
-            WHERE entidade_negocio = :entidade_negocio AND id = :id`;
+        let query = `SELECT * FROM ${this.#tb_name} 
+        WHERE entidade_negocio = :entidade_negocio AND id = :id`;
 
-            const [rows] = await this.#conn.query(query,{id,entidade_negocio: this.#field.entidade_negocio});
+        const [rows] = await this.#conn.query(query,{id,entidade_negocio: this.#field.entidade_negocio});
 
-            if (rows) {
-                
-                this.id = Number(rows.id);
-                this.nom_tipo = String(rows.nom_tipo);
-                this.ativo = Number(rows.ativo);
-                this.#found = true;
-                
-            } else {
-                this.#found = false;
-            }
+        if (rows) {
+            
+            this.id = Number(rows.id);
+            this.nom_tipo = String(rows.nom_tipo);
+            this.ativo = Number(rows.ativo);
+            this.#found = true;
+            
+        } else {
+            this.#found = false;
+        }
 
-            return this.#found ? this.#field : this.#found;
-        
+        return this.#found ? this.#field : this.#found;
 
     }
 
     async Save() {
-
-        
             
-            let query;
+        let query;
 
-            if (this.#found) {
-                query = `UPDATE ${this.#tb_name} SET nom_tipo = :nom_tipo, ativo = :ativo 
-                WHERE entidade_negocio = :entidade_negocio AND id = :id`;
-            } else {
-                this.#field.id = await this.#newId();
-                query = `INSERT INTO ${this.#tb_name} SET id = :id, nom_tipo = :nom_tipo, ativo = :ativo, 
-                entidade_negocio = :entidade_negocio`
-            }
+        if (this.#found) {
+            query = `UPDATE ${this.#tb_name} SET nom_tipo = :nom_tipo, ativo = :ativo 
+            WHERE entidade_negocio = :entidade_negocio AND id = :id`;
+        } else {
+            this.#field.id = await this.#newId();
+            query = `INSERT INTO ${this.#tb_name} SET id = :id, nom_tipo = :nom_tipo, ativo = :ativo, 
+            entidade_negocio = :entidade_negocio`
+        }
 
-            return await this.#conn.query(query,this.#field);
-
-        
+        return await this.#conn.query(query,this.#field);
 
     }
 
     async Excluir(id) {
         
-        
-            
-            const query = `DELETE FROM ${this.#tb_name} WHERE entidade_negocio= :entidade_negocio AND id = :id`;
+        const query = `DELETE FROM ${this.#tb_name} WHERE entidade_negocio= :entidade_negocio AND id = :id`;
 
-            void  await this.#conn.query(query,{id,entidade_negocio: this.#field.entidade_negocio});
+        void  await this.#conn.query(query,{id,entidade_negocio: this.#field.entidade_negocio});
             
-        
-
     }
 
     async #newId() {
 
-        
-            
-            const query =  `SELECT IFNULL(MAX(id),0) + 1 as newid FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio`;
-            const [rows] = await this.#conn.query(query,{entidade_negocio: this.#field.entidade_negocio});
+        const query =  `SELECT IFNULL(MAX(id),0) + 1 as newid FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio`;
+        const [rows] = await this.#conn.query(query,{entidade_negocio: this.#field.entidade_negocio});
 
-            return Number(rows.newid);
-
-        
+        return Number(rows.newid);
 
     }
 

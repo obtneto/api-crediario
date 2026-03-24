@@ -50,76 +50,67 @@ export default class Vendedores {
     get ativo() {return Number(this.#field.ativo)}
 
     async ExecuteQuery(query, params = {}) {
-        
-            const rows = await this.#conn.execute(query, params);
+    
+        const rows = await this.#conn.execute(query, params);
 
-            return rows;
-
+        return rows;
 
     }
 
     async FindById(id) {
 
-            const query = `SELECT * FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio AND id = :id`;
+        const query = `SELECT * FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio AND id = :id`;
 
-            const [rows] = await this.#conn.query(query,{id,entidade_negocio: this.#entidade_negocio});
+        const [rows] = await this.#conn.query(query,{id,entidade_negocio: this.#entidade_negocio});
 
-            if (rows) {
-                this.id = rows.id;
-                this.nom_vendedor = rows.nom_vendedor;
-                this.comissao = rows.comissao;
-                this.cel_contato = rows.cel_contato;
-                this.ativo = rows.ativo;
+        if (rows) {
+            this.id = rows.id;
+            this.nom_vendedor = rows.nom_vendedor;
+            this.comissao = rows.comissao;
+            this.cel_contato = rows.cel_contato;
+            this.ativo = rows.ativo;
 
-                this.#found = true;
-            } else {
-                this.#found = false;
-            }
+            this.#found = true;
+        } else {
+            this.#found = false;
+        }
 
-            return this.#found ? rows : this.#found;
+        return this.#found ? rows : this.#found;
             
-
     }
 
     async Save() {
 
-        
-            let query;
+        let query;
 
-            if (this.#found) {
-                query = `UPDATE ${this.#tb_name} SET nom_vendedor = :nom_vendedor, comissao = :comissao,
-                cel_contato = :cel_contato, entidade_negocio = :entidade_negocio, ativo = :ativo
-                WHERE entidade_negocio = :entidade_negocio AND id = :id`;
-            } else {
-                this.id = await this.#newId();
-                query = `INSERT INTO ${this.#tb_name} SET nom_vendedor = :nom_vendedor, comissao = :comissao,
-                cel_contato = :cel_contato, entidade_negocio = :entidade_negocio, ativo = :ativo, id = :id`;
-            }
+        if (this.#found) {
+            query = `UPDATE ${this.#tb_name} SET nom_vendedor = :nom_vendedor, comissao = :comissao,
+            cel_contato = :cel_contato, entidade_negocio = :entidade_negocio, ativo = :ativo
+            WHERE entidade_negocio = :entidade_negocio AND id = :id`;
+        } else {
+            this.id = await this.#newId();
+            query = `INSERT INTO ${this.#tb_name} SET nom_vendedor = :nom_vendedor, comissao = :comissao,
+            cel_contato = :cel_contato, entidade_negocio = :entidade_negocio, ativo = :ativo, id = :id`;
+        }
 
-            return await this.#conn.query(query,this.#field);
-        
+        return await this.#conn.query(query,this.#field);
 
     }
 
     async Excluir(id) {
-        
-        
             
-            const query = `DELETE FROM ${this.#tb_name} WHERE entidade_negocio= :entidade_negocio AND id = :id`;
+        const query = `DELETE FROM ${this.#tb_name} WHERE entidade_negocio= :entidade_negocio AND id = :id`;
 
-            void await this.#conn.query(query,{id,entidade_negocio: this.#field.entidade_negocio});
-            
+        void await this.#conn.query(query,{id,entidade_negocio: this.#field.entidade_negocio});
         
-
     }
 
     async #newId() {
 
-            const query =  `SELECT IFNULL(MAX(id),0) + 1 as newid FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio`;
-            const [rows] = await this.#conn.query(query,{entidade_negocio: this.#field.entidade_negocio});
+        const query =  `SELECT IFNULL(MAX(id),0) + 1 as newid FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio`;
+        const [rows] = await this.#conn.query(query,{entidade_negocio: this.#field.entidade_negocio});
 
-            return Number(rows.newid);
-
+        return Number(rows.newid);
 
     }
 

@@ -74,124 +74,114 @@ export default class Clientes {
 
     async ExecuteQuery(query, params = {}) {
         
-        
-            const rows = await this.#conn.execute(query, params);
-            return rows;
-        
+        const rows = await this.#conn.execute(query, params);
+
+        return rows;
 
     }
 
     async FindById(id) {
 
-            let query = `SELECT * FROM ${this.#tb_name} WHERE id = :id`;
+        let query = `SELECT * FROM ${this.#tb_name} WHERE id = :id`;
 
-            const [rows] = await this.#conn.query(query,{id});
+        const [rows] = await this.#conn.query(query,{id});
 
-            if (rows) {
-                this.id = rows.id;
-                this.cpf_cliente = rows.cpf_cliente;
-                this.nom_cliente = rows.nom_cliente;
-                this.nom_usual = rows.nom_usual;
-                this.cel_cliente = rows.cel_cliente;
-                this.end_cliente = rows.end_cliente;
-                this.num_cliente = rows.num_cliente;
-                this.bai_cliente = rows.bai_cliente;
-                this.cid_cliente = rows.cid_cliente;
-                this.uf_cliente = rows.uf_cliente;
-                this.cep_cliente = rows.cep_cliente;
-                this.lat_cliente = rows.lat_cliente;
-                this.lon_cliente = rows.lon_cliente;
-                this.dat_cadastro = rows.dat_cadastro;
+        if (rows) {
+            this.id = rows.id;
+            this.cpf_cliente = rows.cpf_cliente;
+            this.nom_cliente = rows.nom_cliente;
+            this.nom_usual = rows.nom_usual;
+            this.cel_cliente = rows.cel_cliente;
+            this.end_cliente = rows.end_cliente;
+            this.num_cliente = rows.num_cliente;
+            this.bai_cliente = rows.bai_cliente;
+            this.cid_cliente = rows.cid_cliente;
+            this.uf_cliente = rows.uf_cliente;
+            this.cep_cliente = rows.cep_cliente;
+            this.lat_cliente = rows.lat_cliente;
+            this.lon_cliente = rows.lon_cliente;
+            this.dat_cadastro = rows.dat_cadastro;
 
-                this.#found = true;
-            } else {
-                this.#found = false;
-            }
+            this.#found = true;
+        } else {
+            this.#found = false;
+        }
 
-            return this.#found ? rows : this.#found;
-
+        return this.#found ? rows : this.#found;
 
     }
 
     async FindByCpf(cpf) {
 
-            let query = `SELECT * FROM ${this.#tb_name} WHERE cpf_cliente = :cpf`;
+        let query = `SELECT * FROM ${this.#tb_name} WHERE cpf_cliente = :cpf`;
 
-            const [rows] = await this.#conn.query(query,{cpf});
+        const [rows] = await this.#conn.query(query,{cpf});
 
-            if (rows) {
-                this.id = rows.id;
-                this.cpf_cliente = rows.cpf_cliente;
-                this.nom_cliente = rows.nom_cliente;
-                this.nom_usual = rows.nom_usual;
-                this.cel_cliente = rows.cel_cliente;
-                this.end_cliente = rows.end_cliente;
-                this.num_cliente = rows.num_cliente;
-                this.bai_cliente = rows.bai_cliente;
-                this.cid_cliente = rows.cid_cliente;
-                this.uf_cliente = rows.uf_cliente;
-                this.cep_cliente = rows.cep_cliente;
-                this.lat_cliente = rows.lat_cliente;
-                this.lon_cliente = rows.lon_cliente;
-                this.dat_cadastro = rows.dat_cadastro;
+        if (rows) {
+            this.id = rows.id;
+            this.cpf_cliente = rows.cpf_cliente;
+            this.nom_cliente = rows.nom_cliente;
+            this.nom_usual = rows.nom_usual;
+            this.cel_cliente = rows.cel_cliente;
+            this.end_cliente = rows.end_cliente;
+            this.num_cliente = rows.num_cliente;
+            this.bai_cliente = rows.bai_cliente;
+            this.cid_cliente = rows.cid_cliente;
+            this.uf_cliente = rows.uf_cliente;
+            this.cep_cliente = rows.cep_cliente;
+            this.lat_cliente = rows.lat_cliente;
+            this.lon_cliente = rows.lon_cliente;
+            this.dat_cadastro = rows.dat_cadastro;
 
-                this.#found = true;
-            } else {
-                this.#found = false;
-            }
+            this.#found = true;
+        } else {
+            this.#found = false;
+        }
 
-            return this.#found ? rows : this.#found;
-
+        return this.#found ? rows : this.#found;
 
     }
 
     async Save() {
 
-            let query;
+        let query;
 
-            if (this.#found) {
-                query = `UPDATE ${this.#tb_name} SET cpf_cliente = :cpf_cliente, nom_cliente = :nom_cliente,nom_usual = :nom_usual,
-                cel_cliente = :cel_cliente, end_cliente = :end_cliente, num_cliente = :num_cliente, bai_cliente = :bai_cliente,
-                cid_cliente = :cid_cliente, uf_cliente = :uf_cliente, cep_cliente = :cep_cliente,
-                lat_cliente = :lat_cliente, lon_cliente = :lon_cliente, dat_cadastro = :dat_cadastro
-                WHERE id = :id`;
-            } else {
+        if (this.#found) {
+            query = `UPDATE ${this.#tb_name} SET cpf_cliente = :cpf_cliente, nom_cliente = :nom_cliente,nom_usual = :nom_usual,
+            cel_cliente = :cel_cliente, end_cliente = :end_cliente, num_cliente = :num_cliente, bai_cliente = :bai_cliente,
+            cid_cliente = :cid_cliente, uf_cliente = :uf_cliente, cep_cliente = :cep_cliente,
+            lat_cliente = :lat_cliente, lon_cliente = :lon_cliente, dat_cadastro = :dat_cadastro
+            WHERE id = :id`;
+        } else {
 
-                this.id = await this.#newId();
+            this.id = await this.#newId();
 
-                query = `INSERT INTO ${this.#tb_name} SET cpf_cliente = :cpf_cliente, nom_cliente = :nom_cliente,nom_usual = :nom_usual,
-                cel_cliente = :cel_cliente, end_cliente = :end_cliente, num_cliente = :num_cliente, bai_cliente = :bai_cliente,
-                cid_cliente = :cid_cliente, uf_cliente = :uf_cliente, cep_cliente = :cep_cliente,
-                lat_cliente = :lat_cliente, lon_cliente = :lon_cliente, id = :id, dat_cadastro = :dat_cadastro`;
-            }
+            query = `INSERT INTO ${this.#tb_name} SET cpf_cliente = :cpf_cliente, nom_cliente = :nom_cliente,nom_usual = :nom_usual,
+            cel_cliente = :cel_cliente, end_cliente = :end_cliente, num_cliente = :num_cliente, bai_cliente = :bai_cliente,
+            cid_cliente = :cid_cliente, uf_cliente = :uf_cliente, cep_cliente = :cep_cliente,
+            lat_cliente = :lat_cliente, lon_cliente = :lon_cliente, id = :id, dat_cadastro = :dat_cadastro`;
+        }
 
-            return await this.#conn.query(query,this.#field);
+        return await this.#conn.query(query,this.#field);
             
     }
 
     async Excluir(id) {
-        
-        
             
-            const query = `DELETE FROM ${this.#tb_name} WHERE id = :id`;
+        const query = `DELETE FROM ${this.#tb_name} WHERE id = :id`;
 
-            void await this.#conn.query(query,{id});
+        void await this.#conn.query(query,{id});
             
-        
     }
 
     async #newId() {
         
+        const query =  `SELECT IFNULL(MAX(id),0) + 1 as newid FROM ${this.#tb_name}`;
         
-            
-            const query =  `SELECT IFNULL(MAX(id),0) + 1 as newid FROM ${this.#tb_name}`;
-            
-            const [rows] = await this.#conn.query(query);
+        const [rows] = await this.#conn.query(query);
 
-            return rows.newid;
+        return rows.newid;
             
-        
-
     }
 
 }

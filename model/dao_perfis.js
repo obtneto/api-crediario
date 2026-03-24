@@ -54,74 +54,65 @@ export default class Perfis {
 
     async ExecuteQuery(query, params = {}) {
         
-            const rows = await this.#conn.execute(query, params);
-            return rows;
+        const rows = await this.#conn.execute(query, params);
+        return rows;
         
-
     }
 
     async FindById(id) {
         
+        const query = `SELECT * FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio AND id = :id`;
+
+        const [rows] = await this.#conn.query(query,{id,entidade_negocio: this.#entidade_negocio});
+
+        if (rows) {
+            this.id = Number(rows.id);
+            this.nom_perfil = String(rows.nom_perfil);
+            this.selecionar = Number(rows.selecionar);
+            this.inserir = Number(rows.inserir);
+            this.atualizar = Number(rows.atualizar);
+            this.excluir = Number(rows.excluir);
+
+            this.#found = true;
+        } else {
+            this.#found = false;
+        }
+
+        return this.#found ? this.#field : this.#found;
         
-            const query = `SELECT * FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio AND id = :id`;
-
-            const [rows] = await this.#conn.query(query,{id,entidade_negocio: this.#entidade_negocio});
-
-            if (rows) {
-                this.id = Number(rows.id);
-                this.nom_perfil = String(rows.nom_perfil);
-                this.selecionar = Number(rows.selecionar);
-                this.inserir = Number(rows.inserir);
-                this.atualizar = Number(rows.atualizar);
-                this.excluir = Number(rows.excluir);
-
-                this.#found = true;
-            } else {
-                this.#found = false;
-            }
-
-            return this.#found ? this.#field : this.#found;
-        
-
     }
 
     async Save() {
 
-            let query;
+        let query;
 
-            if (this.#found) {
-                query = `UPDATE ${this.#tb_name} SET nom_perfil = :nom_perfil, selecionar = :selecionar, inserir = :inserir, atualizar = :atualizar,
-                excluir = :excluir WHERE entidade_negocio = :entidade_negocio AND id = :id`;
-            } else {
-                this.id = await this.#newId();
-                query = `INSERT INTO ${this.#tb_name} SET nom_perfil = :nom_perfil, selecionar = :selecionar, inserir = :inserir, atualizar = :atualizar,
-                excluir = :excluir, id = :id, entidade_negocio = :entidade_negocio`
-            }
+        if (this.#found) {
+            query = `UPDATE ${this.#tb_name} SET nom_perfil = :nom_perfil, selecionar = :selecionar, inserir = :inserir, atualizar = :atualizar,
+            excluir = :excluir WHERE entidade_negocio = :entidade_negocio AND id = :id`;
+        } else {
+            this.id = await this.#newId();
+            query = `INSERT INTO ${this.#tb_name} SET nom_perfil = :nom_perfil, selecionar = :selecionar, inserir = :inserir, atualizar = :atualizar,
+            excluir = :excluir, id = :id, entidade_negocio = :entidade_negocio`
+        }
 
-            return await this.#conn.query(query,this.#field);
+        return await this.#conn.query(query,this.#field);
             
-
     }
 
     async Excluir(id) {
 
-        
-            
-            const query = `DELETE FROM ${this.#tb_name} WHERE entidade_negocio= :entidade_negocio AND id = :id`;
+        const query = `DELETE FROM ${this.#tb_name} WHERE entidade_negocio= :entidade_negocio AND id = :id`;
 
-            void await this.#conn.query(query,{id,entidade_negocio: this.#field.entidade_negocio});
-            
-        
+        void await this.#conn.query(query,{id,entidade_negocio: this.#field.entidade_negocio});
 
     }
 
     async #newId() {
 
-            const query =  `SELECT IFNULL(MAX(id),0) + 1 as newid FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio`;
-            const [rows] = await this.#conn.query(query,{entidade_negocio: this.#field.entidade_negocio});
+        const query =  `SELECT IFNULL(MAX(id),0) + 1 as newid FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio`;
+        const [rows] = await this.#conn.query(query,{entidade_negocio: this.#field.entidade_negocio});
 
-            return Number(rows.newid);
-
+        return Number(rows.newid);
 
     }
 

@@ -42,74 +42,59 @@ export default class Estoque {
 
     async ExecuteQuery(query, params = {}) {
 
-        
+        const rows = await this.#conn.execute(query, params);
 
-            const rows = await this.#conn.execute(query, params);
-
-            return rows;
-
-        
+        return rows;
 
     }
 
     async FindById(id_produto) {
+
+        const query = `SELECT * FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio AND id_produto = :id_produto`;
+
+        const [rows] = await this.#conn.query(query,{entidade_negocio:this.#entidade_negocio,id_produto});
+
+        if (rows) {
+            this.id_produto = Number(rows.id_produto);
+            this.qt_reservada = Number(rows.qt_reservada);
+            this.qt_disponivel = Number(rows.qt_disponivel);
+
+            this.#found = true;
+        } else {
+            this.#found = false;
+        }
+
+        return this.#found ? this.#field : this.#found;
         
-        
-
-            const query = `SELECT * FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio AND id_produto = :id_produto`;
-
-            const [rows] = await this.#conn.query(query,{entidade_negocio:this.#entidade_negocio,id_produto});
-
-            if (rows) {
-                this.id_produto = Number(rows.id_produto);
-                this.qt_reservada = Number(rows.qt_reservada);
-                this.qt_disponivel = Number(rows.qt_disponivel);
-
-                this.#found = true;
-            } else {
-                this.#found = false;
-            }
-
-            return this.#found ? this.#field : this.#found;
-        
-
     }
 
     async Save() {
 
+        let query;
+
+        if (this.#found) {
+            query = `UPDATE ${this.#tb_name} SET qt_reservada = :qt_reservada, qt_disponivel = :qt_disponivel
+            WHERE entidade_negocio = :entidade_negocio AND id_produto = :id_produto`;
+        } else {
+            //this.#field.id = await this.#newId();
+            query = `INSERT INTO ${this.#tb_name} SET id_produto = :id_produto, qt_reservada = :qt_reservada, 
+            qt_disponivel = :qt_disponivel, entidade_negocio = :entidade_negocio`
         
-            
-            let query;
+        }
 
-            if (this.#found) {
-                query = `UPDATE ${this.#tb_name} SET qt_reservada = :qt_reservada, qt_disponivel = :qt_disponivel
-                WHERE entidade_negocio = :entidade_negocio AND id_produto = :id_produto`;
-            } else {
-                //this.#field.id = await this.#newId();
-                query = `INSERT INTO ${this.#tb_name} SET id_produto = :id_produto, qt_reservada = :qt_reservada, 
-                qt_disponivel = :qt_disponivel, entidade_negocio = :entidade_negocio`
-            
-            }
-
-            return await this.#conn.query(query,this.#field);
-
-        
+        return await this.#conn.query(query,this.#field);
 
     }
 
     async Excluir() {
-
-        
             
-            const query = `DELETE FROM ${this.#tb_name} 
-            WHERE entidade_negocio= :entidade_negocio AND id_produto = :id_produto`;
+        const query = `DELETE FROM ${this.#tb_name} 
+        WHERE entidade_negocio= :entidade_negocio AND id_produto = :id_produto`;
 
-            void await this.#conn.query(query,{
-                entidade_negocio: this.#field.entidade_negocio,
-                id_produto: this.#field.id_produto
-            });
-            
-        
+        void await this.#conn.query(query,{
+            entidade_negocio: this.#field.entidade_negocio,
+            id_produto: this.#field.id_produto
+        });
 
     }
 

@@ -86,145 +86,125 @@ export default class Vendas {
 
     async ExecuteQuery(query, params = {}) {
         
+        const rows = await this.#conn.execute(query, params);
+        return rows;
         
-            const rows = await this.#conn.execute(query, params);
-            return rows;
-        
-
     }
 
     async FindById(id) {
 
-        
+        let query = `SELECT * FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio AND id = :id`;
 
-            let query = `SELECT * FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio AND id = :id`;
+        const [rows] = await this.#conn.query(query,{id,entidade_negocio: this.#entidade_negocio});
 
-            const [rows] = await this.#conn.query(query,{id,entidade_negocio: this.#entidade_negocio});
+        if (rows) {
+            this.id = rows.id;
+            this.dt_venda = rows.dt_venda;
+            this.id_vendedor = rows.id_vendedor;
+            this.id_cobrador = rows.id_cobrador;
+            this.id_rota = rows.id_rota;
+            this.id_tipo_pag = rows.id_tipo_pag;
+            this.cpf_cliente = rows.cpf_cliente;
+            this.marca_venda = rows.marca_venda;
+            this.num_recibo = rows.num_recibo;
+            this.referencia = rows.referencia;
+            this.val_tot_venda = rows.val_tot_venda;
+            this.situacao = rows.situacao;
+            this.dia_pagam = rows.dia_pagam;
+            this.melhor_dia = rows.melhor_dia;
+            this.#found = true;
+        } else {
+            this.#found = false;
+        }
 
-            if (rows) {
-                this.id = rows.id;
-                this.dt_venda = rows.dt_venda;
-                this.id_vendedor = rows.id_vendedor;
-                this.id_cobrador = rows.id_cobrador;
-                this.id_rota = rows.id_rota;
-                this.id_tipo_pag = rows.id_tipo_pag;
-                this.cpf_cliente = rows.cpf_cliente;
-                this.marca_venda = rows.marca_venda;
-                this.num_recibo = rows.num_recibo;
-                this.referencia = rows.referencia;
-                this.val_tot_venda = rows.val_tot_venda;
-                this.situacao = rows.situacao;
-                this.dia_pagam = rows.dia_pagam;
-                this.melhor_dia = rows.melhor_dia;
-                this.#found = true;
-            } else {
-                this.#found = false;
-            }
-
-            return this.#found ? this.#field : this.#found;
-
-        
+        return this.#found ? this.#field : this.#found;
 
     }
 
     async FindByCpf(cpf_cliente,id_venda) {
 
-        
+        let query = `SELECT * FROM ${this.#tb_name} 
+        WHERE entidade_negocio = :entidade_negocio AND id_venda = :id_venda AND cpf_cliente = :cpf`;
 
-            let query = `SELECT * FROM ${this.#tb_name} 
-            WHERE entidade_negocio = :entidade_negocio AND id_venda = :id_venda AND cpf_cliente = :cpf`;
+        const [rows] = await this.#conn.query(query,{entidade_negocio: this.#entidade_negocio,id_venda,cpf_cliente});
 
-            const [rows] = await this.#conn.query(query,{entidade_negocio: this.#entidade_negocio,id_venda,cpf_cliente});
+        if (rows) {
+            this.id = rows.id;
+            this.dt_venda = rows.dt_venda;
+            this.id_vendedor = rows.id_vendedor;
+            this.id_cobrador = rows.id_cobrador;
+            this.id_rota = rows.id_rota;
+            this.id_tipo_pag = rows.id_tipo_pag;
+            this.cpf_cliente = rows.cpf_cliente;
+            this.marca_venda = rows.marca_venda;
+            this.num_recibo = rows.num_recibo;
+            this.referencia = rows.referencia;
+            this.val_tot_venda = rows.val_tot_venda;
+            this.situacao = rows.situacao;
+            this.dia_pagam = rows.dia_pagam;
+            this.melhor_dia = rows.melhor_dia;                
+            this.#found = true;
+        } else {
+            this.#found = false;
+        }
 
-            if (rows) {
-                this.id = rows.id;
-                this.dt_venda = rows.dt_venda;
-                this.id_vendedor = rows.id_vendedor;
-                this.id_cobrador = rows.id_cobrador;
-                this.id_rota = rows.id_rota;
-                this.id_tipo_pag = rows.id_tipo_pag;
-                this.cpf_cliente = rows.cpf_cliente;
-                this.marca_venda = rows.marca_venda;
-                this.num_recibo = rows.num_recibo;
-                this.referencia = rows.referencia;
-                this.val_tot_venda = rows.val_tot_venda;
-                this.situacao = rows.situacao;
-                this.dia_pagam = rows.dia_pagam;
-                this.melhor_dia = rows.melhor_dia;                
-                this.#found = true;
-            } else {
-                this.#found = false;
-            }
-
-            return this.#found ? this.#field : this.#found;
-
-        
+        return this.#found ? this.#field : this.#found;
 
     }
 
     async Save() {
 
-        
+        let query;
 
-            let query;
+        if (this.#found) {
+            query = `UPDATE ${this.#tb_name} SET dt_venda = :dt_venda, id_vendedor = :id_vendedor, 
+            id_cobrador = :id_cobrador, id_rota = :id_rota, id_tipo_pag = :id_tipo_pag, cpf_cliente = :cpf_cliente,
+            marca_venda = :marca_venda, num_recibo = :num_recibo, referencia = :referencia, val_tot_venda = :val_tot_venda,
+            situacao = :situacao, dia_pagam = :dia_pagam, melhor_dia = :melhor_dia
+            WHERE entidade_negocio = :entidade_negocio AND id = :id`;
+        } else {
 
-            if (this.#found) {
-                query = `UPDATE ${this.#tb_name} SET dt_venda = :dt_venda, id_vendedor = :id_vendedor, 
-                id_cobrador = :id_cobrador, id_rota = :id_rota, id_tipo_pag = :id_tipo_pag, cpf_cliente = :cpf_cliente,
-                marca_venda = :marca_venda, num_recibo = :num_recibo, referencia = :referencia, val_tot_venda = :val_tot_venda,
-                situacao = :situacao, dia_pagam = :dia_pagam, melhor_dia = :melhor_dia
-                WHERE entidade_negocio = :entidade_negocio AND id = :id`;
-            } else {
+            this.id = await this.#newId();
 
-                this.id = await this.#newId();
+            query = `INSERT INTO ${this.#tb_name} SET dt_venda = :dt_venda, id_vendedor = :id_vendedor, 
+            id_cobrador = :id_cobrador, id_rota = :id_rota, id_tipo_pag = :id_tipo_pag, cpf_cliente = :cpf_cliente,
+            marca_venda = :marca_venda, num_recibo = :num_recibo, referencia = :referencia, val_tot_venda = :val_tot_venda,
+            situacao = :situacao, dia_pagam = :dia_pagam, melhor_dia = :melhor_dia, id = :id,entidade_negocio = :entidade_negocio`;
+        }
 
-                query = `INSERT INTO ${this.#tb_name} SET dt_venda = :dt_venda, id_vendedor = :id_vendedor, 
-                id_cobrador = :id_cobrador, id_rota = :id_rota, id_tipo_pag = :id_tipo_pag, cpf_cliente = :cpf_cliente,
-                marca_venda = :marca_venda, num_recibo = :num_recibo, referencia = :referencia, val_tot_venda = :val_tot_venda,
-                situacao = :situacao, dia_pagam = :dia_pagam, melhor_dia = :melhor_dia, id = :id,entidade_negocio = :entidade_negocio`;
-            }
+        if(this.#field.id_cobrador === 0) this.#field.id_cobrador = null;
+        if(this.#field.id_rota === 0) this.#field.id_rota = null;
 
-            if(this.#field.id_cobrador === 0) this.#field.id_cobrador = null;
-            if(this.#field.id_rota === 0) this.#field.id_rota = null;
-
-            return await this.#conn.query(query,this.#field);
-
+        return await this.#conn.query(query,this.#field);
         
     }
 
     async Excluir(id) {
         
-        
-            
-            const query = `DELETE FROM ${this.#tb_name} WHERE entidade_negocio= :entidade_negocio AND id = :id`;
+        const query = `DELETE FROM ${this.#tb_name} WHERE entidade_negocio= :entidade_negocio AND id = :id`;
 
-            void await this.#conn.query(query,{id,entidade_negocio: this.#field.entidade_negocio});
+        void await this.#conn.query(query,{id,entidade_negocio: this.#field.entidade_negocio});
             
-        
     }
 
     async #newId() {
         
+        const query_new_id =  `SELECT IFNULL(MAX(id),0) as newid FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio`;
         
-            
-            const query_new_id =  `SELECT IFNULL(MAX(id),0) as newid FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio`;
-            
-            const [rows] = await this.#conn.query(query_new_id,{entidade_negocio: this.#field.entidade_negocio});
+        const [rows] = await this.#conn.query(query_new_id,{entidade_negocio: this.#field.entidade_negocio});
 
-            const query_check_ano = "SELECT ano_corrente FROM tb_check_ano WHERE id = 1";
+        const query_check_ano = "SELECT ano_corrente FROM tb_check_ano WHERE id = 1";
 
-            const [rows_check] = await this.#conn.query(query_check_ano);
+        const [rows_check] = await this.#conn.query(query_check_ano);
 
-            const ano_corrente = rows_check.ano_corrente;
-            const ano = new Date(this.#field.dt_venda).getFullYear();
-            const entidade = String(this.#field.entidade_negocio).padStart(3, '0');
+        const ano_corrente = rows_check.ano_corrente;
+        const ano = new Date(this.#field.dt_venda).getFullYear();
+        const entidade = String(this.#field.entidade_negocio).padStart(3, '0');
 
-            const id = ano > ano_corrente ? String(ano) + entidade + '1'.padStart(4, '0') : 
-            String(ano) + entidade + String(Number(String(rows.newid).substring(8,11)) + 1).padStart(4, '0');
+        const id = ano > ano_corrente ? String(ano) + entidade + '1'.padStart(4, '0') : 
+        String(ano) + entidade + String(Number(String(rows.newid).substring(8,11)) + 1).padStart(4, '0');
 
-            return (String(id));
-            
-        
+        return (String(id));
 
     }
 
