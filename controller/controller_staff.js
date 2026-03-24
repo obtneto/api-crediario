@@ -46,6 +46,7 @@ function normalizarAtivo(value, fallback = 1) {
 export class ControllerStaffAuth {
 
     static async IniciarSessao(req, res) {
+        
         const resdata = {
             err: 0,
             msg: '',
