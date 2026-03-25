@@ -702,6 +702,7 @@ export class ControllerVendas {
         try {
             const id_vendedor = Number(req.params.id_vendedor || 0);
             const entidade_negocio = obterEntidadeNegocio(req);
+            const situacaoRaw = String(req.query.situacao || '').trim();
             const dt_ini = String(req.query.dt_ini || '').trim();
             const dt_fim = String(req.query.dt_fim || '').trim();
             const page = Math.max(1, Number(req.query.page || 1));
@@ -753,6 +754,19 @@ export class ControllerVendas {
             const whereClause = ['v.id_vendedor = ?', 'v.entidade_negocio = ?'];
             const params = [id_vendedor, entidade_negocio];
 
+            if (situacaoRaw !== '') {
+                const situacao = Number(situacaoRaw);
+
+                if (![0, 3, 9].includes(situacao)) {
+                    const error = new Error('Situação inválida para o filtro.');
+                    error.statusCode = 400;
+                    throw error;
+                }
+
+                whereClause.push('v.situacao = ?');
+                params.push(situacao);
+            }
+
             if (dt_ini) {
                 whereClause.push('v.dt_venda >= ?');
                 params.push(dt_ini);
@@ -764,12 +778,12 @@ export class ControllerVendas {
             }
 
             let query = `SELECT v.id, v.dt_venda, v.cpf_cliente, c.nom_cliente, c.nom_usual, c.end_cliente, c.bai_cliente, c.cid_cliente, c.uf_cliente,
-                                v.val_tot_venda, tp.nom_tipo
+                                v.val_tot_venda, tp.nom_tipo, v.situacao
                          FROM tb_vendas v
                          LEFT JOIN tb_clientes c ON c.cpf_cliente = v.cpf_cliente
                          LEFT JOIN tb_tipos_pagamentos tp ON tp.id = v.id_tipo_pag AND tp.entidade_negocio = v.entidade_negocio
                          WHERE ${whereClause.join(' AND ')}
-                         ORDER BY v.dt_venda DESC, v.id DESC
+                         ORDER BY v.situacao, v.dt_venda DESC, v.id DESC
                          LIMIT ? OFFSET ?`;
 
             const paramsWithLimit = [...params, limit, offset];
@@ -1587,13 +1601,13 @@ export class ControllerVendas {
 
             const vendas = new Vendas(db.connection,entidade_negocio);
 
-            const query = `SELECT vd.id, vd.dt_venda, vd.cpf_cliente, cl.nom_cliente, vd.val_tot_venda, vd.val_desconto,
+            const query = `SELECT vd.id, vd.dt_venda, vd.cpf_cliente, cl.nom_cliente, vd.situacao, vd.val_tot_venda, vd.val_desconto,
             GREATEST((COALESCE(vd.val_tot_venda, 0) - COALESCE(vd.val_desconto, 0)) - COALESCE(SUM(pg.vl_pagamento), 0), 0) AS saldo_a_pagar
             FROM tb_vendas vd
             LEFT JOIN tb_clientes cl ON cl.cpf_cliente = vd.cpf_cliente
             LEFT JOIN tb_pagamentos pg ON pg.id_venda = vd.id AND pg.entidade_negocio = vd.entidade_negocio
             WHERE vd.entidade_negocio = :entidade_negocio AND vd.cpf_cliente = :cpf
-            GROUP BY vd.id, vd.dt_venda, vd.cpf_cliente, cl.nom_cliente, vd.val_tot_venda, vd.val_desconto
+            GROUP BY vd.id, vd.dt_venda, vd.cpf_cliente, cl.nom_cliente, vd.situacao, vd.val_tot_venda, vd.val_desconto
             ORDER BY vd.dt_venda DESC, vd.id DESC`;
 
             resdata.data = await vendas.ExecuteQuery(query,{entidade_negocio,cpf});

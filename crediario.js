@@ -71,10 +71,8 @@ function isAllowedOrigin(origin) {
 
 const corsOptions = {
     origin: (origin, callback) => {
-        console.log('CORS check for origin:', origin);
 
         if (isAllowedOrigin(origin)) {
-            console.log('CORS allowed for origin:', origin);
             return callback(null, true);
         }
 

@@ -32,6 +32,7 @@ export class ControllerCobranca {
             
             const entidade_negocio = obterEntidadeNegocio(req);
             const com_rota_cobranca = Number(req.params.com_rota_cobranca || 0);
+            const situacaoRaw = String(req.query.situacao || '').trim();
 
             const fieldname = com_rota_cobranca === 1 ? 'id_rota' : 'id_cobrador';
             const id_filter = Number(req.params?.id || 0);
@@ -77,10 +78,22 @@ export class ControllerCobranca {
             const diffMs = dtFimDate.getTime() - dtIniDate.getTime();
             const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-             if (diffDays >= 45) {
+            if (diffDays >= 45) {
                 const error = new Error('Intervalo deve ser inferior a 45 dias.');
                 error.statusCode = 400;
                 throw error;
+            }
+
+            let situacao = null;
+
+            if (situacaoRaw !== '') {
+                situacao = Number(situacaoRaw);
+
+                if (!Number.isInteger(situacao) || ![0, 3].includes(situacao)) {
+                    const error = new Error('Situacao invalida.');
+                    error.statusCode = 400;
+                    throw error;
+                }
             }
 
             void await db.Connect();
@@ -88,44 +101,45 @@ export class ControllerCobranca {
             const cobrancas = new Vendas(db.connection, entidade_negocio);
             const entidades = new Entidades(db.connection);
 
+            const whereClause = [
+                'v.dt_venda >= ?',
+                'v.dt_venda <= ?',
+                `v.${fieldname} = ?`,
+                'v.marca_venda IS NULL',
+                'v.entidade_negocio = ?'
+            ];
+            const params = [dt_ini, dt_fim, id_filter, entidade_negocio];
+
+            if (situacao !== null) {
+                whereClause.push('v.situacao = ?');
+                params.push(situacao);
+            } else {
+                whereClause.push('v.situacao IN (0, 3)');
+            }
+
             let query = `SELECT v.id, v.dt_venda, c.cpf_cliente, c.nom_cliente, c.end_cliente, c.bai_cliente, 
             c.cid_cliente, c.uf_cliente, v.val_tot_venda, COALESCE(SUM(p.vl_pagamento), 0) AS val_total_pago,
-            GREATEST(v.val_tot_venda - COALESCE(SUM(p.vl_pagamento), 0), 0) AS saldo_pagar
+            GREATEST(v.val_tot_venda - COALESCE(SUM(p.vl_pagamento), 0), 0) AS saldo_pagar, v.situacao
             FROM tb_vendas v
             LEFT JOIN tb_clientes c ON c.cpf_cliente = v.cpf_cliente
             LEFT JOIN tb_pagamentos p ON p.entidade_negocio = v.entidade_negocio AND p.id_venda = v.id
-            WHERE v.dt_venda >= ?
-            AND v.dt_venda <= ?
-            AND v.${fieldname} = ?
-            AND v.marca_venda IS NULL
-            AND v.entidade_negocio = ?
+            WHERE ${whereClause.join('\n            AND ')}
             GROUP BY v.id, v.dt_venda, c.cpf_cliente, c.nom_cliente, c.end_cliente, c.bai_cliente, 
-            c.cid_cliente, c.uf_cliente, v.val_tot_venda
+            c.cid_cliente, c.uf_cliente, v.val_tot_venda, v.situacao
             ORDER BY v.dt_venda DESC, v.id DESC
             LIMIT ? OFFSET ?`;
 
             resdata.data.cobrancas = await cobrancas.ExecuteQuery(query, [
-                dt_ini,
-                dt_fim,
-                id_filter,
-                entidade_negocio,
+                ...params,
                 limit,
                 offset
             ]);
 
             query = `SELECT COUNT(*) AS total
                      FROM tb_vendas v
-                     WHERE v.dt_venda >= ?
-                       AND v.dt_venda <= ?
-                       AND v.${fieldname} = ?
-                       AND v.entidade_negocio = ?`;
+                     WHERE ${whereClause.join('\n                       AND ')}`;
 
-            const [countResult] = await cobrancas.ExecuteQuery(query, [
-                dt_ini,
-                dt_fim,
-                id_filter,
-                entidade_negocio
-            ]);
+            const [countResult] = await cobrancas.ExecuteQuery(query, params);
 
             const total = Number(countResult?.total || 0);
 
@@ -529,13 +543,15 @@ export class ControllerCobranca {
             const pagamentos = new Pagamentos(db.connection, entidade_negocio);
             const vendas = new Vendas(db.connection, entidade_negocio);
 
-            const query = `SELECT val_tot_venda, (val_tot_venda - SUM(COALESCE(vl_pagamento, 0))) AS saldo_pagar 
-            FROM tb_vendas 
-            LEFT JOIN tb_pagamentos ON tb_pagamentos.entidade_negocio = tb_vendas.entidade_negocio AND tb_pagamentos.id_venda = tb_vendas.id 
-            WHERE tb_vendas.entidade_negocio = ? AND tb_vendas.id = ? 
-            GROUP BY val_tot_venda`
+            const query = `SELECT val_tot_venda,
+            (COALESCE(val_tot_venda, 0) - COALESCE(val_desconto, 0)) - SUM(COALESCE(vl_pagamento, 0)) AS saldo_pagar
+            FROM tb_vendas
+            LEFT JOIN tb_pagamentos ON tb_pagamentos.entidade_negocio = tb_vendas.entidade_negocio
+            AND tb_pagamentos.id_venda = tb_vendas.id
+            WHERE tb_vendas.entidade_negocio = :entidade_negocio AND tb_vendas.id = :id_venda
+            GROUP BY val_tot_venda, val_desconto`
 
-            const [rows] = await pagamentos.ExecuteQuery(query, [entidade_negocio, id_venda]);
+            const [rows] = await pagamentos.ExecuteQuery(query, {entidade_negocio, id_venda});
 
             if (vl_pagamento > parseFloat(rows.saldo_pagar)) {
                 const error = new Error('Valor do pagamento nao pode ser maior que o saldo a pagar.');
@@ -555,7 +571,13 @@ export class ControllerCobranca {
             void await vendas.FindById(id_venda);
 
             if(vendas.found) {
+
                 vendas.marca_venda = 'X';
+
+                if (parseFloat(rows.saldo_pagar) - parseFloat(vl_pagamento) == 0) {
+                    vendas.situacao = 9;
+                }
+                
                 void await vendas.Save();
             }
 
