@@ -1561,5 +1561,59 @@ export class ControllerVendas {
 
     }
 
+    static async ConsultaVendasPorCliente(req,res) {
+
+        const db = new Database('dbcred');
+        
+        const resdata = {
+            err: 0,
+            msg: '',
+            status: 200,
+            data: []
+        }
+
+        try {
+
+            void await db.Connect();
+
+            const cpf = String(req.params.cpf || '').replace(/\D/g, '');
+            const entidade_negocio = obterEntidadeNegocio(req);
+
+            if (!cpf) {
+                const error = new Error('CPF do Cliente não encontrado!');
+                error.statusCode = 404;
+                throw error; 
+            }
+
+            const vendas = new Vendas(db.connection,entidade_negocio);
+
+            const query = `SELECT vd.id, vd.dt_venda, vd.cpf_cliente, cl.nom_cliente, vd.val_tot_venda, vd.val_desconto,
+            GREATEST((COALESCE(vd.val_tot_venda, 0) - COALESCE(vd.val_desconto, 0)) - COALESCE(SUM(pg.vl_pagamento), 0), 0) AS saldo_a_pagar
+            FROM tb_vendas vd
+            LEFT JOIN tb_clientes cl ON cl.cpf_cliente = vd.cpf_cliente
+            LEFT JOIN tb_pagamentos pg ON pg.id_venda = vd.id AND pg.entidade_negocio = vd.entidade_negocio
+            WHERE vd.entidade_negocio = :entidade_negocio AND vd.cpf_cliente = :cpf
+            GROUP BY vd.id, vd.dt_venda, vd.cpf_cliente, cl.nom_cliente, vd.val_tot_venda, vd.val_desconto
+            ORDER BY vd.dt_venda DESC, vd.id DESC`;
+
+            resdata.data = await vendas.ExecuteQuery(query,{entidade_negocio,cpf});
+
+        } 
+        catch (error) {
+
+            void await db.RollBack();
+
+            resdata.err = Number(error.statusCode || 500);  
+            resdata.msg = error.message;
+            resdata.status = Number(error.statusCode || 500);
+
+            if (resdata.err == 500) GravarLog('ControllerVendas.ConsultaVendasPorCliente', error.stack);
+        }
+
+        void await db.Close();
+
+        res.status(resdata.status).json(resdata);
+
+    }
 
 }

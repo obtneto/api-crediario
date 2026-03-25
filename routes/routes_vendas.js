@@ -25,5 +25,6 @@ router.get('/editar_venda/:id',ControllerVendas.Editar)
 router.post('/salvar_venda',ControllerVendas.Salvar)
 router.post('/excluir_itens_venda/:id_venda/:id_item',ControllerVendas.Excluir)
 router.post('/destinar_venda',ControllerVendas.DestinarVendas);
+router.get('/consultar_vendas_clientes/:cpf',ControllerVendas.ConsultaVendasPorCliente)
 
-export default router
+export default router;
