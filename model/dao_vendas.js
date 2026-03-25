@@ -17,9 +17,11 @@ export default class Vendas {
         num_recibo: null,
         referencia: '',
         val_tot_venda: 0,
+        val_desconto: 0,
         situacao: 0,
-        dia_pagam: '',
-        melhor_dia: '',
+        dia_pagam: null,
+        melhor_dia: null,
+        ult_dat_pagamto: null,
         entidade_negocio: 0
     }
 
@@ -73,6 +75,9 @@ export default class Vendas {
     set val_tot_venda(val_tot_venda) {this.#field.val_tot_venda = parseFloat(val_tot_venda)}
     get val_tot_venda() {return parseFloat(this.#field.val_tot_venda)}
 
+    set val_desconto(val_desconto) {this.#field.val_desconto = parseFloat(val_desconto)}
+    get val_desconto() {return parseFloat(this.#field.val_desconto)}
+
     set situacao(situacao) {this.#field.situacao = situacao}
     get situacao() {return this.#field.situacao}
 
@@ -81,6 +86,9 @@ export default class Vendas {
 
     set melhor_dia(melhor_dia) {this.#field.melhor_dia = melhor_dia}
     get melhor_dia() {return this.#field.melhor_dia}
+
+    set ult_dat_pagamto(ult_dat_pagamto) {this.#field.ult_dat_pagamto = ult_dat_pagamto}
+    get ult_dat_pagamto() {return this.#field.ult_dat_pagamto}
 
     get entidade_negocio() {return Number(this.#entidade_negocio)}
 
@@ -109,9 +117,11 @@ export default class Vendas {
             this.num_recibo = rows.num_recibo;
             this.referencia = rows.referencia;
             this.val_tot_venda = rows.val_tot_venda;
+            this.val_desconto = rows.val_desconto;
             this.situacao = rows.situacao;
             this.dia_pagam = rows.dia_pagam;
             this.melhor_dia = rows.melhor_dia;
+            this.ult_dat_pagamto = rows.ult_dat_pagamto;
             this.#found = true;
         } else {
             this.#found = false;
@@ -140,9 +150,11 @@ export default class Vendas {
             this.num_recibo = rows.num_recibo;
             this.referencia = rows.referencia;
             this.val_tot_venda = rows.val_tot_venda;
+            this.val_desconto = rows.val_desconto;
             this.situacao = rows.situacao;
             this.dia_pagam = rows.dia_pagam;
-            this.melhor_dia = rows.melhor_dia;                
+            this.melhor_dia = rows.melhor_dia;
+            this.ult_dat_pagamto = rows.ult_dat_pagamto;
             this.#found = true;
         } else {
             this.#found = false;
@@ -159,16 +171,16 @@ export default class Vendas {
         if (this.#found) {
             query = `UPDATE ${this.#tb_name} SET dt_venda = :dt_venda, id_vendedor = :id_vendedor, 
             id_cobrador = :id_cobrador, id_rota = :id_rota, id_tipo_pag = :id_tipo_pag, cpf_cliente = :cpf_cliente,
-            marca_venda = :marca_venda, num_recibo = :num_recibo, referencia = :referencia, val_tot_venda = :val_tot_venda,
-            situacao = :situacao, dia_pagam = :dia_pagam, melhor_dia = :melhor_dia
+            marca_venda = :marca_venda, num_recibo = :num_recibo, referencia = :referencia, val_tot_venda = :val_tot_venda, val_desconto = :val_desconto,
+            situacao = :situacao, dia_pagam = :dia_pagam, melhor_dia = :melhor_dia, ult_dat_pagamto = :ult_dat_pagamto
             WHERE entidade_negocio = :entidade_negocio AND id = :id`;
         } else {
 
             this.id = await this.#newId();
 
-            query = `INSERT INTO ${this.#tb_name} SET dt_venda = :dt_venda, id_vendedor = :id_vendedor, 
+            query = `INSERT INTO ${this.#tb_name} SET dt_venda = :dt_venda, id_vendedor = :id_vendedor, ult_dat_pagamto = :ult_dat_pagamto,
             id_cobrador = :id_cobrador, id_rota = :id_rota, id_tipo_pag = :id_tipo_pag, cpf_cliente = :cpf_cliente,
-            marca_venda = :marca_venda, num_recibo = :num_recibo, referencia = :referencia, val_tot_venda = :val_tot_venda,
+            marca_venda = :marca_venda, num_recibo = :num_recibo, referencia = :referencia, val_tot_venda = :val_tot_venda, val_desconto = :val_desconto,
             situacao = :situacao, dia_pagam = :dia_pagam, melhor_dia = :melhor_dia, id = :id,entidade_negocio = :entidade_negocio`;
         }
 
@@ -201,8 +213,8 @@ export default class Vendas {
         const ano = new Date(this.#field.dt_venda).getFullYear();
         const entidade = String(this.#field.entidade_negocio).padStart(3, '0');
 
-        const id = ano > ano_corrente ? String(ano) + entidade + '1'.padStart(4, '0') : 
-        String(ano) + entidade + String(Number(String(rows.newid).substring(8,11)) + 1).padStart(4, '0');
+        const id = ano > ano_corrente ? String(ano) + entidade + '1'.padStart(5, '0') : 
+        String(ano) + entidade + String(Number(String(rows.newid).substring(8,11)) + 1).padStart(5, '0');
 
         return (String(id));
 

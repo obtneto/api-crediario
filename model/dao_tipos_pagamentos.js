@@ -9,6 +9,7 @@ export default class TiposPagamentos {
         id: 0,
         nom_tipo: '',
         ativo: 0,
+        dias_apos_pagamnto: null,
         entidade_negocio: 0
     }
 
@@ -38,6 +39,9 @@ export default class TiposPagamentos {
     set ativo(ativo) {this.#field.ativo = Number(ativo)}
     get ativo() {return Number(this.#field.ativo)}
 
+    set dias_apos_pagamnto(dias_apos_pagamnto) {this.#field.dias_apos_pagamnto = Number(dias_apos_pagamnto)}
+    get dias_apos_pagamnto() {return Number(this.#field.dias_apos_pagamnto)}
+
     get entidade_negocio() {return Number(this.#field.entidade_negocio)}
 
     async ExecuteQuery(query, params = {}) {
@@ -60,6 +64,7 @@ export default class TiposPagamentos {
             this.id = Number(rows.id);
             this.nom_tipo = String(rows.nom_tipo);
             this.ativo = Number(rows.ativo);
+            this.dias_apos_pagamnto = rows.dias_apos_pagamnto
             this.#found = true;
             
         } else {
@@ -75,12 +80,12 @@ export default class TiposPagamentos {
         let query;
 
         if (this.#found) {
-            query = `UPDATE ${this.#tb_name} SET nom_tipo = :nom_tipo, ativo = :ativo 
+            query = `UPDATE ${this.#tb_name} SET nom_tipo = :nom_tipo, ativo = :ativo, dias_apos_pagamnto = :dias_apos_pagamnto
             WHERE entidade_negocio = :entidade_negocio AND id = :id`;
         } else {
             this.#field.id = await this.#newId();
             query = `INSERT INTO ${this.#tb_name} SET id = :id, nom_tipo = :nom_tipo, ativo = :ativo, 
-            entidade_negocio = :entidade_negocio`
+            dias_apos_pagamnto = :dias_apos_pagamnto,entidade_negocio = :entidade_negocio`
         }
 
         return await this.#conn.query(query,this.#field);

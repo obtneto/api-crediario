@@ -2,6 +2,7 @@ import Database from '../connections/dbconn.js';
 import GravarLog from '../utils/GravarLog.js';
 import {obterEntidadeNegocio} from '../utils/CheckEntidades.js';
 import Entidades from '../model/dao_entidades.js';
+import TiposPagamentos from '../model/dao_tipos_pagamentos.js'
 import Vendas from '../model/dao_vendas.js';
 import Pagamentos from '../model/dao_pagamentos.js';
 import {buildTableDocument, formatCurrencyBR, formatDateBR, sendPdfResponse} from '../utils/PdfReport.js';
@@ -118,8 +119,8 @@ export class ControllerCobranca {
             }
 
             let query = `SELECT v.id, v.dt_venda, c.cpf_cliente, c.nom_cliente, c.end_cliente, c.bai_cliente, 
-            c.cid_cliente, c.uf_cliente, v.val_tot_venda, COALESCE(SUM(p.vl_pagamento), 0) AS val_total_pago,
-            GREATEST(v.val_tot_venda - COALESCE(SUM(p.vl_pagamento), 0), 0) AS saldo_pagar, v.situacao
+            c.cid_cliente, c.uf_cliente, v.val_tot_venda, v.val_desconto, COALESCE(SUM(p.vl_pagamento), 0) AS val_total_pago,
+            GREATEST((v.val_tot_venda - val_desconto )- COALESCE(SUM(p.vl_pagamento), 0), 0) AS saldo_pagar, v.situacao
             FROM tb_vendas v
             LEFT JOIN tb_clientes c ON c.cpf_cliente = v.cpf_cliente
             LEFT JOIN tb_pagamentos p ON p.entidade_negocio = v.entidade_negocio AND p.id_venda = v.id
@@ -542,6 +543,7 @@ export class ControllerCobranca {
 
             const pagamentos = new Pagamentos(db.connection, entidade_negocio);
             const vendas = new Vendas(db.connection, entidade_negocio);
+            const tipos = new TiposPagamentos(db.connection,entidade_negocio);
 
             const query = `SELECT val_tot_venda,
             (COALESCE(val_tot_venda, 0) - COALESCE(val_desconto, 0)) - SUM(COALESCE(vl_pagamento, 0)) AS saldo_pagar
@@ -572,7 +574,14 @@ export class ControllerCobranca {
 
             if(vendas.found) {
 
+                void await tipos.FindById(vendas.id_tipo_pag);
+
+                const prox_dia_pagamento = new Date(vendas.dia_pagam);
+
+                prox_dia_pagamento.setDate(prox_dia_pagamento.getDate() + tipos.dias_apos_pagamnto)
+
                 vendas.marca_venda = 'X';
+                vendas.dia_pagam = prox_dia_pagamento;
 
                 if (parseFloat(rows.saldo_pagar) - parseFloat(vl_pagamento) == 0) {
                     vendas.situacao = 9;

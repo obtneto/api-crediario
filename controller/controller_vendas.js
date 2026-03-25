@@ -778,7 +778,7 @@ export class ControllerVendas {
             }
 
             let query = `SELECT v.id, v.dt_venda, v.cpf_cliente, c.nom_cliente, c.nom_usual, c.end_cliente, c.bai_cliente, c.cid_cliente, c.uf_cliente,
-                                v.val_tot_venda, tp.nom_tipo, v.situacao
+                         v.val_tot_venda, tp.nom_tipo, v.situacao, v.val_desconto, (v.val_tot_venda - val_desconto) as tot_a_pagar
                          FROM tb_vendas v
                          LEFT JOIN tb_clientes c ON c.cpf_cliente = v.cpf_cliente
                          LEFT JOIN tb_tipos_pagamentos tp ON tp.id = v.id_tipo_pag AND tp.entidade_negocio = v.entidade_negocio
@@ -1130,8 +1130,9 @@ export class ControllerVendas {
             const id_tipo_pag = Number(body.id_tipo_pag);
             const cpf_cliente = String(body.cpf_cliente).replace(/\D/g, '');
             const referencia = String(body.referencia).trim();
-            const val_tot_venda = Number(body.val_tot_venda);
+            const val_tot_venda = parseFloat(body.val_tot_venda);
             const dia_pagam = String(body.dia_pagam).trim();
+            const val_desconto = parseFloat(body.val_desconto || 0);
             const itens = body.itens;
 
             if (!dt_venda) {
@@ -1152,6 +1153,12 @@ export class ControllerVendas {
                 throw error;
             }
 
+            if (!Number.isFinite(val_desconto) || val_desconto < 0) {
+                const error = new Error('Desconto invalido.');
+                error.statusCode = 400;
+                throw error;
+            }
+
             void await db.Connect();
             void await db.Begin();
 
@@ -1159,11 +1166,24 @@ export class ControllerVendas {
             const estoque = new Estoque(db.connection,entidade_negocio);
             const itensVendas = new ItensVendas(db.connection, entidade_negocio);
             const vendas = new Vendas(db.connection, entidade_negocio);
+            const entidades = new Entidades(db.connection);
 
             /**************************************************************************
              * Salva a venda para obter o ID, caso seja uma nova venda (id vazio ou 0). 
              * Se for uma edição, o ID já existe e a função Save irá atualizar o registro.
              ****************/
+            void entidades.FindById(entidade_negocio);
+
+            const valor_desconto = Number(( parseFloat(entidades.percent_desconto_venda) * parseFloat(val_desconto)).toFixed(4)) / 100;;
+
+            console.log(valor_desconto)
+
+            if (parseFloat(valor_desconto) > val_desconto ) {
+                const error = new Error('Desconto maior que permitido.');
+                error.statusCode = 403;
+                throw error;
+            }
+
             void await vendas.FindById(id);
             
             vendas.id = id;
@@ -1175,6 +1195,7 @@ export class ControllerVendas {
             vendas.val_tot_venda = val_tot_venda;
             vendas.situacao = 0;
             vendas.dia_pagam = dia_pagam;
+            vendas.val_desconto = val_desconto;
 
             void await vendas.Save();
 
@@ -1250,7 +1271,7 @@ export class ControllerVendas {
             resdata.msg = error.message;
             resdata.status = Number(error.statusCode || 500);
 
-            GravarLog('ControllerVendas.Salvar', error.stack);
+            if(resdata.err == 500) GravarLog('ControllerVendas.Salvar', error.stack);
         }
 
         void await db.Close();

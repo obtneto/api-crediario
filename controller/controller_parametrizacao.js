@@ -2284,8 +2284,15 @@ export class ControllerTiposPagamentos{
 
         try {
 
-            const {id,nom_tipo,ativo} = req.body;
+            const {id,nom_tipo,ativo,dias_apos_pagamnto} = req.body;
             const entidade_negocio = obterEntidadeNegocio(req);
+            const diasAposPagamento = Number(dias_apos_pagamnto ?? 0);
+
+            if (!Number.isFinite(diasAposPagamento) || diasAposPagamento < 0) {
+                const error = new Error('Dias apos pagamento invalido.');
+                error.statusCode = 400;
+                throw error;
+            }
             
             void await db.Connect();
 
@@ -2295,10 +2302,10 @@ export class ControllerTiposPagamentos{
 
             void await tipos.FindById(id);
 
-
             tipos.id = id;
             tipos.nom_tipo = nom_tipo;
             tipos.ativo = ativo;
+            tipos.dias_apos_pagamnto = diasAposPagamento;
             
             void await tipos.Save();
 
