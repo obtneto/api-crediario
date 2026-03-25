@@ -146,7 +146,7 @@ export class ControllerCobranca {
             resdata.msg = error.message;
             resdata.status = Number(error.statusCode || 500);
 
-            GravarLog('ControllerCobranca.ListarCobrancas', error.stack);
+             if (resdata.err == 500) GravarLog('ControllerCobranca.ListarCobrancas', error.stack);
         }
 
         void await db.Close();
@@ -292,7 +292,7 @@ export class ControllerCobranca {
             resdata.msg = error.message;
             resdata.status = Number(error.statusCode || 500);
 
-            GravarLog('ControllerCobranca.ListarCobrancasPeriodo', error.stack);
+             if (resdata.err == 500) GravarLog('ControllerCobranca.ListarCobrancasPeriodo', error.stack);
         }
 
         void await db.Close();
@@ -414,7 +414,11 @@ export class ControllerCobranca {
             });
 
             await sendPdfResponse(res, `relatorio-cobranca-${dt_ini}-${dt_fim}.pdf`, document);
+
         } catch (error) {
+            
+            const err = error.statusCode || 500;
+
             if (!res.headersSent) {
                 res.status(Number(error.statusCode || 500)).json({
                     err: Number(error.statusCode || 500),
@@ -422,9 +426,10 @@ export class ControllerCobranca {
                     status: Number(error.statusCode || 500),
                     data: []
                 });
+
+                if (err == 500) GravarLog('ControllerCobranca.ImprimirResumoPeriodo', error.stack);
             }
 
-            GravarLog('ControllerCobranca.ImprimirResumoPeriodo', error.stack);
         }
 
         void await db.Close();
@@ -473,7 +478,7 @@ export class ControllerCobranca {
             resdata.msg = error.message;
             resdata.status = Number(error.statusCode || 500);
 
-            GravarLog('ControllerCobranca.ListarPagamentos', error.stack);
+             if (resdata.err == 500) GravarLog('ControllerCobranca.ListarPagamentos', error.stack);
         }
 
         void await db.Close();
@@ -567,9 +572,8 @@ export class ControllerCobranca {
             resdata.msg = error.message;
             resdata.status = Number(error.statusCode || 500);
 
-                GravarLog('ControllerCobranca.SalvarPagamento', error.stack);
+            if (resdata.err == 500) GravarLog('ControllerCobranca.SalvarPagamento', error.stack);
             
-
         }
 
         void await db.Close();
@@ -716,5 +720,4 @@ export class ControllerCobranca {
         res.status(resdata.status).json(resdata);
     }   
 
-   
 }

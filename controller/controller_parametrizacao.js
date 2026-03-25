@@ -269,7 +269,7 @@ export class ControllerAuth {
             resdata.msg = error.message;
             resdata.status = Number(error.statusCode || 500);
 
-            GravarLog('ControllerAuth.IniciarSessao', error.stack);
+            if (resdata.err == 500) GravarLog('ControllerAuth.IniciarSessao', error.stack);
         }
 
         void await db.Close();
@@ -278,6 +278,7 @@ export class ControllerAuth {
     }
 
     static async SessaoAtual(req, res) {
+
         const db = new Database('dbcred');
 
         const resdata = {
@@ -355,7 +356,8 @@ export class ControllerAuth {
             resdata.msg = error.message;
             resdata.status = Number(error.statusCode || 500);
 
-            GravarLog('ControllerAuth.SessaoAtual', error.stack);
+            if (resdata.err == 500) GravarLog('ControllerAuth.SessaoAtual', error.stack);
+
         } finally {
             void await db.Close();
         }
@@ -456,7 +458,7 @@ export class ControllerAuth {
             resdata.msg = error.message;
             resdata.status = Number(error.statusCode || 500);
 
-            GravarLog('ControllerAuth.SolicitarResetSenhaPublica', error.stack);
+            if (resdata.err == 500) GravarLog('ControllerAuth.SolicitarResetSenhaPublica', error.stack);
         }
 
         void await db.Close();
@@ -578,7 +580,7 @@ export class ControllerAuth {
             resdata.msg = error.message;
             resdata.status = Number(error.statusCode || 500);
 
-            GravarLog('ControllerAuth.AlterarSenha', error.stack);
+            if (resdata.err == 500) GravarLog('ControllerAuth.AlterarSenha', error.stack);
         }
 
         void await db.Close();
@@ -635,7 +637,6 @@ export class ControllerUsuarios{
 
             let perfisRows = await perfis.ExecuteQuery(`SELECT id,nom_perfil FROM tb_perfis WHERE entidade_negocio = :entidade_negocio`, { entidade_negocio: entidade });
             
-
             resdata.data.perfis = perfisRows;
 
 
@@ -772,7 +773,7 @@ export class ControllerUsuarios{
             resdata.msg = error.message;
             resdata.status = Number(error.statusCode || 500);
 
-            GravarLog('ControllerUsuarios.Salvar', error.stack);
+            if (resdata.err == 500) GravarLog('ControllerUsuarios.Salvar', error.stack);
 
         }
 
@@ -1376,7 +1377,6 @@ export class ControllerVendedores{
 
             void await vendedores.FindById(id);
 
-
             void await vendedores.Excluir(id);
 
             void await db.Commit();
@@ -1583,8 +1583,6 @@ export class ControllerCobradores{
             resdata.err = 500;
             resdata.msg = error.stack;
             resdata.status = 500;
-
-            console.log(error.stack)
 
         }
 
@@ -1837,8 +1835,6 @@ export class ControllerProdutos {
             resdata.err = 500;
             resdata.msg = error.stack;
             resdata.status = 500;
-
-            console.log(error.stack)
 
         }
 

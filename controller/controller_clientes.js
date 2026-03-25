@@ -64,11 +64,12 @@ export class ControllerClientes {
                 total_pages: total > 0 ? Math.ceil(total / limit) : 0
             };
         } catch (error) {
+
             resdata.err = Number(error.statusCode || 500);
             resdata.msg = error.message;
             resdata.status = Number(error.statusCode || 500);
 
-            GravarLog(`Erro ao listar clientes: ${error.message}`);
+            if (resdata.err == 500) GravarLog(`Erro ao listar clientes: ${error.message}`);
         }
 
         void await db.Close();
@@ -106,7 +107,7 @@ export class ControllerClientes {
             resdata.msg = error.message;
             resdata.status = Number(error.statusCode || 500);
 
-            GravarLog(`Erro ao editar cliente: ${error.message}`);
+             if (resdata.err == 500) GravarLog(`Erro ao editar cliente: ${error.message}`);
         }
 
         void await db.Close();
@@ -209,7 +210,7 @@ export class ControllerClientes {
             resdata.msg = error.message;
             resdata.status = Number(error.statusCode || 500);
 
-            GravarLog(`Erro ao salvar cliente: ${error.message}`);
+            if (resdata.err == 500) GravarLog(`Erro ao salvar cliente: ${error.message}`);
         }
 
         void await db.Close();

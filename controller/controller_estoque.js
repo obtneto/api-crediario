@@ -133,6 +133,8 @@ export class ControllerEstoque {
 
         } catch (error) {
 
+            const err = error.statusCode || 500;
+
             if (!res.headersSent) {
                 res.status(Number(error.statusCode || 500)).json({
                     err: Number(error.statusCode || 500),
@@ -142,7 +144,7 @@ export class ControllerEstoque {
                 });
             }
 
-            GravarLog.Gravar('ControllerEstoque.Imprimir', error.stack);
+            if (err == 500) GravarLog.Gravar('ControllerEstoque.Imprimir', error.stack);
         }
 
         void await db.Close();

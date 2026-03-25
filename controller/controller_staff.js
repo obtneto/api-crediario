@@ -104,13 +104,14 @@ export class ControllerStaffAuth {
             resdata.msg = error.message;
             resdata.status = Number(error.statusCode || 500);
 
-            GravarLog('ControllerStaffAuth.IniciarSessao', error.stack);
+            if (resdata.err == 500) GravarLog('ControllerStaffAuth.IniciarSessao', error.stack);
         }
 
         return res.status(resdata.status).json(resdata);
     }
 
     static async SessaoAtual(req, res) {
+
         const resdata = {
             err: 0,
             msg: '',
@@ -198,12 +199,14 @@ export class ControllerStaffEntidades {
             query += ` ORDER BY id DESC`;
 
             resdata.data.entidades = await entidades.ExecuteQuery(query, params);
+
         } catch (error) {
+
             resdata.err = Number(error.statusCode || 500);
             resdata.msg = error.message;
             resdata.status = Number(error.statusCode || 500);
 
-            GravarLog('ControllerStaffEntidades.Listar', error.stack);
+            if (resdata.err == 500) GravarLog('ControllerStaffEntidades.Listar', error.stack);
         }
 
         void await db.Close();
@@ -277,7 +280,7 @@ export class ControllerStaffEntidades {
             resdata.msg = error.message;
             resdata.status = Number(error.statusCode || 500);
 
-            GravarLog('ControllerStaffEntidades.Salvar', error.stack);
+            if (resdata.err == 500) GravarLog('ControllerStaffEntidades.Salvar', error.stack);
         }
 
         void await db.Close();
@@ -286,6 +289,7 @@ export class ControllerStaffEntidades {
     }
 
     static async AtualizarStatus(req, res) {
+
         const db = new Database('dbcred');
 
         const resdata = {
@@ -299,6 +303,7 @@ export class ControllerStaffEntidades {
         };
 
         try {
+
             const id = Number(req.params?.id || 0);
             const ativo = normalizarAtivo(req.body?.ativo, 0);
 
@@ -340,7 +345,7 @@ export class ControllerStaffEntidades {
             resdata.msg = error.message;
             resdata.status = Number(error.statusCode || 500);
 
-            GravarLog('ControllerStaffEntidades.AtualizarStatus', error.stack);
+            if (resdata.err == 500) GravarLog('ControllerStaffEntidades.AtualizarStatus', error.stack);
         }
 
         void await db.Close();

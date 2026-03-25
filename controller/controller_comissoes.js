@@ -265,6 +265,8 @@ export class ControllerComissoes {
 
         } catch (error) {
 
+            const err = error.statusCode || 500;
+
             if (!res.headersSent) {
                 res.status(Number(error.statusCode || 500)).json({
                     err: Number(error.statusCode || 500),
@@ -274,7 +276,7 @@ export class ControllerComissoes {
                 });
             }
 
-            GravarLog('ControllerComissoes.ImprimirAdiantamentosAtivos', error.stack);
+            if (err == 500) GravarLog('ControllerComissoes.ImprimirAdiantamentosAtivos', error.stack);
         }
 
         void await db.Close();
@@ -389,7 +391,7 @@ export class ControllerComissoes {
             resdata.msg = error.message;    
             resdata.status = Number(error.statusCode || 500);
 
-            GravarLog('ControllerCobranca.SalvarAdiantamento', error.stack);
+            if (resdata.err == 500) GravarLog('ControllerCobranca.SalvarAdiantamento', error.stack);
             
         }
 
@@ -753,6 +755,8 @@ export class ControllerComissoes {
 
         } catch (error) {
 
+            const err = error.statusCode || 500;
+
             if (!res.headersSent) {
                 res.status(Number(error.statusCode || 500)).json({
                     err: Number(error.statusCode || 500),
@@ -762,7 +766,7 @@ export class ControllerComissoes {
                 });
             }
 
-            GravarLog('ControllerComissoes.ImprimirReciboCobrador', error.stack);
+            if (err == 500) GravarLog('ControllerComissoes.ImprimirReciboCobrador', error.stack);
         }
 
         void await db.Close();
@@ -986,6 +990,8 @@ export class ControllerComissoes {
 
         } catch (error) {
 
+            const err = error.statusCode || 500;
+
             if (!res.headersSent) {
                 res.status(Number(error.statusCode || 500)).json({
                     err: Number(error.statusCode || 500),
@@ -995,7 +1001,7 @@ export class ControllerComissoes {
                 });
             }
 
-            GravarLog('ControllerComissoes.ImprimirReciboCobrador', error.stack);
+            if (err == 500) GravarLog('ControllerComissoes.ImprimirReciboCobrador', error.stack);
         }
 
         void await db.Close();
@@ -1203,7 +1209,7 @@ export class ControllerComissoes {
             resdata.msg = error.message;
             resdata.status = Number(error.statusCode || 500);
 
-            GravarLog('ControllerComissoes.SalvarReciboCobrador', error.stack);
+            if (resdata.err == 500) GravarLog('ControllerComissoes.SalvarReciboCobrador', error.stack);
 
         }
 
@@ -1597,7 +1603,7 @@ export class ControllerComissoes {
             resdata.msg = error.message;
             resdata.status = Number(error.statusCode || 500);
 
-            GravarLog('ControllerComissoes.SalvarReciboCobrador', error.stack);
+            if (resdata.err == 500) GravarLog('ControllerComissoes.SalvarReciboCobrador', error.stack);
 
         }
 
