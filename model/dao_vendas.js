@@ -214,7 +214,7 @@ export default class Vendas {
         const entidade = String(this.#field.entidade_negocio).padStart(3, '0');
 
         const id = ano > ano_corrente ? String(ano) + entidade + '1'.padStart(5, '0') : 
-        String(ano) + entidade + String(Number(String(rows.newid).substring(8,11)) + 1).padStart(5, '0');
+        String(ano) + entidade + String(Number(String(rows.newid).substring(8,12)) + 1).padStart(5, '0');
 
         return (String(id));
 

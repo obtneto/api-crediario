@@ -10,6 +10,7 @@ export default class Perfis {
         id_venda: '',
         dt_pagamento: '',
         vl_pagamento: 0,
+        vl_desconto: 0,
         id_cobrador: null,
         num_recibo: null,
         entidade_negocio: 0
@@ -44,6 +45,9 @@ export default class Perfis {
     set vl_pagamento(vl_pagamento) {this.#field.vl_pagamento = parseFloat(vl_pagamento)}
     get vl_pagamento() {return parseFloat(this.#field.vl_pagamento)}
 
+    set vl_desconto(vl_desconto) {this.#field.vl_desconto = parseFloat(vl_desconto)}
+    get vl_desconto() {return parseFloat(this.#field.vl_desconto)}
+
     set id_cobrador(id_cobrador) {this.#field.id_cobrador = Number(id_cobrador)}
     get id_cobrador() {return Number(this.#field.id_cobrador)}
 
@@ -73,6 +77,7 @@ export default class Perfis {
             this.id_venda = String(rows.id_venda);
             this.dt_pagamento = String(rows.dt_pagamento);
             this.vl_pagamento = parseFloat(rows.vl_pagamento);
+            this.vl_desconto = parseFloat(rows.vl_desconto);
             this.id_cobrador = Number(rows.id_cobrador);
             this.num_recibo = String(rows.num_recibo);
 
@@ -94,7 +99,7 @@ export default class Perfis {
         if (this.#found) {
 
             query = `UPDATE ${this.#tb_name} SET dt_pagamento = :dt_pagamento, vl_pagamento = :vl_pagamento, 
-            id_cobrador = :id_cobrador, num_recibo = :num_recibo
+            id_cobrador = :id_cobrador, num_recibo = :num_recibo, vl_desconto = :vl_desconto
             WHERE entidade_negocio = :entidade_negocio AND id_venda = :id_venda AND id = :id`;
             
         } else {
@@ -102,7 +107,7 @@ export default class Perfis {
             this.id = await this.#newId();
 
             query = `INSERT INTO ${this.#tb_name} SET dt_pagamento = :dt_pagamento, vl_pagamento = :vl_pagamento, 
-            id_cobrador = :id_cobrador,num_recibo = :num_recibo, id_venda = :id_venda, 
+            id_cobrador = :id_cobrador,num_recibo = :num_recibo, id_venda = :id_venda, vl_desconto = :vl_desconto,
             id = :id, entidade_negocio = :entidade_negocio`
         }
 

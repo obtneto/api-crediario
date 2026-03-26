@@ -1081,7 +1081,24 @@ export class ControllerVendas {
             const vendas = new Vendas(db.connection,entidade_negocio);
             const itens = new ItensVendas(db.connection,entidade_negocio);
 
-            resdata.data.vendas = await vendas.FindById(id);
+            const query = `SELECT vd.*,
+                                  (
+                                      (COALESCE(vd.val_tot_venda, 0) - COALESCE(vd.val_desconto, 0))
+                                      - COALESCE((
+                                          SELECT SUM(COALESCE(pg.vl_pagamento, 0))
+                                          FROM tb_pagamentos pg
+                                          WHERE pg.entidade_negocio = vd.entidade_negocio
+                                            AND pg.id_venda = vd.id
+                                      ), 0)
+                                  ) AS saldo_a_pagar
+                           FROM tb_vendas vd
+                           WHERE vd.entidade_negocio = :entidade_negocio
+                             AND vd.id = :id_venda
+                           LIMIT 1`;
+
+            const rows = await vendas.ExecuteQuery(query, { entidade_negocio, id_venda: id });
+
+            resdata.data.vendas = Array.isArray(rows) && rows[0] ? rows[0] : {};
             resdata.data.itens = await itens.FindByVenda(id);
             
         } catch (error) {

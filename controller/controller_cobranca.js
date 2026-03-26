@@ -479,7 +479,8 @@ export class ControllerCobranca {
 
             const pagamentos = new Pagamentos(db.connection, entidade_negocio);
 
-            const query = `SELECT tb_pagamentos.id, tb_pagamentos.dt_pagamento, tb_cobradores.nom_cobrador, tb_pagamentos.vl_pagamento
+            const query = `SELECT tb_pagamentos.id, tb_pagamentos.dt_pagamento, tb_cobradores.nom_cobrador, 
+            tb_pagamentos.vl_pagamento, tb_pagamentos.vl_desconto
             FROM tb_pagamentos 
             LEFT JOIN tb_cobradores ON tb_cobradores.id = tb_pagamentos.id_cobrador AND tb_cobradores.entidade_negocio = tb_pagamentos.entidade_negocio
             WHERE tb_pagamentos.entidade_negocio = ? AND tb_pagamentos.id_venda = ? 
@@ -525,6 +526,7 @@ export class ControllerCobranca {
             const dt_pagamento = String(body.dt_pagamento || '').trim();
             const vl_pagamento = parseFloat(body.vl_pagamento || 0);
             const id_cobrador = Number(body.id_cobrador || 0);
+            const vl_desconto = parseFloat(body.vl_desconto || 0);
 
             if (id_venda <= 0) {
                 const error = new Error('ID da venda invalido.');
@@ -544,7 +546,8 @@ export class ControllerCobranca {
             const pagamentos = new Pagamentos(db.connection, entidade_negocio);
             const vendas = new Vendas(db.connection, entidade_negocio);
             const tipos = new TiposPagamentos(db.connection,entidade_negocio);
-
+            const entidades = new Entidades(db.connection);
+            
             const query = `SELECT val_tot_venda,
             (COALESCE(val_tot_venda, 0) - COALESCE(val_desconto, 0)) - SUM(COALESCE(vl_pagamento, 0)) AS saldo_pagar
             FROM tb_vendas
@@ -555,18 +558,28 @@ export class ControllerCobranca {
 
             const [rows] = await pagamentos.ExecuteQuery(query, {entidade_negocio, id_venda});
 
-            if (vl_pagamento > parseFloat(rows.saldo_pagar)) {
+            void await entidades.FindById(entidade_negocio);
+            void await pagamentos.FindById(id_venda, 0);
+
+            const valor_max_desconto = Number(((parseFloat(entidades.percent_desconto_cobranca) / (parseFloat(rows.saldo_pagar) - parseFloat(vl_desconto)) ) * 100).toFixed(2))
+
+            if (vl_desconto > valor_max_desconto) {
+                const error = new Error("Desconto maior que o permitido.");
+                error.statusCode = 403;
+                throw error
+            }
+
+            if ((vl_pagamento + vl_desconto) > parseFloat(rows.saldo_pagar)) {
                 const error = new Error('Valor do pagamento nao pode ser maior que o saldo a pagar.');
                 error.statusCode = 400;
                 throw error;
             }
 
-            void await pagamentos.FindById(id_venda, 0);
-
             pagamentos.id_venda = id_venda;
             pagamentos.dt_pagamento = dt_pagamento;
             pagamentos.vl_pagamento = vl_pagamento
             pagamentos.id_cobrador = id_cobrador;
+            pagamentos.vl_desconto = vl_desconto;
 
             void await pagamentos.Save();
 
@@ -582,8 +595,11 @@ export class ControllerCobranca {
 
                 vendas.marca_venda = 'X';
                 vendas.dia_pagam = prox_dia_pagamento;
+                vendas.val_desconto += parseFloat(vl_desconto);
 
-                if (parseFloat(rows.saldo_pagar) - parseFloat(vl_pagamento) == 0) {
+                console.log((parseFloat(rows.saldo_pagar) - parseFloat(vl_desconto)) - parseFloat(vl_pagamento))
+
+                if ( ( parseFloat(rows.saldo_pagar) - parseFloat(vl_desconto) ) - parseFloat(vl_pagamento) == 0) {
                     vendas.situacao = 9;
                 }
                 
