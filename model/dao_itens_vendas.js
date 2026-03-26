@@ -12,6 +12,7 @@ export default class ItensVendas {
         qt_produto: 0,
         vl_unit: 0,
         vl_tot_item: 0,
+        forma_pagamnto: '',
         id_venda: ''
     }
 
@@ -46,6 +47,9 @@ export default class ItensVendas {
 
     set vl_unit(vl_unit) {this.#field.vl_unit = parseFloat(vl_unit)}
     get vl_unit() {return parseFloat(this.#field.vl_unit)}
+
+    set forma_pagamnto(forma_pagamnto) {this.#field.forma_pagamnto = forma_pagamnto}
+    get forma_pagamnto() {return this.#field.forma_pagamnto}
 
     get vl_tot_item() {return parseFloat(this.vl_tot_item)}
 
@@ -96,14 +100,15 @@ export default class ItensVendas {
         let query;
 
         if (this.#found) {
-            query = `UPDATE ${this.#tb_name} SET qt_produto = :qt_produto,id_produto = :id_produto,vl_unit = :vl_unit 
+            query = `UPDATE ${this.#tb_name} SET qt_produto = :qt_produto,id_produto = :id_produto,
+            vl_unit = :vl_unit, forma_pagamnto = :forma_pagamnto 
             WHERE entidade_negocio = :entidade_negocio AND id_venda = :id_venda AND id = :id`;
         } else {
 
             this.id = await this.#newId();
 
             query = `INSERT INTO ${this.#tb_name} SET entidade_negocio = :entidade_negocio, id_produto = :id_produto,
-            id = :id, qt_produto = :qt_produto, id_venda = :id_venda,vl_unit = :vl_unit`;
+            id = :id, qt_produto = :qt_produto, id_venda = :id_venda,vl_unit = :vl_unit,forma_pagamnto = :forma_pagamnto`;
         }
 
         if(this.#field.id_produto === 0) this.#field.id_produto = null;

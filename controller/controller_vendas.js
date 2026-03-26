@@ -5,11 +5,13 @@ import Estoque from '../model/dao_estoque.js';
 import Estoque_Mov from '../model/dao_estoque_mov.js';
 import ItensVendas from '../model/dao_itens_vendas.js';
 import Entidades from '../model/dao_entidades.js';
+import Clientes from '../model/dao_clientes.js';
 import Cobradores from '../model/dao_cobradores.js';
 import Rotas from '../model/dao_rotas.js';
 import GravarLog from '../utils/GravarLog.js';
 import {obterEntidadeNegocio} from '../utils/CheckEntidades.js';
 import {buildTableDocument, formatCurrencyBR, formatDateBR, sendPdfResponse} from '../utils/PdfReport.js';
+import {isValidCpf} from '../utils/DocumentValidator.js';
 
 export class ControllerDistribuicao{
 
@@ -751,7 +753,7 @@ export class ControllerVendas {
             const vendas = new Vendas(db.connection, entidade_negocio);
             const entidades = new Entidades(db.connection,entidade_negocio);
 
-            const whereClause = ['v.id_vendedor = ?', 'v.entidade_negocio = ?'];
+            const whereClause = ['id_vendedor = ?', 'entidade_negocio = ?'];
             const params = [id_vendedor, entidade_negocio];
 
             if (situacaoRaw !== '') {
@@ -763,27 +765,23 @@ export class ControllerVendas {
                     throw error;
                 }
 
-                whereClause.push('v.situacao = ?');
+                whereClause.push('situacao = ?');
                 params.push(situacao);
             }
 
             if (dt_ini) {
-                whereClause.push('v.dt_venda >= ?');
+                whereClause.push('dt_venda >= ?');
                 params.push(dt_ini);
             }
 
             if (dt_fim) {
-                whereClause.push('v.dt_venda <= ?');
+                whereClause.push('dt_venda <= ?');
                 params.push(dt_fim);
             }
 
-            let query = `SELECT v.id, v.dt_venda, v.cpf_cliente, c.nom_cliente, c.nom_usual, c.end_cliente, c.bai_cliente, c.cid_cliente, c.uf_cliente,
-                         v.val_tot_venda, tp.nom_tipo, v.situacao, v.val_desconto, (v.val_tot_venda - val_desconto) as tot_a_pagar
-                         FROM tb_vendas v
-                         LEFT JOIN tb_clientes c ON c.cpf_cliente = v.cpf_cliente
-                         LEFT JOIN tb_tipos_pagamentos tp ON tp.id = v.id_tipo_pag AND tp.entidade_negocio = v.entidade_negocio
+            let query = `SELECT * FROM vw_vendas
                          WHERE ${whereClause.join(' AND ')}
-                         ORDER BY v.situacao, v.dt_venda DESC, v.id DESC
+                         ORDER BY situacao, dt_venda DESC, id DESC
                          LIMIT ? OFFSET ?`;
 
             const paramsWithLimit = [...params, limit, offset];
@@ -1164,6 +1162,24 @@ export class ControllerVendas {
                 throw error;
             }
 
+            if (!cpf_cliente) {
+                const error = new Error('CPF do cliente e obrigatorio.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (!isValidCpf(cpf_cliente)) {
+                const error = new Error('CPF do cliente invalido.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (!Number.isFinite(id_tipo_pag) || id_tipo_pag <= 0) {
+                const error = new Error('Tipo de pagamento e obrigatorio.');
+                error.statusCode = 400;
+                throw error;
+            }
+
             if (!Array.isArray(itens) || itens.length === 0) {
                 const error = new Error('Informe ao menos um item da venda.');
                 error.statusCode = 400;
@@ -1184,6 +1200,21 @@ export class ControllerVendas {
             const itensVendas = new ItensVendas(db.connection, entidade_negocio);
             const vendas = new Vendas(db.connection, entidade_negocio);
             const entidades = new Entidades(db.connection);
+            const clientes = new Clientes(db.connection);
+
+            void await clientes.FindByCpf(cpf_cliente);
+
+            if (!clientes.found) {
+                const error = new Error('Cliente nao encontrado para o CPF informado. Pesquise ou cadastre o cliente antes de salvar a venda.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (!String(clientes.nom_cliente || '').trim()) {
+                const error = new Error('Cliente sem nome cadastrado para o CPF informado.');
+                error.statusCode = 400;
+                throw error;
+            }
 
             /**************************************************************************
              * Salva a venda para obter o ID, caso seja uma nova venda (id vazio ou 0). 
@@ -1222,34 +1253,96 @@ export class ControllerVendas {
             let itens_salvos = 0;
             let qt_produto_antes = 0;
             let qt_produto_atual = 0;
+            const parseItemDecimal = (value) => {
+                const raw = String(value ?? '').trim();
+                if (!raw) return Number.NaN;
+
+                const normalized = raw.includes(',')
+                    ? raw.replace(/\./g, '').replace(',', '.')
+                    : raw;
+
+                const parsed = Number(normalized);
+                return Number.isFinite(parsed) ? parsed : Number.NaN;
+            };
 
             for (const item of itens) {
+                qt_produto_antes = 0;
 
-                void await itensVendas.FindById(Number(item.id),vendas.id)
+                const id_item = Number(item.id || 0);
+                const id_produto_item = Number(item.id_produto);
+                const qt_produto_item = Number(item.qt_produto);
+                const vl_unit_item = parseItemDecimal(item.vl_unit ?? item.vlr_unitario);
+                const forma_pagamnto_item = String(item.forma_pagamnto ?? item.forma_pagamento ?? '').trim().toLowerCase();
+
+                if (!Number.isFinite(id_produto_item) || id_produto_item <= 0) {
+                    const error = new Error('Item com produto invalido.');
+                    error.statusCode = 400;
+                    throw error;
+                }
+
+                if (!Number.isFinite(qt_produto_item) || qt_produto_item <= 0) {
+                    const error = new Error('Item com quantidade invalida.');
+                    error.statusCode = 400;
+                    throw error;
+                }
+
+                if (!Number.isFinite(vl_unit_item) || vl_unit_item < 0) {
+                    const error = new Error('Item com valor unitario invalido.');
+                    error.statusCode = 400;
+                    throw error;
+                }
+
+                if (!forma_pagamnto_item) {
+                    const error = new Error('Item com forma de pagamento invalida.');
+                    error.statusCode = 400;
+                    throw error;
+                }
+
+                void await itensVendas.FindById(id_item,vendas.id)
 
                 if (itensVendas.found) qt_produto_antes = itensVendas.qt_produto;
 
-                itensVendas.id_produto = Number(item.id_produto);
-                itensVendas.qt_produto = Number(item.qt_produto);
+                itensVendas.id_produto = id_produto_item;
+                itensVendas.qt_produto = qt_produto_item;
+                itensVendas.vl_unit = vl_unit_item;
+                itensVendas.forma_pagamnto = forma_pagamnto_item;
                 itensVendas.id_venda = vendas.id;
 
                 void await itensVendas.Save();
 
-                void await estoque.FindById(item.id_produto);
+                void await estoque.FindById(id_produto_item);
 
-                if (!estoque.found) throw Error('Produto não encontrado no estoque.');
-
+                if (!estoque.found) {
+                    const error = new Error('Produto não encontrado no estoque.');
+                    error.statusCode = 404;
+                    throw error
+                }
+                
                 if (!itensVendas.found) {
-                    if (estoque.qt_reservada < item.qt_produto) throw Error('Não exite estoque suficiente para esse produto.');
-                    qt_produto_atual = item.qt_produto;
+
+                    if (estoque.qt_reservada < qt_produto_item) {
+                        const error = new Error('Não exite estoque suficiente para esse produto.');
+                        error.statusCode = 403;
+                        throw error;
+                    }
+
+                    qt_produto_atual = qt_produto_item;
+
                 }
                 else {
-                    if(estoque.qt_reservada < ((qt_produto_antes - itensVendas.qt_produto) * -1)) throw Error('Não exite estoque suficiente para esse produto.');
+
+                    if(estoque.qt_reservada < ((qt_produto_antes - itensVendas.qt_produto) * -1)) {
+                        const error = new Error('Não exite estoque suficiente para esse produto.');
+                        error.statusCode = 403;
+                        throw error;
+                    }
+
                     qt_produto_atual = ((qt_produto_antes - itensVendas.qt_produto) * -1);
+
                 }
 
                 if (!itensVendas.found) {
-                    estoque.qt_reservada = Number(estoque.qt_reservada) - Number(item.qt_produto);
+                    estoque.qt_reservada = Number(estoque.qt_reservada) - Number(qt_produto_item);
                 } else {
                     estoque.qt_reservada = Number(estoque.qt_reservada) + (qt_produto_antes - itensVendas.qt_produto)
                 }
@@ -1263,7 +1356,7 @@ export class ControllerVendas {
                 void await estoque_mov.FindById(0, new Date());
 
                 estoque_mov.dt_mov = new Date();
-                estoque_mov.id_produto = item.id_produto;
+                estoque_mov.id_produto = id_produto_item;
                 estoque_mov.qt_mov = qt_produto_atual;
                 estoque_mov.tp_mov = (qt_produto_antes - itensVendas.qt_produto) < 0 ? 'VENDA' : 'DEVOL';
                 estoque_mov.nr_documento = String(vendas.id);

@@ -13,7 +13,7 @@ export default class Vendas {
         id_rota: null,
         id_tipo_pag: 0,
         cpf_cliente: '',
-        marca_venda: 0,
+        marca_venda: null,
         num_recibo: null,
         referencia: '',
         val_tot_venda: 0,
