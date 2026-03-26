@@ -1,7 +1,9 @@
 import crypto from 'node:crypto';
 import Database from '../connections/dbconn.js';
 import Entidades from '../model/dao_entidades.js';
+import StaffUsers from '../model/doa_staff.js';
 import GravarLog from '../utils/GravarLog.js';
+import { criptografarSenha, validarSenha } from '../utils/Criptografia.js';
 import { addTokenToBlacklist } from '../utils/TokenBlacklist.js';
 import {
     definirSessaoStaffHttpOnly,
@@ -11,17 +13,36 @@ import {
     renovarSessaoStaffHttpOnly
 } from '../utils/StaffSession.js';
 
-function getStaffCredentials() {
-    const isProduction = process.env.NODE_ENV === 'production';
-    const user = String(process.env.STAFF_AUTH_USER || (isProduction ? '' : 'staff')).trim();
-    const password = String(process.env.STAFF_AUTH_PASSWORD || (isProduction ? '' : 'Staff@1234')).trim();
-    const name = String(process.env.STAFF_AUTH_NAME || 'Staff Crediario').trim();
+async function getStaffCredentials(connection, inputUser = '') {
+
+    const userInput = String(inputUser || '').trim();
+
+    if (!connection) throw new Error('Conexao Invalida.');
+
+    const staffUsers = new StaffUsers(connection);
+    const userRegistrado = userInput ? await staffUsers.FindByUser(userInput) : false;
+
+    if (userRegistrado) {
+        return {
+            user: String(userRegistrado.user || ''),
+            password: String(userRegistrado.password || ''),
+            name: String(process.env.STAFF_AUTH_NAME || userRegistrado.user || 'Staff Crediario').trim()
+        };
+    }
 
     return {
-        user,
-        password,
-        name
+        user: '',
+        password: '',
+        name: ''
     };
+}
+
+function normalizarAtivo(value, fallback = 1) {
+    if (value === undefined || value === null || value === '') {
+        return Number(fallback) === 1 ? 1 : 0;
+    }
+
+    return Number(value) === 1 ? 1 : 0;
 }
 
 function safeCompare(leftValue = '', rightValue = '') {
@@ -35,18 +56,12 @@ function safeCompare(leftValue = '', rightValue = '') {
     return crypto.timingSafeEqual(left, right);
 }
 
-function normalizarAtivo(value, fallback = 1) {
-    if (value === undefined || value === null || value === '') {
-        return Number(fallback) === 1 ? 1 : 0;
-    }
-
-    return Number(value) === 1 ? 1 : 0;
-}
-
 export class ControllerStaffAuth {
 
     static async IniciarSessao(req, res) {
         
+        const db = new Database('dbcred');
+
         const resdata = {
             err: 0,
             msg: '',
@@ -55,15 +70,8 @@ export class ControllerStaffAuth {
         };
 
         try {
-            const credentials = getStaffCredentials();
             const user = String(req.body?.user || '').trim();
             const password = String(req.body?.password || '').trim();
-
-            if (!credentials.user || !credentials.password) {
-                const error = new Error('Credenciais staff nao configuradas no ambiente.');
-                error.statusCode = 503;
-                throw error;
-            }
 
             if (!user) {
                 const error = new Error('Informe o usuario staff.');
@@ -77,8 +85,18 @@ export class ControllerStaffAuth {
                 throw error;
             }
 
+            void await db.Connect();
+
+            const credentials = await getStaffCredentials(db.connection, user);
+
+            if (!credentials.user || !credentials.password) {
+                const error = new Error('Usuario ou senha staff invalidos.');
+                error.statusCode = 401;
+                throw error;
+            }
+
             const userValido = safeCompare(user, credentials.user);
-            const senhaValida = safeCompare(password, credentials.password);
+            const senhaValida = await validarSenha(password, credentials.password);
 
             if (!userValido || !senhaValida) {
                 const error = new Error('Usuario ou senha staff invalidos.');
@@ -106,6 +124,8 @@ export class ControllerStaffAuth {
 
             if (resdata.err == 500) GravarLog('ControllerStaffAuth.IniciarSessao', error.stack);
         }
+
+        void await db.Close();
 
         return res.status(resdata.status).json(resdata);
     }
@@ -166,6 +186,7 @@ export class ControllerStaffAuth {
 export class ControllerStaffEntidades {
 
     static async Listar(req, res) {
+        
         const db = new Database('dbcred');
 
         const resdata = {
@@ -178,11 +199,13 @@ export class ControllerStaffEntidades {
         };
 
         try {
+
             const pesq = String(req.query?.pesq || '').trim();
 
             void await db.Connect();
 
             const entidades = new Entidades(db.connection);
+
             let query = `SELECT id, nom_entidade, nom_responsavel, num_cnpj, cel_contato,
                                 cel_whatsapp_bussiness, percent_desconto_venda,
                                 percent_desconto_cobranca, com_rota_cobranca, ativo
@@ -190,6 +213,7 @@ export class ControllerStaffEntidades {
             const params = {};
 
             if (pesq) {
+
                 query += ` WHERE nom_entidade LIKE :pesq
                            OR nom_responsavel LIKE :pesq
                            OR num_cnpj LIKE :pesq`;
@@ -238,6 +262,7 @@ export class ControllerStaffEntidades {
             const percent_desconto_venda = Number(body.percent_desconto_venda || 0);
             const percent_desconto_cobranca = Number(body.percent_desconto_cobranca || 0);
             const com_rota_cobranca = Number(body.com_rota_cobranca || 0) === 1 ? 1 : 0;
+            
             let ativo = 1;
 
             if (!nom_entidade) {
@@ -273,7 +298,9 @@ export class ControllerStaffEntidades {
 
             resdata.msg = id > 0 ? 'Entidade atualizada com sucesso.' : 'Entidade cadastrada com sucesso.';
             resdata.data.id = entidades.id;
+
         } catch (error) {
+
             void await db.RollBack();
 
             resdata.err = Number(error.statusCode || 500);
@@ -346,6 +373,257 @@ export class ControllerStaffEntidades {
             resdata.status = Number(error.statusCode || 500);
 
             if (resdata.err == 500) GravarLog('ControllerStaffEntidades.AtualizarStatus', error.stack);
+        }
+
+        void await db.Close();
+
+        return res.status(resdata.status).json(resdata);
+    }
+}
+
+export class ControllerStaffUsuarios {
+
+    static async Listar(req, res) {
+
+        const db = new Database('dbcred');
+
+        const resdata = {
+            err: 0,
+            msg: '',
+            status: 200,
+            data: {
+                usuarios: []
+            }
+        };
+
+        try {
+            const pesq = String(req.query?.pesq || '').trim();
+
+            void await db.Connect();
+
+            const staffUsers = new StaffUsers(db.connection);
+            let query = `SELECT id, user FROM tb_staff_user`;
+            const params = {};
+
+            if (pesq) {
+                query += ` WHERE user LIKE :pesq`;
+                params.pesq = `%${pesq}%`;
+            }
+
+            query += ` ORDER BY user ASC, id DESC`;
+
+            resdata.data.usuarios = await staffUsers.ExecuteQuery(query, params);
+        } catch (error) {
+            resdata.err = Number(error.statusCode || 500);
+            resdata.msg = error.message;
+            resdata.status = Number(error.statusCode || 500);
+
+            if (resdata.err == 500) GravarLog('ControllerStaffUsuarios.Listar', error.stack);
+        }
+
+        void await db.Close();
+
+        return res.status(resdata.status).json(resdata);
+    }
+
+    static async Editar(req, res) {
+
+        const db = new Database('dbcred');
+
+        const resdata = {
+            err: 0,
+            msg: '',
+            status: 200,
+            data: {}
+        };
+
+        try {
+            const id = Number(req.params?.id || 0);
+
+            if (id <= 0) {
+                const error = new Error('Usuario staff invalido.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            void await db.Connect();
+
+            const staffUsers = new StaffUsers(db.connection);
+            const usuario = await staffUsers.FindById(id);
+
+            if (!usuario) {
+                const error = new Error('Usuario staff nao encontrado.');
+                error.statusCode = 404;
+                throw error;
+            }
+
+            resdata.data = {
+                id: Number(usuario.id || 0),
+                user: String(usuario.user || ''),
+                password: ''
+            };
+        } catch (error) {
+            resdata.err = Number(error.statusCode || 500);
+            resdata.msg = error.message;
+            resdata.status = Number(error.statusCode || 500);
+
+            if (resdata.err == 500) GravarLog('ControllerStaffUsuarios.Editar', error.stack);
+        }
+
+        void await db.Close();
+
+        return res.status(resdata.status).json(resdata);
+    }
+
+    static async Salvar(req, res) {
+
+        const db = new Database('dbcred');
+
+        const resdata = {
+            err: 0,
+            msg: '',
+            status: 200,
+            data: {
+                id: 0
+            }
+        };
+
+        try {
+            const body = req.body || {};
+            const id = Number(body.id || 0);
+            const user = String(body.user || '').trim();
+            const passwordInformada = String(body.password || '').trim();
+
+            if (!user) {
+                const error = new Error('Informe o usuario staff.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            void await db.Connect();
+            void await db.Begin();
+
+            const staffUsers = new StaffUsers(db.connection);
+            let usuarioAtual = null;
+
+            if (id > 0) {
+                const registroAtual = await staffUsers.FindById(id);
+
+                if (!registroAtual) {
+                    const error = new Error('Usuario staff nao encontrado.');
+                    error.statusCode = 404;
+                    throw error;
+                }
+
+                usuarioAtual = { ...registroAtual };
+            }
+
+            const usuarioDuplicado = await staffUsers.FindByUser(user);
+
+            if (usuarioDuplicado && Number(usuarioDuplicado.id || 0) !== id) {
+                const error = new Error('Usuario staff ja cadastrado.');
+                error.statusCode = 409;
+                throw error;
+            }
+
+            if (!passwordInformada && id <= 0) {
+                const error = new Error('Informe a senha staff.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            const password = passwordInformada
+                ? await criptografarSenha(passwordInformada)
+                : String(usuarioAtual?.password || '').trim();
+
+            if (!password) {
+                const error = new Error('Nao foi possivel definir a senha staff.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            staffUsers.id = id;
+            staffUsers.user = user;
+            staffUsers.password = password;
+
+            const saveResult = await staffUsers.Save();
+
+            void await db.Commit();
+
+            const idPersistido = id > 0
+                ? id
+                : Number(saveResult?.insertId || 0);
+
+            resdata.msg = id > 0
+                ? 'Usuario staff atualizado com sucesso.'
+                : 'Usuario staff cadastrado com sucesso.';
+            resdata.data.id = idPersistido;
+        } catch (error) {
+
+            void await db.RollBack();
+
+            resdata.err = Number(error.statusCode || 500);
+            resdata.msg = error.message;
+            resdata.status = Number(error.statusCode || 500);
+
+            if (resdata.err == 500) GravarLog('ControllerStaffUsuarios.Salvar', error.stack);
+        }
+
+        void await db.Close();
+
+        return res.status(resdata.status).json(resdata);
+    }
+
+    static async Excluir(req, res) {
+
+        const db = new Database('dbcred');
+
+        const resdata = {
+            err: 0,
+            msg: '',
+            status: 200,
+            data: {
+                id: 0
+            }
+        };
+
+        try {
+            const id = Number(req.params?.id || 0);
+
+            if (id <= 0) {
+                const error = new Error('Usuario staff invalido.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            void await db.Connect();
+            void await db.Begin();
+
+            const staffUsers = new StaffUsers(db.connection);
+            const usuario = await staffUsers.FindById(id);
+
+            if (!usuario) {
+                const error = new Error('Usuario staff nao encontrado.');
+                error.statusCode = 404;
+                throw error;
+            }
+
+            staffUsers.id = id;
+            void await staffUsers.Excluir();
+
+            void await db.Commit();
+
+            resdata.msg = 'Usuario staff excluido com sucesso.';
+            resdata.data.id = id;
+        } catch (error) {
+
+            void await db.RollBack();
+
+            resdata.err = Number(error.statusCode || 500);
+            resdata.msg = error.message;
+            resdata.status = Number(error.statusCode || 500);
+
+            if (resdata.err == 500) GravarLog('ControllerStaffUsuarios.Excluir', error.stack);
         }
 
         void await db.Close();

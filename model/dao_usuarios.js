@@ -14,6 +14,7 @@ export default class Usuarios {
         entidade_negocio: 0,
         id_perfil: 0,
         reset_password: 0,
+        num_verificacao: null,
         iniciais: '',
     }
 
@@ -58,6 +59,9 @@ export default class Usuarios {
     set iniciais(iniciais) {this.#field.iniciais = iniciais}
     get iniciais() {return this.#field.iniciais}
 
+    set num_verificacao(num_verificacao) {this.#field.num_verificacao = num_verificacao}
+    get num_verificacao() {return this.#field.num_verificacao}
+
     get entidade_negocio() {return Number(this.#field.entidade_negocio)}
 
     async ExecuteQuery(query, params = {}) {
@@ -80,9 +84,10 @@ export default class Usuarios {
             this.nom_completo = String(rows.nom_completo);
             this.email = String(rows.email);
             this.senha = String(rows.senha);
-            this.reset_password = Number(rows.reset_password)
+            this.reset_password = Number(rows.reset_password);
             this.iniciais = String(rows.iniciais);
             this.id_perfil = Number(rows.id_perfil);
+            this.num_verificacao = String(rows.num_verificacao);
             this.#found = true;
         } else {
             this.#found = false;
@@ -109,6 +114,7 @@ export default class Usuarios {
             this.reset_password = Number(rows.reset_password)
             this.iniciais = String(rows.iniciais);
             this.id_perfil = Number(rows.id_perfil);
+            this.num_verificacao = String(rows.num_verificacao)
             this.#found = true;
         } else {
             this.#found = false;
@@ -125,11 +131,12 @@ export default class Usuarios {
         if (this.#found) {
             query = `UPDATE tb_usuarios SET usuario = :usuario,nom_completo = :nom_completo, email = :email, 
             senha = :senha, entidade_negocio = :entidade_negocio, id_perfil = :id_perfil, reset_password = :reset_password, 
-            iniciais = :iniciais WHERE entidade_negocio = :entidade_negocio AND id = :id`;
+            iniciais = :iniciais, num_verificacao = :num_verificacao
+            WHERE entidade_negocio = :entidade_negocio AND id = :id`;
         } else {
             this.id = await this.#newId();
 
-            query = `INSERT INTO tb_usuarios SET usuario = :usuario, nom_completo = :nom_completo, email = :email, 
+            query = `INSERT INTO tb_usuarios SET usuario = :usuario, nom_completo = :nom_completo, email = :email, num_verificacao = :num_verificacao,
             senha = :senha, entidade_negocio = :entidade_negocio, id_perfil = :id_perfil, reset_password = :reset_password, iniciais = :iniciais, 
             id = :id`
         }

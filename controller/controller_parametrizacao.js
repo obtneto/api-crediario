@@ -15,6 +15,7 @@ import {addTokenToBlacklist} from '../utils/TokenBlacklist.js';
 import {criptografarSenha, senhaPrecisaUpgrade, SENHA_RESET_PADRAO, validarSenha} from '../utils/Criptografia.js';
 import {desencriptar} from '../utils/DecriptPayload.js';
 import { validate, authSessionSchema, usuarioSalvarSchema } from '../utils/RequestValidator.js';
+import {enviarEmailResend} from '../utils/EnvioEmail.js'
 
 const PASSWORD_REGEX = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=\S{8,}).+$/;
 
@@ -74,7 +75,7 @@ function garantirEntidadeAtiva(entidade = {}, mensagem = 'A entidade vinculada a
 
 async function buscarUsuariosAutenticacao(connection, user) {
 
-    const query = `SELECT u.id, u.usuario, u.nom_completo, u.senha, u.reset_password, u.iniciais,
+    const query = `SELECT u.id, u.usuario, u.nom_completo, u.senha, u.reset_password, u.num_verificacao, u.iniciais,
         u.entidade_negocio,
         COALESCE(p.id, 0) AS perfil_id,
         COALESCE(p.selecionar, 0) AS selecionar,
@@ -480,7 +481,7 @@ export class ControllerAuth {
         try {
             const entidade_negocio = obterEntidadeNegocio(req);
             const user = String(req.auth?.user || '').trim();
-            const current_password = String(req.body?.current_password || '').trim();
+            const verification_number = String(req.body?.verification_number || '').trim();
             const new_password = String(req.body?.new_password || '').trim();
             const confirm_password = String(req.body?.confirm_password || '').trim();
 
@@ -490,8 +491,8 @@ export class ControllerAuth {
                 throw error;
             }
 
-            if (!current_password) {
-                const error = new Error('Informe a senha atual.');
+            if (!verification_number) {
+                const error = new Error('Informe o numero de verificacao.');
                 error.statusCode = 400;
                 throw error;
             }
@@ -510,12 +511,6 @@ export class ControllerAuth {
 
             if (new_password !== confirm_password) {
                 const error = new Error('A confirmação da nova senha não confere.');
-                error.statusCode = 400;
-                throw error;
-            }
-
-            if (new_password === current_password) {
-                const error = new Error('A nova senha deve ser diferente da senha atual.');
                 error.statusCode = 400;
                 throw error;
             }
@@ -543,13 +538,16 @@ export class ControllerAuth {
                 throw error;
             }
 
-            const senhaResetada = Number(usuario.reset_password || 0) === 1;
-            const senhaAtualValida = senhaResetada
-                ? current_password === SENHA_RESET_PADRAO
-                : await validarSenha(current_password, usuario.senha);
+            const numeroVerificacaoUsuario = String(usuario.num_verificacao || '').trim();
 
-            if (!senhaAtualValida) {
-                const error = new Error(senhaResetada ? 'Senha atual invalida. Use a senha padrao definida no reset.' : 'Senha atual invalida.');
+            if (!numeroVerificacaoUsuario) {
+                const error = new Error('Numero de verificacao nao encontrado para este usuario. Solicite um novo reset.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (verification_number !== numeroVerificacaoUsuario) {
+                const error = new Error('Numero de verificacao invalido.');
                 error.statusCode = 401;
                 throw error;
             }
@@ -557,6 +555,7 @@ export class ControllerAuth {
             void await usuarios.FindByUser(user);
             usuarios.senha = await criptografarSenha(new_password);
             usuarios.reset_password = 0;
+            usuarios.num_verificacao = null;
 
             void await usuarios.Save();
             void await db.Commit();
@@ -747,7 +746,72 @@ export class ControllerUsuarios{
             usuarios.reset_password = reset_password ? 1 : 0;
 
             if (reset_password) {
-                usuarios.senha = await criptografarSenha(SENHA_RESET_PADRAO);
+
+                const numero = Math.floor(100000 + Math.random() * 900000);
+
+                await enviarEmailResend({
+                    from: "Crediario <onboarding@resend.dev>",
+                    to: usuarios.email,
+                    subject: 'Reset de Senha',
+                    html: `
+                        <div style="margin:0;padding:24px 0;background:#f4f6f8;font-family:Arial,Helvetica,sans-serif;color:#1f2937;">
+                            <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse;">
+                                <tr>
+                                    <td align="center" style="padding:0 16px;">
+                                        <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="max-width:560px;border-collapse:collapse;background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;">
+                                            <tr>
+                                                <td style="padding:28px 28px 12px 28px;text-align:center;">
+                                                    <p style="margin:0;font-size:12px;letter-spacing:1px;text-transform:uppercase;color:#6b7280;">
+                                                        Crediario
+                                                    </p>
+                                                    <h2 style="margin:10px 0 0 0;font-size:22px;line-height:1.3;color:#111827;">
+                                                        Numero de verificacao
+                                                    </h2>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding:0 28px;text-align:center;">
+                                                    <p style="margin:0 0 18px 0;font-size:15px;line-height:1.6;color:#4b5563;">
+                                                        Use o codigo abaixo para concluir a alteracao da sua senha no sistema.
+                                                    </p>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding:0 28px 16px 28px;text-align:center;">
+                                                    <div style="display:inline-block;padding:14px 22px;background:#f3f4f6;border:1px dashed #d1d5db;border-radius:10px;font-size:30px;font-weight:700;letter-spacing:8px;color:#111827;">
+                                                        ${numero}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding:0 28px 12px 28px;text-align:center;">
+                                                    <p style="margin:0;font-size:13px;line-height:1.6;color:#6b7280;">
+                                                        Senha padrao para login:
+                                                    </p>
+                                                    <p style="margin:6px 0 0 0;font-size:17px;line-height:1.4;font-weight:700;letter-spacing:0.5px;color:#111827;">
+                                                        ${SENHA_RESET_PADRAO}
+                                                    </p>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding:0 28px 28px 28px;text-align:center;">
+                                                    <p style="margin:0;font-size:13px;line-height:1.6;color:#6b7280;">
+                                                        Apos o login, voce sera direcionado para alterar a senha.
+                                                        Se voce nao solicitou esta acao, ignore este e-mail.
+                                                    </p>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    `
+                });
+
+                usuarios.num_verificacao = numero;
+                usuarios.senha = process.env.SENHA_RESET_PADRAO;
+
             } else if (passwordNormalizado) {
                 usuarios.senha = await criptografarSenha(passwordNormalizado);
             } else if (!usuarioExistente) {

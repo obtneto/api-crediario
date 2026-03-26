@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { ControllerStaffAuth, ControllerStaffEntidades } from '../controller/controller_staff.js';
+import { ControllerStaffAuth, ControllerStaffEntidades, ControllerStaffUsuarios } from '../controller/controller_staff.js';
 import { criarMiddlewareSessaoStaff } from '../utils/StaffRouteSessionMiddleware.js';
 
 const router = Router();
@@ -13,5 +13,10 @@ router.post('/auth/logout', ControllerStaffAuth.EncerrarSessao);
 router.get('/entidades', ControllerStaffEntidades.Listar);
 router.post('/entidades', ControllerStaffEntidades.Salvar);
 router.post('/entidades/:id/ativo', ControllerStaffEntidades.AtualizarStatus);
+
+router.get('/usuarios', ControllerStaffUsuarios.Listar);
+router.get('/usuarios/:id', ControllerStaffUsuarios.Editar);
+router.post('/usuarios', ControllerStaffUsuarios.Salvar);
+router.post('/usuarios/:id/excluir', ControllerStaffUsuarios.Excluir);
 
 export default router;
