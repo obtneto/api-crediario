@@ -1099,8 +1099,14 @@ export class ControllerPerfis{
 
         try {
             
-            const id = req.params.id
-            const entidade = obterEntidadeNegocio(req)
+            const id = Number(req.params.id || 0);
+            const entidade = obterEntidadeNegocio(req);
+
+            if (!id || id == 0) {
+                const error = new Error("ID do Perfil invalido.");
+                error.statusCode = 404;
+                throw error;
+            }
 
             void await db.Connect();
 
@@ -1108,14 +1114,13 @@ export class ControllerPerfis{
 
             resdata.data = await perfis.FindById(id);
 
-
         } catch (error) {
 
-            resdata.err = 500;
+            resdata.err = error.statusCode || 500;
             resdata.msg = error.message;
-            resdata.status = 500;
+            resdata.status = error.statusCode || 500;
 
-            GravarLog('ControllerPerfis.Editar', error.stack);
+            if(resdata.err == 500) GravarLog('ControllerPerfis.Editar', error.stack);
 
         }
 
@@ -1139,7 +1144,13 @@ export class ControllerPerfis{
         try {
 
             const {id,nom_perfil,selecionar,insert,atualizar,excluir} = req.body;
-            const entidade = obterEntidadeNegocio(req)
+            const entidade = obterEntidadeNegocio(req);
+
+            if (!id) {
+                const error = new Error("ID do perfil invalido.");
+                error.statusCode = 404;
+                throw error;
+            }
             
             void await db.Connect();
 
@@ -1164,11 +1175,11 @@ export class ControllerPerfis{
             
             void await db.RollBack();
 
-            resdata.err = 500;
+            resdata.err = error.statusCode || 500;
             resdata.msg = error.message;
-            resdata.status = 500;
+            resdata.status = error.statusCode || 500;
 
-            GravarLog('ControllerPerfis.Salvar', error.stack);
+            if (resdata.err == 500) GravarLog('ControllerPerfis.Salvar', error.stack);
 
         }
 
@@ -1191,8 +1202,14 @@ export class ControllerPerfis{
 
         try {
 
-            const id = req.params.id;
-            const entidade = obterEntidadeNegocio(req)
+            const id = Number(req.params.id || 0);
+            const entidade = obterEntidadeNegocio(req);
+
+            if (!id || id == 0) {
+                const error = new Error("ID do perfil invalido.");
+                error.statusCode = 404;
+                throw error;
+            }
             
             void await db.Connect();
 
@@ -1208,11 +1225,11 @@ export class ControllerPerfis{
             
             void await db.RollBack();
 
-            resdata.err = 500;
+            resdata.err = error.statusCode || 500;
             resdata.msg = error.message;
-            resdata.status = 500;
+            resdata.status = error.statusCode || 500;
 
-            GravarLog('ControllerPerfis.Excluir', error.stack);
+            if(resdata.err == 500) GravarLog('ControllerPerfis.Excluir', error.stack);
 
         }
 
@@ -1340,7 +1357,7 @@ export class ControllerVendedores{
 
         try {
             
-            const id = req.params.id
+            const id = Number(req.params.id || 500);
             const entidade_negocio = obterEntidadeNegocio(req);
 
             void await db.Connect();

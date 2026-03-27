@@ -572,13 +572,13 @@ export class ControllerCobranca {
 
             if ((vl_pagamento + vl_desconto) > parseFloat(rows.saldo_pagar)) {
                 const error = new Error('Valor do pagamento nao pode ser maior que o saldo a pagar.');
-                error.statusCode = 400;
+                error.statusCode = 403;
                 throw error;
             }
 
             pagamentos.id_venda = id_venda;
             pagamentos.dt_pagamento = dt_pagamento;
-            pagamentos.vl_pagamento = vl_pagamento
+            pagamentos.vl_pagamento = vl_pagamento;
             pagamentos.id_cobrador = id_cobrador;
             pagamentos.vl_desconto = vl_desconto;
 
