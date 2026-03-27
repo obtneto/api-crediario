@@ -154,6 +154,7 @@ export class ControllerCobranca {
                 total,
                 total_pages: total > 0 ? Math.ceil(total / limit) : 0
             };
+
             
         } catch (error) {
 
@@ -596,8 +597,7 @@ export class ControllerCobranca {
                 vendas.marca_venda = 'X';
                 vendas.dia_pagam = prox_dia_pagamento;
                 vendas.val_desconto += parseFloat(vl_desconto);
-
-                console.log((parseFloat(rows.saldo_pagar) - parseFloat(vl_desconto)) - parseFloat(vl_pagamento))
+                vendas.ult_dat_pagamto = dt_pagamento;
 
                 if ( ( parseFloat(rows.saldo_pagar) - parseFloat(vl_desconto) ) - parseFloat(vl_pagamento) == 0) {
                     vendas.situacao = 9;
