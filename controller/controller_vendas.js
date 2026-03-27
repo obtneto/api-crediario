@@ -1733,6 +1733,7 @@ export class ControllerVendas {
             const vendas = new Vendas(db.connection,entidade_negocio);
 
             const query = `SELECT vd.id, vd.dt_venda, vd.cpf_cliente, cl.nom_cliente, vd.situacao, vd.val_tot_venda, vd.val_desconto,
+            GREATEST(COALESCE(SUM(pg.vl_pagamento), 0),0) as tot_pagamentos,
             GREATEST((COALESCE(vd.val_tot_venda, 0) - COALESCE(vd.val_desconto, 0)) - COALESCE(SUM(pg.vl_pagamento), 0), 0) AS saldo_a_pagar
             FROM tb_vendas vd
             LEFT JOIN tb_clientes cl ON cl.cpf_cliente = vd.cpf_cliente
