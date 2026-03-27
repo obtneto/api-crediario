@@ -343,9 +343,9 @@ export class ControllerEstoqMov {
 
             void await estqmov.FindById(id,dt_mov);
 
-            estqmov.dt_mov = dt_mov;
+            estqmov.dt_mov = new Date(dt_mov).toLocaleString('sv-SE',{timeZone:'-03:00'});;
             estqmov.id_produto = id_produto;
-            estqmov.tp_mov = new Date(tp_mov).toLocaleString('sv-SE',{timeZone:'-03:00'});
+            estqmov.tp_mov = tp_mov
             estqmov.qt_mov = qt_mov;
             estqmov.nr_documento = nr_documento;
             estqmov.descricao = descricao;
