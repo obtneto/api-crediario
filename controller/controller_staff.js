@@ -294,6 +294,23 @@ export class ControllerStaffEntidades {
             entidades.ativo = ativo;
 
             void await entidades.Save();
+
+            const query_perfil = `INSERT INTO tb_perfis (id,nom_perfil, selecionar, atualizar, excluir, inserir, entidade_negocio) 
+            VALUES (1,'Administrador', 1, 1, 1, 1, ${entidades.id}),(2,'Operador', 1, 1, 0, 1, ${entidades.id}),(3,'Convidado', 1, 0, 0, 0, ${entidades.id})`;
+
+            void await db.connection.execute(query_perfil);
+
+            const query_tipo_pag = `
+            INSERT INTO tb_tipos_pagamentos (id, nom_tipo, ativo, entidade_negocio, dias_apos_pagamnto) 
+            VALUES (1, 'SEMANAL', 1, ${entidades.id}, 7),(2, 'QUINZENAL', 1, ${entidades.id}, 15),(3, 'MENSAL', 1, ${entidades.id}, 30);`.trim();
+
+            void await db.connection.execute(query_tipo_pag);
+
+            const query_usuarios = `INSERT INTO tb_usuarios (id, usuario, nom_completo, email, senha, entidade_negocio, reset_password, iniciais, id_perfil, num_verificacao) 
+            VALUES (1, 'admin-00${entidades.id}', 'ADMINISTRADOR', NULL, 'abcd@1234', ${entidades.id}, 1, 'AA', 1, 123456)`
+
+            void await db.connection.execute(query_usuarios);
+
             void await db.Commit();
 
             resdata.msg = id > 0 ? 'Entidade atualizada com sucesso.' : 'Entidade cadastrada com sucesso.';

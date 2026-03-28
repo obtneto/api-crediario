@@ -102,6 +102,9 @@ export default class Entidades {
             percent_desconto_venda = :percent_desconto_venda, percent_desconto_cobranca = :percent_desconto_cobranca, ativo = :ativo
             WHERE id = :id`;
         } else {
+
+            this.#field.id = await this.newId()
+
             query = `INSERT INTO tb_entidades SET 
             nom_entidade = :nom_entidade, nom_responsavel = :nom_responsavel, 
             num_cnpj = :num_cnpj, cel_contato = :cel_contato,
@@ -111,10 +114,8 @@ export default class Entidades {
             com_rota_cobranca = :com_rota_cobranca, id = :id, ativo = :ativo`
         }
 
-        const [rows] = await this.#conn.query(query,this.#field);
+        void await this.#conn.query(query,this.#field);
 
-        return rows;
-        
     }
 
     async newId() {

@@ -1,9 +1,11 @@
 import {createConnection} from 'mariadb';
+import fs from 'node:fs';
 
 export default class Database {
     
     #dbname = null;
     #conn = null;
+    #script = null
 
     constructor(database){
         if (!database) throw new Error('Forneça o nome do Banco de Dados');
@@ -30,20 +32,20 @@ export default class Database {
             initSql: "SET time_zone = '-03:00'" 
         });
 
-        // normaliza parâmetros posicionais ? para named placeholders :p1, :p2, ...
-        const originalExecute = this.#conn.execute.bind(this.#conn);
-        this.#conn.execute = async (query, params={}) => {
-            if (Array.isArray(params) && query.includes('?')) {
-                let counter = 0;
-                const transformedQuery = query.replace(/\?/g, () => `:p${++counter}`);
-                const transformedParams = params.reduce((result, value, index) => {
-                    result[`p${index + 1}`] = value;
-                    return result;
-                }, {});
-                return originalExecute(transformedQuery, transformedParams);
-            }
-            return originalExecute(query, params);
-        };
+        /*const script = `DELIMITER // CREATE EVENT IF NOT EXISTS atualizar_situacao_vendas_horario
+            ON SCHEDULE EVERY 1 HOUR
+            STARTS CURRENT_TIMESTAMP
+            DO
+            BEGIN
+            UPDATE tb_vendas vd 
+            JOIN tb_tipos_pagamentos tp ON tp.entidade_negocio = vd.entidade_negocio AND tp.id = vd.id_tipo_pag
+            SET vd.situacao = CASE 
+                    WHEN DATEDIFF(CURRENT_DATE(),vd.dia_pagam) > (tp.dias_apos_pagamnto + 1) THEN 3 
+                    ELSE 0
+            END WHERE vd.situacao = 0;
+            END;`;
+
+        this.#conn.execute(script);*/
 
     };
 
