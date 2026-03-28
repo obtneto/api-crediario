@@ -40,8 +40,8 @@ export class ControllerCobranca {
 
             const dt_ini = String(req.query.dt_ini || '').trim();
             const dt_fim = String(req.query.dt_fim || '').trim();
-            const page = Math.max(1, Number(req.query.page || 1));
-            const limit = Math.min(200, Math.max(1, Number(req.query.limit || 50)));
+            const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+            const limit = Math.min(200, Math.max(1, parseInt(req.query.limit, 10) || 50));
             const offset = (page - 1) * limit; 
 
             if (!dt_ini || !dt_fim) {
@@ -205,8 +205,8 @@ export class ControllerCobranca {
             const responsavelNameField = com_rota_cobranca === 1 ? 'resp.nom_rota' : 'resp.nom_cobrador';
             const dt_ini = String(req.query.dt_ini || '').trim();
             const dt_fim = String(req.query.dt_fim || '').trim();
-            const page = Math.max(1, Number(req.query.page || 1));
-            const limit = Math.min(200, Math.max(1, Number(req.query.limit || 50)));
+            const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+            const limit = Math.min(200, Math.max(1, parseInt(req.query.limit, 10) || 50));
             const offset = (page - 1) * limit;
 
             if (!dt_ini || !dt_fim) {

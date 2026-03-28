@@ -25,37 +25,33 @@ export class ControllerClientes {
         }
 
         try {
+            
             const pesq = String(req.params.pesq || '*').trim();
-            const page = Math.max(1, Number(req.query.page || 1));
-            const limit = Math.min(200, Math.max(1, Number(req.query.limit || 50)));
+            const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+            const limit = Math.min(200, Math.max(1, parseInt(req.query.limit, 10) || 50));
             const offset = (page - 1) * limit;
 
             void await db.Connect();
 
             const clientes = new Clientes(db.connection);
-            const whereClause = ['1 = 1'];
-            const params = [];
+            const filtroAtivo = pesq !== '*';
+            const whereSql = filtroAtivo ? 'WHERE c.nom_cliente LIKE :pesq' : '';
+            const queryParams = filtroAtivo ? { pesq: `%${pesq}%` } : {};
 
-            if (pesq !== '*') {
-                whereClause.push('c.nom_cliente LIKE ?');
-                params.push(`%${pesq}%`);
-            }
-
-            let query = `SELECT c.id, c.cpf_cliente, c.nom_cliente,c.nom_usual, c.cel_cliente, c.end_cliente, c.num_cliente,
+            let query = `SELECT c.id, c.cpf_cliente, c.nom_cliente, c.nom_usual, c.cel_cliente, c.end_cliente, c.num_cliente,
                          c.bai_cliente, c.cid_cliente, c.uf_cliente, c.cep_cliente, c.lat_cliente, c.lon_cliente
                          FROM tb_clientes c
-                         WHERE ${whereClause.join(' AND ')}
+                         ${whereSql}
                          ORDER BY c.nom_cliente ASC, c.id DESC
-                         LIMIT ? OFFSET ?`;
+                         LIMIT :limit OFFSET :offset`;
 
-            params.push(limit, offset);
-            resdata.data.clientes = await clientes.ExecuteQuery(query, params);
+            resdata.data.clientes = await clientes.ExecuteQuery(query, { ...queryParams, limit, offset });
 
             query = `SELECT COUNT(*) AS total
                      FROM tb_clientes c
-                     WHERE ${whereClause.join(' AND ')}`;
+                     ${whereSql}`;
 
-            const countResult = await clientes.ExecuteQuery(query, params.slice(0, -2)); // Remove limit and offset for count
+            const countResult = await clientes.ExecuteQuery(query, queryParams);
             const total = Number(Array.isArray(countResult) && countResult[0] ? countResult[0].total : 0);
             resdata.data.paginacao = {
                 page,

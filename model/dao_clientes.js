@@ -78,7 +78,7 @@ export default class Clientes {
 
         //if (this.#tb_name != match[1]) throw new Error("Nome da Tabela diferente da Classe DAO_clientes.");
 
-        const rows = await this.#conn.execute(query, params);
+        const rows = await this.#conn.query(query, params);
 
         return rows;
 

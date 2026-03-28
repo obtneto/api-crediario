@@ -41,8 +41,8 @@ export class ControllerDistribuicao{
             const entidade_negocio = obterEntidadeNegocio(req);
             const dt_ini = String(req.query.dt_ini || '').trim();
             const dt_fim = String(req.query.dt_fim || '').trim();
-            const page = Math.max(1, Number(req.query.page || 1));
-            const limit = Math.min(200, Math.max(1, Number(req.query.limit || 50)));
+            const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+            const limit = Math.min(200, Math.max(1, parseInt(req.query.limit, 10) || 50));
             const offset = (page - 1) * limit;
 
             if (id_vendedor <= 0) {
@@ -170,8 +170,8 @@ export class ControllerDistribuicao{
             const entidade_negocio = obterEntidadeNegocio(req);
             const dt_ini = String(req.query.dt_ini || '').trim();
             const dt_fim = String(req.query.dt_fim || '').trim();
-            const page = Math.max(1, Number(req.query.page || 1));
-            const limit = Math.min(200, Math.max(1, Number(req.query.limit || 50)));
+            const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+            const limit = Math.min(200, Math.max(1, parseInt(req.query.limit, 10) || 50));
             const offset = (page - 1) * limit;
 
             if (id_vendedor <= 0) {
@@ -702,13 +702,14 @@ export class ControllerVendas {
         }
 
         try {
+            
             const id_vendedor = Number(req.params.id_vendedor || 0);
             const entidade_negocio = obterEntidadeNegocio(req);
             const situacaoRaw = String(req.query.situacao || '').trim();
             const dt_ini = String(req.query.dt_ini || '').trim();
             const dt_fim = String(req.query.dt_fim || '').trim();
-            const page = Math.max(1, Number(req.query.page || 1));
-            const limit = Math.min(200, Math.max(1, Number(req.query.limit || 50)));
+            const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+            const limit = Math.min(200, Math.max(1, parseInt(req.query.limit, 10) || 50));
             const offset = (page - 1) * limit;
 
             if (id_vendedor <= 0) {
@@ -802,12 +803,14 @@ export class ControllerVendas {
                 total,
                 total_pages: total > 0 ? Math.ceil(total / limit) : 0
             };
+
         } catch (error) {
+
             resdata.err = Number(error.statusCode || 500);
             resdata.msg = error.message;
             resdata.status = Number(error.statusCode || 500);
 
-            GravarLog('ControllerVendas.Listar', error.stack);
+            if (resdata.err === 500) GravarLog('ControllerVendas.Listar', error.stack);
         }
 
         void await db.Close();
@@ -844,8 +847,8 @@ export class ControllerVendas {
             const entidade_negocio = obterEntidadeNegocio(req);
             const dt_ini = String(req.query.dt_ini || '').trim();
             const dt_fim = String(req.query.dt_fim || '').trim();
-            const page = Math.max(1, Number(req.query.page || 1));
-            const limit = Math.min(200, Math.max(1, Number(req.query.limit || 50)));
+            const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+            const limit = Math.min(200, Math.max(1, parseInt(req.query.limit, 10) || 50));
             const offset = (page - 1) * limit;
 
             if (!dt_ini || !dt_fim) {
@@ -1505,8 +1508,8 @@ export class ControllerVendas {
             const entidade_negocio = obterEntidadeNegocio(req);
             const dt_ini = String(req.query.dt_ini || '').trim();
             const dt_fim = String(req.query.dt_fim || '').trim();
-            const page = Math.max(1, Number(req.query.page || 1));
-            const limit = Math.min(200, Math.max(1, Number(req.query.limit || 50)));
+            const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+            const limit = Math.min(200, Math.max(1, parseInt(req.query.limit, 10) || 50));
             const offset = (page - 1) * limit;
 
             if (!dt_ini || !dt_fim) {

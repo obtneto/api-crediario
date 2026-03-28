@@ -7,6 +7,7 @@ import route_clientes from './routes/routes_clientes.js';
 import route_cobranca from './routes/routes_cobranca.js';
 import route_comissoes from './routes/routes_comissoes.js';
 import route_staff from './routes/routes_staff.js';
+import route_relatorios from './routes/routes_relatorios.js';
 
 import {config} from 'dotenv';
 import helmet from 'helmet';
@@ -96,6 +97,7 @@ app.use(router_estoque);
 app.use(route_clientes);
 app.use(route_cobranca);
 app.use(route_comissoes);
+app.use(route_relatorios);
 
 app.listen(3000,() => {console.log('API executando na PORTA 3000')});
 

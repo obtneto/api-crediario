@@ -1321,8 +1321,8 @@ export class ControllerComissoes {
 
             const dt_ini = String(req.query.dt_ini || '').trim();
             const dt_fim = String(req.query.dt_fim || '').trim();
-            const page = Math.max(1, Number(req.query.page || 1));
-            const limit = Math.min(200, Math.max(1, Number(req.query.limit || 50)));
+            const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+            const limit = Math.min(200, Math.max(1, parseInt(req.query.limit, 10) || 50));
             const offset = (page - 1) * limit;
 
             if (!id_cobrador || id_cobrador <= 0) {
@@ -1715,8 +1715,8 @@ export class ControllerComissoes {
 
             const dt_ini = String(req.query.dt_ini || '').trim();
             const dt_fim = String(req.query.dt_fim || '').trim();
-            const page = Math.max(1, Number(req.query.page || 1));
-            const limit = Math.min(200, Math.max(1, Number(req.query.limit || 50)));
+            const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+            const limit = Math.min(200, Math.max(1, parseInt(req.query.limit, 10) || 50));
             const offset = (page - 1) * limit;
 
             if (!id_vendedor || id_vendedor <= 0) {
