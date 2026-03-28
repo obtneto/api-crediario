@@ -69,7 +69,7 @@ export class ControllerClientes {
             resdata.msg = error.message;
             resdata.status = Number(error.statusCode || 500);
 
-            if (resdata.err == 500) GravarLog(`Erro ao listar clientes: ${error.message}`);
+            if (resdata.err == 500) GravarLog(`Erro ao listar clientes: ${error.stack}`);
         }
 
         void await db.Close();
@@ -210,7 +210,7 @@ export class ControllerClientes {
             resdata.msg = error.message;
             resdata.status = Number(error.statusCode || 500);
 
-            if (resdata.err == 500) GravarLog(`Erro ao salvar cliente: ${error.message}`);
+            if (resdata.err == 500) GravarLog(`Erro ao salvar cliente: ${error.stack}`);
         }
 
         void await db.Close();
