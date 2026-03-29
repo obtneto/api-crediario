@@ -85,18 +85,6 @@ export class ControllerCobranca {
                 throw error;
             }
 
-            let situacao = null;
-
-            if (situacaoRaw !== '') {
-                situacao = Number(situacaoRaw);
-
-                if (!Number.isInteger(situacao) || ![0, 3].includes(situacao)) {
-                    const error = new Error('Situacao invalida.');
-                    error.statusCode = 400;
-                    throw error;
-                }
-            }
-
             void await db.Connect();
 
             const cobrancas = new Vendas(db.connection, entidade_negocio);

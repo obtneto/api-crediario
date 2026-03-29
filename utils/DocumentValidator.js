@@ -1,4 +1,4 @@
-export const isValidCpf = (cpf = '') => {
+export default isValidCpf = (cpf = '') => {
     const raw = String(cpf).replace(/\D/g, '');
 
     if (!/^\d{11}$/.test(raw)) return false;

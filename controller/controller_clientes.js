@@ -1,7 +1,7 @@
 import Database from '../connections/dbconn.js';
 import Clientes from '../model/dao_clientes.js';
 import GravarLog from '../utils/GravarLog.js'; 
-import { validate, clienteSalvarSchema } from '../utils/RequestValidator.js';
+import CheckCPF from '../utils/DocumentValidator.js';
 
 export class ControllerClientes {
 
@@ -51,14 +51,16 @@ export class ControllerClientes {
                      FROM tb_clientes c
                      ${whereSql}`;
 
-            const countResult = await clientes.ExecuteQuery(query, queryParams);
-            const total = Number(Array.isArray(countResult) && countResult[0] ? countResult[0].total : 0);
+            const [rows] = await clientes.ExecuteQuery(query, queryParams);
+            const total = rows.total;
+
             resdata.data.paginacao = {
                 page,
                 limit,
                 total,
-                total_pages: total > 0 ? Math.ceil(total / limit) : 0
+                total_pages: total > 0 ? Math.ceil(total / limit) : 0  
             };
+            
         } catch (error) {
 
             resdata.err = Number(error.statusCode || 500);
@@ -95,7 +97,7 @@ export class ControllerClientes {
 
             const rows = await clientes.FindByCpf(cpf);
 
-            if (rows) resdata.data = rows;
+            resdata.data = rows;
             
         } catch (error) {
 
@@ -125,31 +127,18 @@ export class ControllerClientes {
         
         try {
 
-            const cpf = String(req.body?.cpf || req.body?.cpf_cliente || '').replace(/\D/g, '');
-            const nome = String(req.body?.nome || req.body?.nom_cliente || '').trim().toUpperCase();
-            const usual = String(req.body?.usual || req.body?.nom_usual || '').trim().toUpperCase();
-            const celular = String(req.body?.celular || req.body?.cel_cliente || '').replace(/\D/g, '');
-            const ender = String(req.body?.ender || req.body?.end_cliente || '').trim().toUpperCase();
-            const numero = String(req.body?.numero || req.body?.num_cliente || '').trim().toUpperCase();
-            const bairro = String(req.body?.bairro || req.body?.bai_cliente || '').trim().toUpperCase();
-            const cidade = String(req.body?.cidade || req.body?.cid_cliente || '').trim().toUpperCase();
-            const uf = String(req.body?.uf || req.body?.uf_cliente || '').trim().toUpperCase();
-            const cep = String(req.body?.cep || req.body?.cep_cliente || '').replace(/\D/g, '');
+            const cpf = String(req.body.cpf_cliente).replace(/\D/g, '');
+            const nome = String(req.body.nom_cliente).trim().toUpperCase();
+            const usual = String(req.body.nom_usual).trim().toUpperCase();
+            const celular = String(req.body.cel_cliente).replace(/\D/g, '');
+            const ender = String(req.body.end_cliente).trim().toUpperCase();
+            const numero = String(req.body.num_cliente).trim().toUpperCase();
+            const bairro = String(req.body.bai_cliente).trim().toUpperCase();
+            const cidade = String(req.body.cid_cliente).trim().toUpperCase();
+            const uf = String(req.body.uf_cliente).trim().toUpperCase();
+            const cep = String(req.body.cep_cliente).replace(/\D/g, '');
 
-            validate(clienteSalvarSchema, {
-                cpf,
-                nome,
-                usual,
-                celular,
-                ender,
-                numero,
-                bairro,
-                cidade,
-                uf,
-                cep
-            });
-
-            if (cpf.length !== 11) {
+            if (cpf.length !== 11 || !CheckCPF(cpf)) {
                 const error = new Error('CPF invalido.');
                 error.statusCode = 400;
                 throw error;
@@ -169,8 +158,8 @@ export class ControllerClientes {
 
             void await clientes.FindByCpf(cpf);
 
-            if (clientes.found) {
-                clientes.dat_cadastro = new Date();
+            if (!clientes.found) {
+                clientes.dat_cadastro = new Date().toLocaleString('sv-SE',{timeZone:'-03:00'});
             }
 
             clientes.cpf_cliente = cpf;
@@ -189,13 +178,6 @@ export class ControllerClientes {
             void await db.Commit();
 
             resdata.msg = "Cliente Salvo com sucesso.";    
-
-            /*await enviarEmailResend({
-                from: "Crediario <onboarding@resend.dev>",
-                to: 'obtneto@gmail.com',
-                subject: 'Teste',
-                html: '<p>Ola!</p>'
-            });*/
 
             
         } catch (error) {
