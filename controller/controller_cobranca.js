@@ -128,9 +128,9 @@ export class ControllerCobranca {
                      FROM tb_vendas v
                      WHERE ${whereClause.join('\n                       AND ')}`;
 
-            const [countResult] = await cobrancas.ExecuteQuery(query, params);
+            const [rows] = await cobrancas.ExecuteQuery(query, params);
 
-            const total = Number(countResult?.total || 0);
+            const total = Number(rows.total || 0);
 
             query = `SELECT id,nom_entidade FROM tb_entidades WHERE id = ?`;
 
@@ -725,7 +725,7 @@ export class ControllerCobranca {
 
             const vendas = new Vendas(db.connection, entidade_negocio);
 
-            const query = `UPDATE tb_vendas SET marca_venda = NULL
+            const query = `UPDATE tb_vendas SET marca_venda = Null
             WHERE entidade_negocio = ? AND ${fieldname} = ? 
             AND dt_venda >= ? AND dt_venda <= ?`;
 

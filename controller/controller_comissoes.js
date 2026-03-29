@@ -371,7 +371,7 @@ export class ControllerComissoes {
             void await adiantamentos.FindById(id_adiantamento);
 
             if (!adiantamentos.found) {
-                adiantamentos.dt_adiant = new Date().toLocaleString('sv-SE');
+                adiantamentos.dt_adiant = new Date().toLocaleString('sv-SE',{timeZone:'-03:00'});
             }
 
             fieldname === 'id_cobrador' ? adiantamentos.id_cobrador = id : adiantamentos.id_vendedor = id;
@@ -1118,7 +1118,7 @@ export class ControllerComissoes {
     }
 
     /*********************************************************
-    * Recibos de Pagamentos Comissões Cobrador
+    * Salvar Comissões Cobrador
     **********************************************************/
     static async SalvarReciboCobrador(req,res) {
 
