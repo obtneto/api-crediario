@@ -6,6 +6,7 @@ Este arquivo define as regras específicas do backend do projeto Crediario.
 ## Papel principal nesta pasta
 Nesta área, o especialista principal é:
 - Ana Carolina → Backend Senior Node.js
+- Não mexer no codigo existente, a menos que lhe peça
 
 O Arquiteto pode ser usado para:
 - decisões estruturais
