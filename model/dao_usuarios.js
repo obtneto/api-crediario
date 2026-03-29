@@ -13,6 +13,7 @@ export default class Usuarios {
         senha: '',
         entidade_negocio: 0,
         id_perfil: 0,
+        modo_acesso: '',
         reset_password: 0,
         num_verificacao: null,
         iniciais: '',
@@ -53,6 +54,9 @@ export default class Usuarios {
     set id_perfil(id_perfil) {this.#field.id_perfil = Number(id_perfil)}
     get id_perfil() {return Number(this.#field.id_perfil)}
 
+    set modo_acesso(modo_acesso) {this.#field.modo_acesso = String(modo_acesso || '').trim().toUpperCase()}
+    get modo_acesso() {return this.#field.modo_acesso}
+
     set reset_password(reset_password) {this.#field.reset_password = Number(reset_password)}
     get reset_password() {return Number(this.#field.reset_password)}
 
@@ -87,6 +91,7 @@ export default class Usuarios {
             this.reset_password = Number(rows.reset_password);
             this.iniciais = String(rows.iniciais);
             this.id_perfil = Number(rows.id_perfil);
+            this.modo_acesso = rows.modo_acesso;
             this.num_verificacao = String(rows.num_verificacao);
             this.#found = true;
         } else {
@@ -114,6 +119,7 @@ export default class Usuarios {
             this.reset_password = Number(rows.reset_password)
             this.iniciais = String(rows.iniciais);
             this.id_perfil = Number(rows.id_perfil);
+            this.modo_acesso = rows.modo_acesso;
             this.num_verificacao = String(rows.num_verificacao)
             this.#found = true;
         } else {
@@ -130,14 +136,14 @@ export default class Usuarios {
 
         if (this.#found) {
             query = `UPDATE tb_usuarios SET usuario = :usuario,nom_completo = :nom_completo, email = :email, 
-            senha = :senha, entidade_negocio = :entidade_negocio, id_perfil = :id_perfil, reset_password = :reset_password, 
+            senha = :senha, entidade_negocio = :entidade_negocio, id_perfil = :id_perfil, modo_acesso = :modo_acesso, reset_password = :reset_password, 
             iniciais = :iniciais, num_verificacao = :num_verificacao
             WHERE entidade_negocio = :entidade_negocio AND id = :id`;
         } else {
             this.id = await this.#newId();
 
             query = `INSERT INTO tb_usuarios SET usuario = :usuario, nom_completo = :nom_completo, email = :email, num_verificacao = :num_verificacao,
-            senha = :senha, entidade_negocio = :entidade_negocio, id_perfil = :id_perfil, reset_password = :reset_password, iniciais = :iniciais, 
+            senha = :senha, entidade_negocio = :entidade_negocio, id_perfil = :id_perfil, modo_acesso = :modo_acesso, reset_password = :reset_password, iniciais = :iniciais, 
             id = :id`
         }
 

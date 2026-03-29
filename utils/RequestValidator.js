@@ -36,6 +36,14 @@ export const usuarioSalvarSchema = z.object({
     nom_completo: z.string().min(1),
     email: z.string().trim().email().optional(),
     id_perfil: z.coerce.number().int().nonnegative().optional(),
+    modo_acesso: z.preprocess((value) => {
+        if (value === undefined || value === null) {
+            return undefined;
+        }
+
+        const normalizado = String(value).trim().toUpperCase();
+        return normalizado || undefined;
+    }, z.enum(['DT', 'DM', 'MB']).optional()),
     reset_password: z.union([
         z.boolean(),
         z.coerce.number().int().min(0).max(1)

@@ -1,7 +1,6 @@
 import crypto from 'node:crypto';
 import Database from '../connections/dbconn.js';
 import Entidades from '../model/dao_entidades.js';
-import StaffUsers from '../model/doa_staff.js';
 import GravarLog from '../utils/GravarLog.js';
 import { criptografarSenha, validarSenha } from '../utils/Criptografia.js';
 import { addTokenToBlacklist } from '../utils/TokenBlacklist.js';
@@ -13,21 +12,138 @@ import {
     renovarSessaoStaffHttpOnly
 } from '../utils/StaffSession.js';
 
+const STAFF_MODO_ACESSO = 'SF';
+const STAFF_ENTIDADE_PADRAO = Number(process.env.STAFF_ENTIDADE_NEGOCIO || 1);
+
+function normalizarModoAcessoStaff(value = '') {
+    return String(value || '').trim().toUpperCase() === STAFF_MODO_ACESSO;
+}
+
+function gerarIniciais(user = '') {
+    const texto = String(user || '').trim().toUpperCase();
+    if (!texto) return 'ST';
+
+    const partes = texto.split(/\s+/).filter(Boolean);
+    if (partes.length >= 2) {
+        return `${partes[0][0]}${partes[partes.length - 1][0]}`;
+    }
+
+    return texto.slice(0, 2).padEnd(2, 'S');
+}
+
+async function buscarStaffPorUser(connection, inputUser = '') {
+    const user = String(inputUser || '').trim();
+
+    if (!connection || !user) {
+        return null;
+    }
+
+    const query = `SELECT id, entidade_negocio, usuario AS user, senha AS password,
+        COALESCE(nom_completo, usuario) AS name, modo_acesso
+        FROM tb_usuarios
+        WHERE usuario = :user AND modo_acesso = :modo_acesso
+        ORDER BY entidade_negocio ASC, id ASC`;
+
+    const [row] = await connection.execute(query, { user, modo_acesso: STAFF_MODO_ACESSO });
+    return row || null;
+}
+
+async function contarStaffUsuarios(connection) {
+    if (!connection) {
+        return 0;
+    }
+
+    const [row] = await connection.execute(
+        `SELECT COUNT(*) AS total
+         FROM tb_usuarios
+         WHERE modo_acesso = :modo_acesso`,
+        { modo_acesso: STAFF_MODO_ACESSO }
+    );
+
+    return Number(row?.total || 0);
+}
+
+async function buscarEntidadePorId(connection, entidadeNegocio = 0) {
+    const entidadeId = Number(entidadeNegocio || 0);
+
+    if (!connection || entidadeId <= 0) {
+        return null;
+    }
+
+    const [row] = await connection.execute(
+        `SELECT id, nom_entidade, ativo
+         FROM tb_entidades
+         WHERE id = :id`,
+        { id: entidadeId }
+    );
+
+    return row || null;
+}
+
+async function buscarStaffPorId(connection, id = 0) {
+    const userId = Number(id || 0);
+
+    if (!connection || userId <= 0) {
+        return null;
+    }
+
+    const query = `SELECT id, entidade_negocio, usuario AS user, senha AS password,
+        COALESCE(nom_completo, usuario) AS name, modo_acesso
+        FROM tb_usuarios
+        WHERE id = :id AND modo_acesso = :modo_acesso
+        ORDER BY entidade_negocio ASC
+        LIMIT 1`;
+
+    const [row] = await connection.execute(query, { id: userId, modo_acesso: STAFF_MODO_ACESSO });
+    return row || null;
+}
+
+async function novoIdUsuarioPorEntidade(connection, entidadeNegocio = 0) {
+    const entidade = Number(entidadeNegocio || 0);
+
+    if (!connection || entidade <= 0) {
+        return 0;
+    }
+
+    const [row] = await connection.execute(
+        `SELECT IFNULL(MAX(id),0) + 1 AS newid
+         FROM tb_usuarios
+         WHERE entidade_negocio = :entidade_negocio`,
+        { entidade_negocio: entidade }
+    );
+
+    return Number(row?.newid || 0);
+}
+
 async function getStaffCredentials(connection, inputUser = '') {
 
-    const userInput = String(inputUser || '').trim();
+    if (!connection) {
+        throw new Error('Conexao Invalida.');
+    }
 
-    if (!connection) throw new Error('Conexao Invalida.');
+    const userRegistrado = await buscarStaffPorUser(connection, inputUser);
 
-    const staffUsers = new StaffUsers(connection);
-    const userRegistrado = userInput ? await staffUsers.FindByUser(userInput) : false;
-
-    if (userRegistrado) {
+    if (userRegistrado && normalizarModoAcessoStaff(userRegistrado.modo_acesso)) {
         return {
             user: String(userRegistrado.user || ''),
             password: String(userRegistrado.password || ''),
-            name: String(process.env.STAFF_AUTH_NAME || userRegistrado.user || 'Staff Crediario').trim()
+            name: String(process.env.STAFF_AUTH_NAME || userRegistrado.name || userRegistrado.user || 'Staff Crediario').trim()
         };
+    }
+
+    const totalStaffUsuarios = await contarStaffUsuarios(connection);
+
+    if (totalStaffUsuarios === 0) {
+        const userPadrao = String(process.env.USER_STAFF_PADRAO || '').trim();
+        const passPadrao = String(process.env.PASS_STAFF_PADRAO || '').trim();
+
+        if (userPadrao && passPadrao) {
+            return {
+                user: userPadrao,
+                password: passPadrao,
+                name: String(process.env.STAFF_AUTH_NAME || userPadrao || 'Staff Crediario').trim()
+            };
+        }
     }
 
     return {
@@ -306,8 +422,8 @@ export class ControllerStaffEntidades {
 
             void await db.connection.execute(query_tipo_pag);
 
-            const query_usuarios = `INSERT INTO tb_usuarios (id, usuario, nom_completo, email, senha, entidade_negocio, reset_password, iniciais, id_perfil, num_verificacao) 
-            VALUES (1, 'admin-00${entidades.id}', 'ADMINISTRADOR', NULL, 'abcd@1234', ${entidades.id}, 1, 'AA', 1, 123456)`
+            const query_usuarios = `INSERT INTO tb_usuarios (id, usuario, nom_completo, email, senha, entidade_negocio, reset_password, iniciais, id_perfil, num_verificacao, modo_acesso) 
+            VALUES (1, 'admin-00${entidades.id}', 'ADMINISTRADOR', NULL, 'abcd@1234', ${entidades.id}, 1, 'AA', 1, 123456, 'DT')`
 
             void await db.connection.execute(query_usuarios);
 
@@ -418,18 +534,21 @@ export class ControllerStaffUsuarios {
 
             void await db.Connect();
 
-            const staffUsers = new StaffUsers(db.connection);
-            let query = `SELECT id, user FROM tb_staff_user`;
+            let query = `SELECT u.id, u.usuario AS user, u.entidade_negocio, COALESCE(e.nom_entidade, '') AS nom_entidade
+                         FROM tb_usuarios u
+                         LEFT JOIN tb_entidades e ON e.id = u.entidade_negocio
+                         WHERE modo_acesso = :modo_acesso`;
             const params = {};
+            params.modo_acesso = STAFF_MODO_ACESSO;
 
             if (pesq) {
-                query += ` WHERE user LIKE :pesq`;
+                query += ` AND u.usuario LIKE :pesq`;
                 params.pesq = `%${pesq}%`;
             }
 
-            query += ` ORDER BY user ASC, id DESC`;
+            query += ` ORDER BY u.usuario ASC, u.id DESC`;
 
-            resdata.data.usuarios = await staffUsers.ExecuteQuery(query, params);
+            resdata.data.usuarios = await db.connection.execute(query, params);
         } catch (error) {
             resdata.err = Number(error.statusCode || 500);
             resdata.msg = error.message;
@@ -465,8 +584,7 @@ export class ControllerStaffUsuarios {
 
             void await db.Connect();
 
-            const staffUsers = new StaffUsers(db.connection);
-            const usuario = await staffUsers.FindById(id);
+            const usuario = await buscarStaffPorId(db.connection, id);
 
             if (!usuario) {
                 const error = new Error('Usuario staff nao encontrado.');
@@ -477,6 +595,7 @@ export class ControllerStaffUsuarios {
             resdata.data = {
                 id: Number(usuario.id || 0),
                 user: String(usuario.user || ''),
+                entidade_negocio: Number(usuario.entidade_negocio || 0),
                 password: ''
             };
         } catch (error) {
@@ -510,6 +629,7 @@ export class ControllerStaffUsuarios {
             const id = Number(body.id || 0);
             const user = String(body.user || '').trim();
             const passwordInformada = String(body.password || '').trim();
+            const entidadeInformada = Number(body.entidade_negocio || 0);
 
             if (!user) {
                 const error = new Error('Informe o usuario staff.');
@@ -520,11 +640,10 @@ export class ControllerStaffUsuarios {
             void await db.Connect();
             void await db.Begin();
 
-            const staffUsers = new StaffUsers(db.connection);
             let usuarioAtual = null;
 
             if (id > 0) {
-                const registroAtual = await staffUsers.FindById(id);
+                const registroAtual = await buscarStaffPorId(db.connection, id);
 
                 if (!registroAtual) {
                     const error = new Error('Usuario staff nao encontrado.');
@@ -535,7 +654,7 @@ export class ControllerStaffUsuarios {
                 usuarioAtual = { ...registroAtual };
             }
 
-            const usuarioDuplicado = await staffUsers.FindByUser(user);
+            const usuarioDuplicado = await buscarStaffPorUser(db.connection, user);
 
             if (usuarioDuplicado && Number(usuarioDuplicado.id || 0) !== id) {
                 const error = new Error('Usuario staff ja cadastrado.');
@@ -559,17 +678,82 @@ export class ControllerStaffUsuarios {
                 throw error;
             }
 
-            staffUsers.id = id;
-            staffUsers.user = user;
-            staffUsers.password = password;
+            let idPersistido = id;
+            const entidadeNegocio = id > 0
+                ? Number(usuarioAtual?.entidade_negocio || 0)
+                : entidadeInformada;
 
-            const saveResult = await staffUsers.Save();
+            if (entidadeNegocio <= 0) {
+                const error = new Error('Selecione a entidade de negocio do usuario staff.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            const entidade = await buscarEntidadePorId(db.connection, entidadeNegocio);
+
+            if (!entidade) {
+                const error = new Error('Entidade de negocio nao encontrada para o usuario staff.');
+                error.statusCode = 404;
+                throw error;
+            }
+
+            if (id > 0) {
+                void await db.connection.execute(
+                    `UPDATE tb_usuarios
+                     SET usuario = :user,
+                         nom_completo = :nom_completo,
+                         senha = :password,
+                         modo_acesso = :modo_acesso
+                     WHERE id = :id
+                       AND entidade_negocio = :entidade_negocio
+                       AND modo_acesso = :modo_acesso`,
+                    {
+                        id,
+                        entidade_negocio: entidadeNegocio,
+                        user,
+                        nom_completo: user.toUpperCase(),
+                        password,
+                        modo_acesso: STAFF_MODO_ACESSO
+                    }
+                );
+            } else {
+                const novoId = await novoIdUsuarioPorEntidade(db.connection, entidadeNegocio);
+
+                if (novoId <= 0) {
+                    const error = new Error('Nao foi possivel gerar o ID do usuario staff.');
+                    error.statusCode = 500;
+                    throw error;
+                }
+
+                void await db.connection.execute(
+                    `INSERT INTO tb_usuarios (
+                        id, usuario, nom_completo, email, senha,
+                        entidade_negocio, reset_password, iniciais, id_perfil,
+                        num_verificacao, modo_acesso
+                    ) VALUES (
+                        :id, :user, :nom_completo, :email, :password,
+                        :entidade_negocio, :reset_password, :iniciais, :id_perfil,
+                        :num_verificacao, :modo_acesso
+                    )`,
+                    {
+                        id: novoId,
+                        user,
+                        nom_completo: user.toUpperCase(),
+                        email: null,
+                        password,
+                        entidade_negocio: entidadeNegocio,
+                        reset_password: 0,
+                        iniciais: gerarIniciais(user),
+                        id_perfil: 1,
+                        num_verificacao: null,
+                        modo_acesso: STAFF_MODO_ACESSO
+                    }
+                );
+
+                idPersistido = novoId;
+            }
 
             void await db.Commit();
-
-            const idPersistido = id > 0
-                ? id
-                : Number(saveResult?.insertId || 0);
 
             resdata.msg = id > 0
                 ? 'Usuario staff atualizado com sucesso.'
@@ -616,8 +800,7 @@ export class ControllerStaffUsuarios {
             void await db.Connect();
             void await db.Begin();
 
-            const staffUsers = new StaffUsers(db.connection);
-            const usuario = await staffUsers.FindById(id);
+            const usuario = await buscarStaffPorId(db.connection, id);
 
             if (!usuario) {
                 const error = new Error('Usuario staff nao encontrado.');
@@ -625,8 +808,17 @@ export class ControllerStaffUsuarios {
                 throw error;
             }
 
-            staffUsers.id = id;
-            void await staffUsers.Excluir();
+            void await db.connection.execute(
+                `DELETE FROM tb_usuarios
+                 WHERE id = :id
+                   AND entidade_negocio = :entidade_negocio
+                   AND modo_acesso = :modo_acesso`,
+                {
+                    id,
+                    entidade_negocio: Number(usuario?.entidade_negocio || STAFF_ENTIDADE_PADRAO),
+                    modo_acesso: STAFF_MODO_ACESSO
+                }
+            );
 
             void await db.Commit();
 

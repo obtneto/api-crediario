@@ -88,7 +88,7 @@ async function buscarUsuariosAutenticacao(connection, user) {
         FROM tb_usuarios u
         LEFT JOIN tb_perfis p ON p.id = u.id_perfil AND p.entidade_negocio = u.entidade_negocio
         LEFT JOIN tb_entidades e ON e.id = u.entidade_negocio
-        WHERE u.usuario = :user
+        WHERE u.usuario = :user AND u.modo_acesso <> 'MB'
         ORDER BY u.entidade_negocio`;
 
     const usuarios = await connection.execute(query, { user });
@@ -615,10 +615,10 @@ export class ControllerUsuarios{
             const usuario = new Usuarios(db.connection, entidade);
 
             const params = { entidade_negocio: entidade };
-            let query = `SELECT u.id, u.usuario, u.nom_completo, u.email, u.entidade_negocio, u.reset_password, u.iniciais, p.nom_perfil
+            let query = `SELECT u.id, u.usuario, u.nom_completo, u.email, u.entidade_negocio, u.id_perfil, u.modo_acesso, u.reset_password, u.iniciais, p.nom_perfil
             FROM tb_usuarios u
             LEFT JOIN tb_perfis p ON p.id = u.id_perfil AND p.entidade_negocio = u.entidade_negocio
-            WHERE u.entidade_negocio = :entidade_negocio`;
+            WHERE u.entidade_negocio = :entidade_negocio AND u.modo_acesso IN ('DT','DM','MB')`;
 
             if (pesq != "*") {
                 query += ` AND u.nom_completo LIKE :pesq`;
@@ -714,11 +714,11 @@ export class ControllerUsuarios{
 
         try {
 
-            let {id,usuario,nom_completo,email,id_perfil,reset_password,password} = req.body;
+            let {id,usuario,nom_completo,email,id_perfil,modo_acesso,reset_password,password} = req.body;
             const entidade = obterEntidadeNegocio(req);
 
-            const validated = validate(usuarioSalvarSchema, {id,usuario,nom_completo,email,id_perfil,reset_password,password});
-            ({ id, usuario, nom_completo, email, id_perfil, reset_password, password } = validated);
+            const validated = validate(usuarioSalvarSchema, {id,usuario,nom_completo,email,id_perfil,modo_acesso,reset_password,password});
+            ({ id, usuario, nom_completo, email, id_perfil, modo_acesso, reset_password, password } = validated);
 
             const passwordNormalizado = String(password || '').trim();
             
@@ -743,6 +743,11 @@ export class ControllerUsuarios{
             usuarios.nom_completo = nom_completo;
             usuarios.email = email;
             usuarios.id_perfil = id_perfil;
+            if (modo_acesso) {
+                usuarios.modo_acesso = modo_acesso;
+            } else if (!usuarioExistente) {
+                usuarios.modo_acesso = 'DT';
+            }
             usuarios.reset_password = reset_password ? 1 : 0;
 
             if (reset_password) {
@@ -884,6 +889,88 @@ export class ControllerUsuarios{
 
             GravarLog('ControllerUsuarios.Excluir', error.stack);
 
+        }
+
+        void await db.Close();
+
+        res.status(resdata.status).json(resdata);
+
+    }
+}
+
+export class ControllerModoAcessos{
+
+    static async ListarModoAcessosDesktop(req,res) {
+
+        const db = new Database('dbcred');
+
+        const resdata = {
+            err: 0,
+            msg: '',
+            status: 200,
+            data: []
+        }
+
+        try {
+
+            void await db.Connect();
+
+            const query = "SELECT * FROM tb_modo_acessos WHERE modo_acesso IN ('DT','DM','MB')";
+
+            resdata.data = await db.connection.execute(query);
+            
+        } catch (error) {
+
+            resdata.err = 500;
+            resdata.msg = "Erro Inesperado ocorreu, verifique com o suporte tecnico.";
+            resdata.status = 500;
+
+            GravarLog('ControllerModoAcessos.Listar', error.stack);
+        }
+
+        void await db.Close();
+
+        res.status(resdata.status).json(resdata);
+
+    }
+
+    static async ListarModoAcessosMobile(req,res) {
+
+        const db = new Database('dbcred');
+
+        const resdata = {
+            err: 0,
+            msg: '',
+            status: 200,
+            data: []
+        }
+
+        try {
+
+            void await db.Connect();
+
+            const camposDisponiveis = await db.connection.execute(
+                "SHOW COLUMNS FROM tb_modo_acessos WHERE Field IN ('nome_acesso','descricao','nom_modo_acesso','desc_modo_acesso')"
+            );
+
+            const prioridades = ['nome_acesso', 'descricao', 'nom_modo_acesso', 'desc_modo_acesso'];
+            const campos = Array.isArray(camposDisponiveis)
+                ? camposDisponiveis.map((item) => String(item?.Field || '').trim()).filter(Boolean)
+                : [];
+            const labelColumn = prioridades.find((campo) => campos.includes(campo)) || 'modo_acesso';
+            const query = `SELECT modo_acesso, COALESCE(${labelColumn}, modo_acesso) AS nome_acesso
+            FROM tb_modo_acessos
+            WHERE modo_acesso IN ('DM','MB')`;
+
+            resdata.data = await db.connection.execute(query);
+            
+        } catch (error) {
+
+            resdata.err = 500;
+            resdata.msg = "Erro Inesperado ocorreu, verifique com o suporte tecnico.";
+            resdata.status = 500;
+
+            GravarLog('ControllerModoAcessos.Listar', error.stack);
         }
 
         void await db.Close();

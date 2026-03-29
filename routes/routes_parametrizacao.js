@@ -7,7 +7,8 @@ import {ControllerEntidades,
     ControllerCobradores,
     ControllerProdutos,
     ControllerRotas,
-    ControllerTiposPagamentos
+    ControllerTiposPagamentos,
+    ControllerModoAcessos
     
 } from '../controller/controller_parametrizacao.js'
 
@@ -31,6 +32,9 @@ router.get('/listar_usuarios/:entidade/:pesq/',ControllerUsuarios.Listar);
 router.get('/editar_usuario/:id',ControllerUsuarios.Editar);
 router.get('/excluir_usuario/:id',ControllerUsuarios.Excluir);
 router.post('/salvar_usuario',ControllerUsuarios.Salvar);
+
+/**** Modo de Acessos ****/
+router.get('/listar_modo_acessos_desktop',ControllerModoAcessos.ListarModoAcessosDesktop)
 
 /**** Perfis ****/
 router.get('/listar_perfis/:pesq',ControllerPerfis.Listar);
