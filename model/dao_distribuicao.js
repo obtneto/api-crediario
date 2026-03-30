@@ -9,10 +9,6 @@ export default class Distribuicao {
         id: 0,
         dt_distrib: '',
         id_vendedor: null,
-        id_produto: null,
-        qt_distrib: 0,
-        qt_retorno: 0,
-        dt_retorno: '',
         entidade_negocio: 0
     }
 
@@ -42,23 +38,11 @@ export default class Distribuicao {
     set id_vendedor(id_vendedor) {this.#field.id_vendedor = Number(id_vendedor)}
     get id_vendedor() {return Number(this.#field.id_vendedor)}
 
-    set id_produto(id_produto) {this.#field.id_produto = Number(id_produto)}
-    get id_produto() {return Number(this.#field.id_produto)}
-
-    set qt_distrib(qt_distrib) {this.#field.qt_distrib = Number(qt_distrib)}
-    get qt_distrib() {return Number(this.#field.qt_distrib)}
-
-    set qt_retorno(qt_retorno) {this.#field.qt_retorno = Number(qt_retorno)}
-    get qt_retorno() {return Number(this.#field.qt_retorno)}
-
-    set dt_retorno(dt_retorno) {this.#field.dt_retorno = dt_retorno}
-    get dt_retorno() {return this.#field.dt_retorno}
-
     get entidade_negocio() {return this.#field.entidade_negocio}
 
     async ExecuteQuery(query, params = {}) {
 
-        const rows = await this.#conn.execute(query, params);
+        const rows = await this.#conn.query(query, params);
 
         return rows;
 
@@ -66,7 +50,8 @@ export default class Distribuicao {
 
     async FindById(id) {
         
-        let query = `SELECT * FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio AND id = :id`;
+        let query = `SELECT * FROM ${this.#tb_name} 
+                     WHERE entidade_negocio = :entidade_negocio AND id = :id`;
         
         const [rows] = await this.#conn.query(query,{id,entidade_negocio:this.#entidade_negocio});
 
@@ -74,10 +59,6 @@ export default class Distribuicao {
             this.id = rows.id;
             this.dt_distrib = rows.dt_distrib;
             this.id_vendedor = rows.id_vendedor;
-            this.id_produto = rows.id_produto;
-            this.qt_distrib = rows.qt_distrib;
-            this.dt_retorno = rows.dt_retorno;
-            this.qt_retorno = rows.qt_retorno;
             this.#found = true;
         } else {
             this.#found = false;
@@ -92,36 +73,39 @@ export default class Distribuicao {
         let query;
 
         if (this.#found) {
-            query = `UPDATE ${this.#tb_name} SET dt_distrib = :dt_distrib, id_vendedor = :id_vendedor,
-            id_produto = :id_produto, qt_distrib = :qt_distrib, qt_retorno = :qt_retorno, dt_retorno = :dt_retorno
-            WHERE entidade_negocio = :entidade_negocio AND id = :id`;
+
+            query = `UPDATE ${this.#tb_name} 
+                     SET dt_distrib = :dt_distrib, id_vendedor = :id_vendedor,
+                     WHERE entidade_negocio = :entidade_negocio AND id = :id`;
         } else {
 
             this.id = await this.#newId();
 
-            query = `INSERT INTO ${this.#tb_name} SET dt_distrib = :dt_distrib, id_vendedor = :id_vendedor,
-            id_produto = :id_produto,qt_distrib = :qt_distrib,qt_retorno = :qt_retorno, dt_retorno = :qt_retorno,
-            entidade_negocio = :entidade_negocio, id = :id`;
+            query = `INSERT INTO ${this.#tb_name} 
+                     SET dt_distrib = :dt_distrib, id_vendedor = :id_vendedor,
+                     entidade_negocio = :entidade_negocio, id = :id`;
         }
 
         if (this.#field.id_vendedor === 0) this.#field.id_vendedor = null;
-        if (this.#field.id_produto === 0) this.#field.id_produto = null;
 
         return await this.#conn.query(query,this.#field);
             
     }
 
-    async Excluir(id) {
+    async Excluir() {
             
-        const query = `DELETE FROM ${this.#tb_name} WHERE entidade_negocio= :entidade_negocio AND id = :id`;
+        const query = `DELETE FROM ${this.#tb_name} 
+                       WHERE entidade_negocio= :entidade_negocio AND id = :id`;
 
-        void await this.#conn.query(query,{id,entidade_negocio: this.#field.entidade_negocio});      
+        void await this.#conn.query(query,{id:this.#field.id,entidade_negocio: this.#field.entidade_negocio});      
         
     }
 
     async #newId() {
         
-        const query =  `SELECT IFNULL(MAX(id),0) + 1 as newid FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio`;
+        const query =  `SELECT IFNULL(MAX(id),0) + 1 as newid 
+                        FROM ${this.#tb_name} 
+                        WHERE entidade_negocio = :entidade_negocio`;
         
         const [rows] = await this.#conn.query(query,{entidade_negocio: this.#field.entidade_negocio});
 

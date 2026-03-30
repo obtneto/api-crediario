@@ -1,11 +1,10 @@
 import {createConnection} from 'mariadb';
-import fs from 'node:fs';
 
 export default class Database {
     
     #dbname = null;
     #conn = null;
-    #script = null
+    //#script = null
 
     constructor(database){
         if (!database) throw new Error('Forneça o nome do Banco de Dados');

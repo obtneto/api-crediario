@@ -33,7 +33,7 @@ export class ControllerCobranca {
             
             const entidade_negocio = obterEntidadeNegocio(req);
             const com_rota_cobranca = Number(req.params.com_rota_cobranca || 0);
-            const situacaoRaw = String(req.query.situacao || '').trim();
+            const situacao = String(req.query.situacao || '').trim();
 
             const fieldname = com_rota_cobranca === 1 ? 'id_rota' : 'id_cobrador';
             const id_filter = Number(req.params?.id || 0);

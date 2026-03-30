@@ -1,5 +1,6 @@
 import Database from '../connections/dbconn.js';
 import Distribuicao from '../model/dao_distribuicao.js';
+import ItensDistribuicoes from '../model/dao_itens_distribuicoes.js'
 import Vendas from '../model/dao_vendas.js';
 import Estoque from '../model/dao_estoque.js';
 import Estoque_Mov from '../model/dao_estoque_mov.js';
@@ -11,7 +12,7 @@ import Rotas from '../model/dao_rotas.js';
 import GravarLog from '../utils/GravarLog.js';
 import {obterEntidadeNegocio} from '../utils/CheckEntidades.js';
 import {buildTableDocument, formatCurrencyBR, formatDateBR, sendPdfResponse} from '../utils/PdfReport.js';
-import {isValidCpf} from '../utils/DocumentValidator.js';
+import isValidCpf from '../utils/DocumentValidator.js';
 
 export class ControllerDistribuicao{
 
@@ -100,26 +101,30 @@ export class ControllerDistribuicao{
                 params.push(dt_fim);
             }
 
-            whereClause.push('qt_distrib > 0');
-
-            let query = `SELECT d.id, d.dt_distrib, p.nom_produto, p.mar_produto, p.und_produto, d.qt_distrib
+            let query = `SELECT d.id, d.dt_distrib, v.nom_vendedor
                          FROM tb_distribuicao d
-                         LEFT JOIN tb_produtos p ON p.id = d.id_produto AND p.entidade_negocio = d.entidade_negocio
+                         LEFT JOIN tb_vendedores v ON v.id = d.id_vendedor AND v.entidade_negocio = d.entidade_negocio
                          WHERE ${whereClause.join(' AND ')}
                          ORDER BY d.dt_distrib DESC, d.id DESC
                          LIMIT ? OFFSET ?`;
 
             const paramsWithLimit = [...params, limit, offset];
+
             resdata.data.distrib = await distrib.ExecuteQuery(query, paramsWithLimit);
 
             query = `SELECT COUNT(*) AS total
                      FROM tb_distribuicao d
                      WHERE ${whereClause.join(' AND ')}`;
 
+
+            console.log(params)
+
             const countResult = await distrib.ExecuteQuery(query, params);
+
             const total = Number(Array.isArray(countResult) && countResult[0] ? countResult[0].total : 0);
 
             query = `SELECT id,nom_entidade FROM tb_entidades WHERE id = ?`;
+
             resdata.data.entidades = await entidades.ExecuteQuery(query, [entidade_negocio]);
             resdata.data.paginacao = {
                 page,
@@ -471,14 +476,15 @@ export class ControllerDistribuicao{
 
         try {
             
-            const id = req.params.id
+            const id_distrib = Number(req.params.id_distrib || 0);
+            const id_produto = Number(req.params.id_produto || 0);
             const entidade_negocio = obterEntidadeNegocio(req);
 
             void await db.Connect();
 
-            const distrib = new Distribuicao(db.connection, entidade_negocio);
+            const itens = new ItensDistribuicoes(db.connection, entidade_negocio);
 
-            resdata.data = await distrib.FindById(id);
+            resdata.data = await itens.FindById(id_distrib,id_produto);
 
 
         } catch (error) {
@@ -523,16 +529,23 @@ export class ControllerDistribuicao{
 
             const estoque = new Estoque(db.connection,entidade_negocio);
             const distrib = new Distribuicao(db.connection,entidade_negocio);
+            const itens = new ItensDistribuicoes(db.connection,entidade_negocio);
 
             void await distrib.FindById(id);
 
             distrib.id = id;
             distrib.dt_distrib = dt_distrib;
             distrib.id_vendedor = id_vendedor;
-            distrib.id_produto = id_produto;
-            distrib.qt_distrib = qt_distrib;
-
+            
             void await distrib.Save();
+
+            void await itens.FindById(id,id_produto)
+
+            itens.id_distrib = distrib.id;
+            itens.id_produto = id_produto;
+            itens.qt_distrib += qt_distrib;
+
+            void await itens.Save();
 
             void await estoque.FindById(id_produto);
 
@@ -580,7 +593,7 @@ export class ControllerDistribuicao{
 
         try {
 
-            const id = req.params.id;
+            const id_distrib = req.params.id;
             const entidade_negocio = obterEntidadeNegocio(req);
 
             void await db.Connect();
@@ -588,11 +601,15 @@ export class ControllerDistribuicao{
             void await db.Begin();
 
             const distrib = new Distribuicao(db.connection, entidade_negocio);
-            void await distrib.FindById(id);
 
+            const query_delete_itens = `DELETE FROM tb_itens_distrib 
+                                        WHERE entidade_negocio = :entidade_negocio AND id_distrib = :id_distrib`;
 
-            void await distrib.Excluir(id);
-            resdata.data = [];
+            void await db.connection.query(query_delete_itens,{entidade_negocio,id_distrib});
+            
+            void await distrib.FindById(id_distrib);
+
+            void await distrib.Excluir();
 
             void await db.Commit();
             
@@ -611,6 +628,51 @@ export class ControllerDistribuicao{
 
         res.status(resdata.status).json(resdata);
 
+    }
+
+    static async ListarItens(req,res) {
+
+        const db = new Database('dbcred');
+
+        const resdata = {
+            err: 0,
+            msg: '',
+            status: 200,
+            data: []
+        }
+
+        try {
+
+            void await db.Connect();
+
+            const entidade_negocio = obterEntidadeNegocio(req);
+            const id_distrib = Number(req.params.id_distrib || 0);
+
+            if (!id_distrib || id_produto == 0) {
+                const error = new Error('ID de Distribuição invalido.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            const query = `SELECT * FROM tb_itens_distrib 
+                           WHERE entidade_negocio = :entidade_negocio AND id_distrib = :id_distrib`
+
+            const rows = await db.connection.query(query,{entidade_negocio,id_distrib});
+
+            resdata.data = rows;
+            
+        } catch (error) {
+            
+            resdata.err = error.statusCode || 500;
+            resdata.msg = error.message;
+            resdata.status = error.statusCode || 500;
+
+            if(resdata.err == 500) GravarLog('ControllerDistribuicao.Editar', error.stack);
+        }
+
+        void await db.Close();
+
+        res.status(resdata.status).json(resdata);
     }
      
     static async DevolverProduto(req,res) {
