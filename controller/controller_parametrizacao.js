@@ -272,6 +272,9 @@ export class ControllerAuth {
 
             if (resdata.err == 500) GravarLog('ControllerAuth.IniciarSessao', error.stack);
         }
+        finally {
+            void await db.CreateEvents();
+        }
 
         void await db.Close();
 

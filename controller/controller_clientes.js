@@ -52,7 +52,10 @@ export class ControllerClientes {
                      ${whereSql}`;
 
             const [rows] = await clientes.ExecuteQuery(query, queryParams);
-            const total = rows.total;
+            const totalRaw = rows?.total ?? 0;
+            const total = typeof totalRaw === 'bigint'
+                ? Number(totalRaw)
+                : Number(totalRaw || 0);
 
             resdata.data.paginacao = {
                 page,

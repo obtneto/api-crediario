@@ -14,6 +14,15 @@ import {obterEntidadeNegocio} from '../utils/CheckEntidades.js';
 import {buildTableDocument, formatCurrencyBR, formatDateBR, sendPdfResponse} from '../utils/PdfReport.js';
 import isValidCpf from '../utils/DocumentValidator.js';
 
+const formatMaskIdDistrib = (value) => {
+    const digits = String(value ?? '').replace(/\D/g, '').slice(0, 8);
+
+    if (!digits) return '-';
+    if (digits.length <= 4) return digits;
+
+    return `${digits.slice(0, 4)}-${digits.slice(4)}`;
+};
+
 export class ControllerDistribuicao{
 
     static async Listar(req,res) {
@@ -104,7 +113,7 @@ export class ControllerDistribuicao{
             let query = `SELECT d.id, d.dt_distrib, v.nom_vendedor
                          FROM tb_distribuicao d
                          LEFT JOIN tb_vendedores v ON v.id = d.id_vendedor AND v.entidade_negocio = d.entidade_negocio
-                         WHERE ${whereClause.join(' AND ')}
+                         WHERE ${whereClause.join(' AND ')} AND d.situacao = 0
                          ORDER BY d.dt_distrib DESC, d.id DESC
                          LIMIT ? OFFSET ?`;
 
@@ -116,8 +125,6 @@ export class ControllerDistribuicao{
                      FROM tb_distribuicao d
                      WHERE ${whereClause.join(' AND ')}`;
 
-
-            console.log(params)
 
             const countResult = await distrib.ExecuteQuery(query, params);
 
@@ -298,13 +305,14 @@ export class ControllerDistribuicao{
             const id_vendedor = req.params.id_vendedor;
             const entidade_negocio = obterEntidadeNegocio(req);
 
-            const distrib = new Distribuicao(db.connection,entidade_negocio)
+            const itens= new ItensDistribuicoes(db.connection,entidade_negocio)
 
-            const query = `SELECT d.id_produto, p.nom_produto, p.mar_produto,p.und_produto, d.qt_distrib as saldo  FROM tb_distribuicao d
-            LEFT JOIN tb_produtos p ON p.entidade_negocio = d.entidade_negocio AND p.id = d.id_produto 
-            WHERE d.entidade_negocio = ? AND d.id_vendedor = ? AND p.ativo = 1 AND d.qt_distrib > 0 `;
+            const query = `SELECT i.id_produto, p.nom_produto, p.mar_produto,p.und_produto, i.qt_distrib as saldo 
+            FROM tb_itens_distrib i
+            LEFT JOIN tb_produtos p ON p.entidade_negocio = i.entidade_negocio AND p.id = i.id_produto 
+            WHERE i.entidade_negocio = ? AND i.id_vendedor = ? AND p.ativo = 1 AND i.qt_distrib > 0 `;
 
-            const rows = await distrib.ExecuteQuery(query, [entidade_negocio, id_vendedor]);
+            const rows = await itens.ExecuteQuery(query, [entidade_negocio, id_vendedor]);
 
             resdata.data = rows;
 
@@ -376,31 +384,47 @@ export class ControllerDistribuicao{
             void await db.Connect();
 
             const distrib = new Distribuicao(db.connection, entidade_negocio);
-
-            const whereClause = ['d.id_vendedor = ?', 'd.entidade_negocio = ?', 'd.qt_distrib > 0'];
-            const params = [id_vendedor, entidade_negocio];
+            const entidades = new Entidades(db.connection);
+            const whereClause = [
+                'd.entidade_negocio = :entidade_negocio',
+                'd.id_vendedor = :id_vendedor'
+            ];
+            const params = {
+                entidade_negocio,
+                id_vendedor
+            };
 
             if (dt_ini) {
-                whereClause.push('d.dt_distrib >= ?');
-                params.push(dt_ini);
+                whereClause.push('d.dt_distrib >= :dt_ini');
+                params.dt_ini = dt_ini;
             }
 
             if (dt_fim) {
-                whereClause.push('d.dt_distrib <= ?');
-                params.push(dt_fim);
+                whereClause.push('d.dt_distrib <= :dt_fim');
+                params.dt_fim = dt_fim;
             }
 
-            if (pesq) {
-                whereClause.push('p.nom_produto LIKE ?');
-                params.push(`%${pesq}%`);
+            if (pesq && pesq !== '*') {
+                whereClause.push('p.nom_produto LIKE :pesq');
+                params.pesq = `%${pesq}%`;
             }
 
-            const query = `SELECT d.id, d.dt_distrib, p.nom_produto, p.mar_produto, p.und_produto, d.qt_distrib, vd.nom_vendedor
+            const query = `SELECT d.id AS id_distrib, d.dt_distrib, d.id_vendedor,
+                                  COALESCE(v.nom_vendedor, 'Sem vendedor') AS nom_vendedor,
+                                  i.id_produto, COALESCE(i.qt_distrib, 0) AS qt_distrib,
+                                  COALESCE(p.nom_produto, 'Produto nao encontrado') AS nom_produto,
+                                  COALESCE(p.mar_produto, '-') AS mar_produto,
+                                  COALESCE(p.und_produto, '-') AS und_produto
                            FROM tb_distribuicao d
-                           LEFT JOIN tb_produtos p ON p.id = d.id_produto AND p.entidade_negocio = d.entidade_negocio
-                           LEFT JOIN tb_vendedores vd ON vd.id = d.id_vendedor AND vd.entidade_negocio = d.entidade_negocio
-                           WHERE ${whereClause.join(' AND ')}
-                           ORDER BY d.dt_distrib DESC, d.id DESC`;
+                           INNER JOIN tb_itens_distrib i ON i.entidade_negocio = d.entidade_negocio
+                                                       AND i.id_distrib = d.id
+                                                       AND i.id_vendedor = d.id_vendedor
+                           LEFT JOIN tb_vendedores v ON v.entidade_negocio = d.entidade_negocio
+                                                    AND v.id = d.id_vendedor
+                           LEFT JOIN tb_produtos p ON p.entidade_negocio = i.entidade_negocio
+                                                  AND p.id = i.id_produto
+                           WHERE ${whereClause.join(' AND ')} AND i.qt_distrib > 0
+                           ORDER BY d.dt_distrib DESC, d.id DESC, p.nom_produto ASC, i.id_produto ASC`;
 
             const rows = await distrib.ExecuteQuery(query, params);
 
@@ -410,42 +434,196 @@ export class ControllerDistribuicao{
                 throw error;
             }
 
-            const entidades = new Entidades(db.connection, entidade_negocio);
             const [entidade] = await entidades.ExecuteQuery(
-                `SELECT id, nom_entidade FROM tb_entidades WHERE id = ?`,
-                [entidade_negocio]
+                `SELECT id, nom_entidade FROM tb_entidades WHERE id = :id`,
+                { id: entidade_negocio }
             );
-            const vendedor = String(rows[0]?.nom_vendedor || '-');
-            const periodo = dt_ini && dt_fim ? `Periodo: ${formatDateBR(dt_ini)} a ${formatDateBR(dt_fim)}` : '';
-            const filtroProduto = pesq ? `Filtro: ${pesq}` : '';
-            const subtitle = [ `Vendedor: ${vendedor}`, periodo, filtroProduto ].filter(Boolean).join(' | ');
 
-            const body = [
-                [
-                    { text: 'Data', bold: true, fontSize: 9, alignment: 'left' },
-                    { text: 'Produto', bold: true, fontSize: 9, alignment: 'left' },
-                    { text: 'Unidade', bold: true, fontSize: 9, alignment: 'center' },
-                    { text: 'Quantidade', bold: true, fontSize: 9, alignment: 'right' }
-                ],
-                ...rows.map((item) => ([
-                    { text: formatDateBR(item?.dt_distrib), alignment: 'left' },
-                    { text: `${item?.nom_produto || '-'}${item?.mar_produto ? ` - ${item.mar_produto}` : ''}`.trim(), alignment: 'left' },
-                    { text: String(item?.und_produto || '-'), alignment: 'center' },
-                    { text: String(item?.qt_distrib ?? 0), alignment: 'right' }
-                ]))
-            ];
+            const vendedorNome = String(rows[0]?.nom_vendedor || `ID ${id_vendedor}`);
+            const periodoInicio = dt_ini || dt_fim || '';
+            const periodoFim = dt_fim || dt_ini || '';
+            const periodoTexto = periodoInicio && periodoFim
+                ? `${formatDateBR(periodoInicio)} a ${formatDateBR(periodoFim)}`
+                : 'Todos os periodos';
+            const subtitle = `Vendedor: ${vendedorNome} | Periodo: ${periodoTexto}${pesq && pesq !== '*' ? ` | Produto: ${pesq}` : ''}`;
 
-            const document = buildTableDocument({
-                title: 'RELATORIO DE DISTRIBUICAO',
-                organizationName: entidade?.nom_entidade || String(entidade_negocio),
-                subtitle,
-                widths: ['16%', '52%', '12%', '20%'],
-                body
+            const distribuicoesMap = new Map();
+
+            for (const item of rows) {
+                const chaveDistrib = String(item?.id_distrib || '');
+
+                if (!distribuicoesMap.has(chaveDistrib)) {
+                    distribuicoesMap.set(chaveDistrib, {
+                        id_distrib: formatMaskIdDistrib(item?.id_distrib),
+                        dt_distrib: String(item?.dt_distrib || ''),
+                        id_vendedor: Number(item?.id_vendedor || 0),
+                        nom_vendedor: String(item?.nom_vendedor || 'Sem vendedor'),
+                        itens: []
+                    });
+                }
+
+                distribuicoesMap.get(chaveDistrib).itens.push({
+                    id_produto: Number(item?.id_produto || 0),
+                    nom_produto: String(item?.nom_produto || '-'),
+                    mar_produto: String(item?.mar_produto || '-'),
+                    und_produto: String(item?.und_produto || '-'),
+                    qt_distrib: Number(item?.qt_distrib || 0)
+                });
+            }
+
+            const distribuicoes = Array.from(distribuicoesMap.values());
+            const generatedAt = formatDateBR(new Date(), true);
+            const content = [];
+
+            distribuicoes.forEach((distribuicao, index) => {
+                const totalDistrib = distribuicao.itens.reduce((acc, atual) => acc + Number(atual.qt_distrib || 0), 0);
+
+                content.push({
+                    text: `DISTRIBUICAO ${distribuicao.id_distrib}`,
+                    style: 'sectionTitle',
+                    margin: [0, index === 0 ? 0 : 14, 0, 6]
+                });
+
+                content.push({
+                    text: `Data da distribuicao: ${formatDateBR(distribuicao.dt_distrib)}`,
+                    style: 'fieldValue',
+                    margin: [0, 0, 0, 4]
+                });
+
+                const itensBody = [
+                    [
+                        { text: 'ID Produto', bold: true, fontSize: 8, alignment: 'left' },
+                        { text: 'Produto', bold: true, fontSize: 8, alignment: 'left' },
+                        { text: 'Marca', bold: true, fontSize: 8, alignment: 'left' },
+                        { text: 'Und', bold: true, fontSize: 8, alignment: 'left' },
+                        { text: 'Qtd. Distrib.', bold: true, fontSize: 8, alignment: 'right' }
+                    ],
+                    ...distribuicao.itens.map((item) => ([
+                        { text: String(item.id_produto || 0), alignment: 'left' },
+                        { text: item.nom_produto, alignment: 'left' },
+                        { text: item.mar_produto, alignment: 'left' },
+                        { text: item.und_produto, alignment: 'left' },
+                        { text: String(Number(item.qt_distrib || 0)), alignment: 'right' }
+                    ])),
+                    [
+                        { text: 'TOTAL DA DISTRIBUICAO', bold: true, colSpan: 4, alignment: 'left' },
+                        {},
+                        {},
+                        {},
+                        { text: String(totalDistrib), bold: true, alignment: 'right' }
+                    ]
+                ];
+
+                content.push({
+                    text: 'Itens da distribuicao',
+                    style: 'itemsTitle',
+                    margin: [0, 8, 0, 4]
+                });
+
+                content.push({
+                    layout: {
+                        hLineWidth: (i) => (i === 1 ? 0.7 : 0.3),
+                        vLineWidth: () => 0,
+                        hLineColor: () => '#cfd4dc',
+                        paddingLeft: () => 2,
+                        paddingRight: () => 2,
+                        paddingTop: (i) => (i === 0 ? 4 : 2),
+                        paddingBottom: () => 2
+                    },
+                    table: {
+                        headerRows: 1,
+                        widths: ['14%', '44%', '18%', '10%', '14%'],
+                        body: itensBody
+                    }
+                });
+
+                if (index < distribuicoes.length - 1) {
+                    content.push({ text: '', pageBreak: 'after' });
+                }
             });
+
+            const document = {
+                pageSize: 'A4',
+                pageOrientation: 'portrait',
+                pageMargins: [18, 84, 18, 36],
+                defaultStyle: {
+                    font: 'Roboto',
+                    fontSize: 8
+                },
+                header: () => ({
+                    margin: [18, 12, 18, 0],
+                    stack: [
+                        {
+                            columns: [
+                                { text: String(entidade?.nom_entidade || entidade_negocio), style: 'reportBrand' },
+                                { text: generatedAt, style: 'reportMeta', alignment: 'right' }
+                            ]
+                        },
+                        { text: 'RELATORIO DE DISTRIBUICAO', style: 'reportName' },
+                        { text: subtitle, style: 'reportSubtitle' }
+                    ]
+                }),
+                content,
+                footer(currentPage, pageCount) {
+                    return {
+                        margin: [18, 0, 18, 12],
+                        columns: [
+                            { text: `Emitido em ${generatedAt}`, style: 'footerMeta' },
+                            { text: `Pagina ${currentPage} de ${pageCount}`, alignment: 'right', style: 'footerMeta' }
+                        ]
+                    };
+                },
+                styles: {
+                    reportBrand: {
+                        fontSize: 8,
+                        bold: true,
+                        color: '#1f4f96'
+                    },
+                    reportMeta: {
+                        fontSize: 7,
+                        color: '#516174'
+                    },
+                    reportName: {
+                        fontSize: 12,
+                        bold: true,
+                        color: '#10213d',
+                        margin: [0, 6, 0, 2]
+                    },
+                    reportSubtitle: {
+                        fontSize: 8,
+                        color: '#4a5568'
+                    },
+                    sectionTitle: {
+                        fontSize: 10,
+                        bold: true,
+                        color: '#10213d'
+                    },
+                    fieldLabel: {
+                        fontSize: 8,
+                        bold: true,
+                        color: '#475569'
+                    },
+                    fieldValue: {
+                        fontSize: 8,
+                        color: '#0f172a'
+                    },
+                    itemsTitle: {
+                        fontSize: 9,
+                        bold: true,
+                        color: '#1e293b'
+                    },
+                    footerMeta: {
+                        fontSize: 7,
+                        color: '#64748b'
+                    }
+                }
+            };
 
             await sendPdfResponse(res, `relatorio-distribuicao-${id_vendedor}.pdf`, document);
 
         } catch (error) {
+
+            const err = error.statusCode || 500;
 
             if (!res.headersSent) {
                 res.status(Number(error.statusCode || 500)).json({
@@ -456,7 +634,7 @@ export class ControllerDistribuicao{
                 });
             }
 
-            GravarLog('ControllerDistribuicao.Imprimir', error.stack);
+            if (err === 500) GravarLog('ControllerDistribuicao.Imprimir', error.stack);
         }
 
         void await db.Close();
@@ -504,7 +682,7 @@ export class ControllerDistribuicao{
             const query_itens_distrib = `SELECT d.id_distrib, d.id_produto, d.id_vendedor, d.qt_distrib, p.nom_produto, p.mar_produto
                                          FROM tb_itens_distrib d
                                          LEFT JOIN tb_produtos p ON p.entidade_negocio = d.entidade_negocio AND p.id = d.id_produto
-                                         WHERE d.entidade_negocio = :entidade_negocio AND d.id_distrib = :id_distrib`;
+                                         WHERE d.entidade_negocio = :entidade_negocio AND d.id_distrib = :id_distrib AND d.qt_distrib > 0`;
 
             resdata.data.itens = await db.connection.query(query_itens_distrib,{entidade_negocio,id_distrib});
 
@@ -1429,7 +1607,7 @@ export class ControllerVendas {
 
                 itensDistrib.qt_distrib = Number(itensDistrib.qt_distrib) - Number(itensVendas.qt_produto)
 
-                void await estoque.Save();
+                void await itensDistrib.Save();
 
                 /******************************************************
                 * Registra a movimentação de estoque referente a venda.
