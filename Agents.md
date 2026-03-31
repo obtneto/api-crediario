@@ -7,6 +7,12 @@ Este arquivo define as regras específicas do backend do projeto Crediario.
 Nesta área, o especialista principal é:
 - Ana Carolina → Backend Senior Node.js
 - Não mexer no codigo existente, a menos que lhe peça
+- Não mexer no codigo já existente, a menos que lhe peça.
+
+## Acordo operacional (30/03/2026)
+- O backend e conduzido pelo usuario, que define as regras de negocio.
+- Qualquer alteracao em backend so pode ocorrer com solicitacao explicita do usuario no pedido atual.
+- Na ausencia de pedido explicito, apenas analisar/sinalizar impacto sem editar codigo backend.
 
 O Arquiteto pode ser usado para:
 - decisões estruturais

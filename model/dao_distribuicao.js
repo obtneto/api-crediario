@@ -6,7 +6,7 @@ export default class Distribuicao {
     #entidade_negocio = 0;
 
     #field = {
-        id: 0,
+        id: null,
         dt_distrib: '',
         id_vendedor: null,
         entidade_negocio: 0
@@ -29,8 +29,8 @@ export default class Distribuicao {
 
     get found() {return this.#found}
 
-    set id(id) {this.#field.id = Number(id)}
-    get id() {return Number(this.#field.id)}
+    set id(id) {this.#field.id = String(id)}
+    get id() {return String(this.#field.id)}
 
     set dt_distrib(dt_distrib) {this.#field.dt_distrib = dt_distrib}
     get dt_distrib() {return this.#field.dt_distrib}
@@ -50,7 +50,7 @@ export default class Distribuicao {
 
     async FindById(id) {
         
-        let query = `SELECT * FROM ${this.#tb_name} 
+        const query = `SELECT * FROM ${this.#tb_name} 
                      WHERE entidade_negocio = :entidade_negocio AND id = :id`;
         
         const [rows] = await this.#conn.query(query,{id,entidade_negocio:this.#entidade_negocio});
@@ -68,6 +68,20 @@ export default class Distribuicao {
 
     }
 
+    async ListarItens(id) {
+
+        const query = `SELECT * FROM tb_itens_distrib 
+                       WHERE entidade_negocio = :entidade_negocio AND id_distrib = :id_distrib`;
+
+        const rows = await this.#conn.query(query,{
+            entidade_negocio: this.#entidade_negocio,
+            id_distrib: id
+        });
+
+        return rows;
+
+    }
+
     async Save() {
 
         let query;
@@ -75,7 +89,7 @@ export default class Distribuicao {
         if (this.#found) {
 
             query = `UPDATE ${this.#tb_name} 
-                     SET dt_distrib = :dt_distrib, id_vendedor = :id_vendedor,
+                     SET id_vendedor = :id_vendedor, dt_distrib = :dt_distrib
                      WHERE entidade_negocio = :entidade_negocio AND id = :id`;
         } else {
 
@@ -107,9 +121,22 @@ export default class Distribuicao {
                         FROM ${this.#tb_name} 
                         WHERE entidade_negocio = :entidade_negocio`;
         
-        const [rows] = await this.#conn.query(query,{entidade_negocio: this.#field.entidade_negocio});
+        const [rows] = await this.#conn.query(query,{
+            entidade_negocio: this.#field.entidade_negocio
+        });
 
-        return rows.newid;
+        const query_check_ano = "SELECT ano_corrente FROM tb_check_ano WHERE id = 1";
+
+        const [rows_check] = await this.#conn.query(query_check_ano);
+
+        const ano_corrente = rows_check.ano_corrente;
+        const ano = new Date(this.#field.dt_distrib).getFullYear();
+
+        const id = ano > ano_corrente ? String(ano) + '1'.padStart(4, '0') : 
+        String(ano) + String(Number(String(rows.newid).substring(4,8)) + 1).padStart(4, '0');
+
+
+        return String(id);
 
     }
 

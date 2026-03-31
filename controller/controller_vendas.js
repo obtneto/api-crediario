@@ -1,6 +1,6 @@
 import Database from '../connections/dbconn.js';
 import Distribuicao from '../model/dao_distribuicao.js';
-import ItensDistribuicoes from '../model/dao_itens_distribuicoes.js'
+import ItensDistribuicoes from '../model/dao_itens_distrib.js'
 import Vendas from '../model/dao_vendas.js';
 import Estoque from '../model/dao_estoque.js';
 import Estoque_Mov from '../model/dao_estoque_mov.js';
@@ -471,27 +471,49 @@ export class ControllerDistribuicao{
             err: 0,
             msg: '',
             status: 200,
-            data: []
+            data: {
+                distrib : {},
+                itens: []
+            }
         }
 
         try {
             
-            const id_distrib = Number(req.params.id_distrib || 0);
-            const id_produto = Number(req.params.id_produto || 0);
+            const id_distrib = String(req.params.id_distrib || '').trim();
+
             const entidade_negocio = obterEntidadeNegocio(req);
+
+            if (id_distrib === '') {
+                const error = new Error('ID da distribuição invalido.');
+                error.statusCode = 400;
+                throw error;
+            }
 
             void await db.Connect();
 
-            const itens = new ItensDistribuicoes(db.connection, entidade_negocio);
+            const  distrib  = new Distribuicao(db.connection, entidade_negocio);
 
-            resdata.data = await itens.FindById(id_distrib,id_produto);
+            resdata.data.distrib = await distrib.FindById(id_distrib);
+
+            if (!resdata.data.distrib) {
+                const error = new Error('Distribuição não encontrada.');
+                error.statusCode = 404;
+                throw error;
+            }
+
+            const query_itens_distrib = `SELECT d.id_distrib, d.id_produto, d.id_vendedor, d.qt_distrib, p.nom_produto, p.mar_produto
+                                         FROM tb_itens_distrib d
+                                         LEFT JOIN tb_produtos p ON p.entidade_negocio = d.entidade_negocio AND p.id = d.id_produto
+                                         WHERE d.entidade_negocio = :entidade_negocio AND d.id_distrib = :id_distrib`;
+
+            resdata.data.itens = await db.connection.query(query_itens_distrib,{entidade_negocio,id_distrib});
 
 
         } catch (error) {
             
-            resdata.err = 500;
+            resdata.err = Number(error.statusCode || 500);
             resdata.msg = error.message;
-            resdata.status = 500;
+            resdata.status = Number(error.statusCode || 500);
 
             GravarLog('ControllerDistribuicao.Editar', error.stack);
         }
@@ -515,13 +537,30 @@ export class ControllerDistribuicao{
 
         try {
 
-            const id = Number(req.body.id);
+            const id = String(req.body.id);
             const dt_distrib = new Date(req.body.dt_distrib);
             const id_vendedor = Number(req.body.id_vendedor);
-            const id_produto = Number(req.body.id_produto);
-            const qt_distrib = Number(req.body.qt_distrib);
-            
+            const itens_distrib = req.body.itens;
+
             const entidade_negocio = obterEntidadeNegocio(req);
+
+            if (!dt_distrib || Number.isNaN(dt_distrib.getTime())) {
+                const error = new Error('Data de distribuição inválida.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (id_vendedor <= 0) {
+                const error = new Error('Vendedor inválido.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (!Array.isArray(itens_distrib) || itens_distrib.length === 0) {
+                const error = new Error('Informe ao menos um item para distribuição.');
+                error.statusCode = 400;
+                throw error;
+            }
 
             void await db.Connect();
 
@@ -530,6 +569,7 @@ export class ControllerDistribuicao{
             const estoque = new Estoque(db.connection,entidade_negocio);
             const distrib = new Distribuicao(db.connection,entidade_negocio);
             const itens = new ItensDistribuicoes(db.connection,entidade_negocio);
+            const estoque_mov = new Estoque_Mov(db.connection,entidade_negocio);
 
             void await distrib.FindById(id);
 
@@ -539,36 +579,62 @@ export class ControllerDistribuicao{
             
             void await distrib.Save();
 
-            void await itens.FindById(id,id_produto)
+            const dt_mov = new Date().toLocaleString('sv-SE');
 
-            itens.id_distrib = distrib.id;
-            itens.id_produto = id_produto;
-            itens.qt_distrib += qt_distrib;
+            for (const item_distrib of itens_distrib) {
 
-            void await itens.Save();
+                void await itens.FindById(distrib.id_vendedor,item_distrib.id_produto)
 
-            void await estoque.FindById(id_produto);
+                const qt_distrib_corrente = itens.qt_distrib;
 
-            if (estoque.qt_disponivel < qt_distrib) {
-                throw Error('Quantidade a ser distribuida não pode ser maior que saldo do estoque.')
+                itens.id_distrib = distrib.id;
+                itens.id_produto = item_distrib.id_produto;
+                itens.id_vendedor = distrib.id_vendedor;
+                itens.qt_distrib = Number(itens.qt_distrib) + (Number(item_distrib.qt_distrib) - Number(qt_distrib_corrente));
+
+                void await itens.Save();
+
+                /*****************************************************************/
+                void await estoque.FindById(item_distrib.id_produto);
+
+                if (estoque.qt_disponivel < item_distrib.qt_distrib) {
+                    throw Error('Quantidade a ser distribuida não pode ser maior que saldo do estoque.')
+                }
+
+                estoque.qt_disponivel = parseFloat(estoque.qt_disponivel) - parseFloat(item_distrib.qt_distrib);
+                estoque.qt_reservada = parseFloat(estoque.qt_reservada) + parseFloat(item_distrib.qt_distrib);
+
+                void await estoque.Save();
+
+                /*****************************************************************/
+                void await estoque_mov.FindById(0,dt_mov);
+
+                estoque_mov.dt_mov = dt_mov;
+                estoque_mov.descricao = `Inserir/Atualizar itens da Distribuicao ${distrib.id}`
+                estoque_mov.id_produto = item_distrib.id_produto;
+                estoque_mov.nr_documento = distrib.id
+                estoque_mov.qt_mov = item_distrib.qt_distrib
+                estoque_mov.tp_mov = "MOVIMENTAÇÃO";
+
+                estoque_mov.Save();
+
             }
-
-            estoque.qt_disponivel = parseFloat(estoque.qt_disponivel) - qt_distrib;
-            estoque.qt_reservada = parseFloat(estoque.qt_reservada) + qt_distrib;
-
-            void await estoque.Save();
 
             void await db.Commit();
 
-            resdata.msg = 'Distribuida com sucesso.';
+            resdata.msg = `Distribuida Nr ${distrib.id} ${distrib.found ? 'Atualizada com Sucesso.' : 'Inserida com Sucesso.'}`;
+
+            resdata.data = {
+                id_distrib: Number(distrib.id || 0)
+            };
 
         } catch (error) {
             
             void await db.RollBack();
 
-            resdata.err = 500;
+            resdata.err = Number(error.statusCode || 500);
             resdata.msg = error.message;
-            resdata.status = 500;
+            resdata.status = Number(error.statusCode || 500);
 
             GravarLog('ControllerDistribuicao.Salvar', error.stack);
 
@@ -593,152 +659,89 @@ export class ControllerDistribuicao{
 
         try {
 
-            const id_distrib = req.params.id;
-            const entidade_negocio = obterEntidadeNegocio(req);
-
             void await db.Connect();
 
             void await db.Begin();
 
-            const distrib = new Distribuicao(db.connection, entidade_negocio);
-
-            const query_delete_itens = `DELETE FROM tb_itens_distrib 
-                                        WHERE entidade_negocio = :entidade_negocio AND id_distrib = :id_distrib`;
-
-            void await db.connection.query(query_delete_itens,{entidade_negocio,id_distrib});
-            
-            void await distrib.FindById(id_distrib);
-
-            void await distrib.Excluir();
-
-            void await db.Commit();
-            
-        } catch (error) {
-             
-            void await db.RollBack();
-
-            resdata.err = 500;
-            resdata.msg = error.message;
-            resdata.status = 500;
-
-            GravarLog('ControllerDistribuicao.Excluir', error.stack);
-        }
-
-        void await db.Close();
-
-        res.status(resdata.status).json(resdata);
-
-    }
-
-    static async ListarItens(req,res) {
-
-        const db = new Database('dbcred');
-
-        const resdata = {
-            err: 0,
-            msg: '',
-            status: 200,
-            data: []
-        }
-
-        try {
-
-            void await db.Connect();
-
-            const entidade_negocio = obterEntidadeNegocio(req);
             const id_distrib = Number(req.params.id_distrib || 0);
+            const entidade_negocio = obterEntidadeNegocio(req);
 
-            if (!id_distrib || id_produto == 0) {
-                const error = new Error('ID de Distribuição invalido.');
+            if (id_distrib == 0) {
+                const error = new Error('ID da Distribuição invalido.');
                 error.statusCode = 400;
                 throw error;
             }
 
-            const query = `SELECT * FROM tb_itens_distrib 
-                           WHERE entidade_negocio = :entidade_negocio AND id_distrib = :id_distrib`
-
-            const rows = await db.connection.query(query,{entidade_negocio,id_distrib});
-
-            resdata.data = rows;
-            
-        } catch (error) {
-            
-            resdata.err = error.statusCode || 500;
-            resdata.msg = error.message;
-            resdata.status = error.statusCode || 500;
-
-            if(resdata.err == 500) GravarLog('ControllerDistribuicao.Editar', error.stack);
-        }
-
-        void await db.Close();
-
-        res.status(resdata.status).json(resdata);
-    }
-     
-    static async DevolverProduto(req,res) {
-
-        const db = new Database('dbcred');
-
-        const resdata = {
-            err: 0,
-            msg: '',
-            status: 200,
-            data: []
-        }
-
-        try {
-
-            const id = Number(req.body.id);
-            const qt_retorno = Number(req.body.qt_retorno);
-            const dt_retorno = new Date(req.body.dt_retorno);
-            const entidade_negocio = obterEntidadeNegocio(req)
-
-            void await db.Connect();
-
-            void await db.Begin();
-
-            const estoque = new Estoque(db.connection,entidade_negocio);
             const distrib = new Distribuicao(db.connection,entidade_negocio);
+            const itens_distrib = new ItensDistribuicoes(db.connection,entidade_negocio);
+            const estoque = new Estoque(db.connection,entidade_negocio);
+            const estoque_mov = new Estoque_Mov(db.connection,entidade_negocio);
 
-            const rows =  await distrib.FindById(id);
+            const itens = await distrib.ListarItens(id_distrib);
 
-            if (!rows) throw new Error("ID da distribuição não encontrada.");
+            let dt_mov = new Date().toLocaleString('sv-SE');
+            
+            for (const item of itens) {
 
-            distrib.dt_retorno = dt_retorno;
-            distrib.qt_retorno = Number(distrib.qt_retorno) +  Number(qt_retorno);
-            distrib.qt_distrib = Number(distrib.qt_distrib) - Number(qt_retorno);
+                /*****************************************************************/
+                void await estoque_mov.FindById(0,dt_mov);
 
-            void await distrib.Save();
+                estoque_mov.dt_mov = dt_mov;
+                estoque_mov.descricao = `Exclusao Distribuicao ${id_distrib}`
+                estoque_mov.id_produto = item.id_produto;
+                estoque_mov.nr_documento = id_distrib;
+                estoque_mov.qt_mov = item.qt_distrib;
+                estoque_mov.tp_mov = "MOVIMENTAÇÃO"
 
-            void await estoque.FindById(distrib.id_produto);
+                estoque_mov.Save();
 
-            estoque.qt_disponivel =  parseFloat(estoque.qt_disponivel) + Number(qt_retorno);
-            estoque.qt_reservada = parseFloat(estoque.qt_reservada) - Number(qt_retorno);
+                /*****************************************************************/
+                void await estoque.FindById(item.id_produto);
 
-            void await estoque.Save();
+                estoque.qt_reservada = Number(estoque.qt_reservada) - Number(item.qt_distrib);
+                estoque.qt_disponivel = Number(estoque.qt_disponivel) + Number(item.qt_distrib);
 
-            void await db.Commit()
+                void await estoque.Save();
 
-            resdata.msg = 'Produto devolvido com sucesso.';
+                /*****************************************************************/
+                void await itens_distrib.FindById(item.id_vendedor,item.id_produto);
 
+                void await itens_distrib.Excluir();
+
+            }
+
+            void await distrib.FindById(id_distrib)
+
+
+            if (!distrib.found) {
+                const error = new Error('Distribuição não encontrada.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            void await distrib.Excluir();
+
+            void await db.Commit();
+
+            resdata.msg = `Distribuição Nr ${id_distrib} excluida com sucesso.`
             
         } catch (error) {
              
             void await db.RollBack();
 
-            resdata.err = 500;
+            resdata.err = error.statusCode || 500;
             resdata.msg = error.message;
-            resdata.status = 500;
+            resdata.status = error.statusCode || 500;
 
-            GravarLog('ControllerDistribuicao.DevolverProduto', error.stack);
+            if(resdata.err == 500) GravarLog('ControllerDistribuicao.Excluir', error.stack);
         }
 
         void await db.Close();
 
         res.status(resdata.status).json(resdata);
-        
+
     }
-    
+
 }
 
 export class ControllerVendas {
@@ -1289,8 +1292,6 @@ export class ControllerVendas {
 
             const valor_desconto = Number(( parseFloat(entidades.percent_desconto_venda) * parseFloat(val_desconto)).toFixed(4)) / 100;;
 
-            console.log(valor_desconto)
-
             if (parseFloat(valor_desconto) > val_desconto ) {
                 const error = new Error('Desconto maior que permitido.');
                 error.statusCode = 403;
@@ -1318,6 +1319,7 @@ export class ControllerVendas {
             let itens_salvos = 0;
             let qt_produto_antes = 0;
             let qt_produto_atual = 0;
+
             const parseItemDecimal = (value) => {
                 const raw = String(value ?? '').trim();
                 if (!raw) return Number.NaN;

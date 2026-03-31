@@ -8,6 +8,7 @@ export default class ItensDistribuicoes {
     #field = {
         id_distrib:0,
         id_produto: 0,
+        id_vendedor: 0,
         qt_distrib: 0,
         entidade_negocio: 0,
     }
@@ -32,6 +33,9 @@ export default class ItensDistribuicoes {
     set id_produto(id_produto) {this.#field.id_produto = Number(id_produto)}
     get id_produto() {return Number(this.#field.id_produto)}
 
+    set id_vendedor(id_vendedor) {this.#field.id_vendedor = Number(id_vendedor)}
+    get id_vendedor() {return Number(this.#field.id_vendedor)}
+
     set id_distrib(id_distrib) {this.#field.id_distrib = Number(id_distrib)}
     get id_distrib() {return Number(this.#field.id_distrib)}
 
@@ -47,19 +51,20 @@ export default class ItensDistribuicoes {
         
     }
 
-    async FindById(id_distrib,id_produto) {
+    async FindById(id_vendedor,id_produto) {
         
         let query = `SELECT * FROM ${this.#tb_name} 
                      WHERE entidade_negocio = :entidade_negocio AND 
-                     id_distrib = :id_distrib AND 
+                     id_vendedor = :id_vendedor AND 
                      id_produto = :id_produto`;
         
-        const [rows] = await this.#conn.query(query,{id_produto,id_distrib,entidade_negocio: this.#entidade_negocio});
+        const [rows] = await this.#conn.query(query,{id_produto,id_vendedor,entidade_negocio: this.#entidade_negocio});
 
         if (rows) {
             this.id_distrib = Number(rows.id_distrib);
             this.id_produto = String(rows.id_produto);
             this.qt_distrib = Number(rows.qt_distrib);
+            this.id_vendedor = Number(rows.id_vendedor);
             this.#found = true;
         } else {
             this.#found = false;
@@ -76,19 +81,23 @@ export default class ItensDistribuicoes {
         if (this.#found) {
 
             query = `UPDATE ${this.#tb_name} 
-                     SET qt_distrib = :qt_distrib, 
-                     WHERE entidade_negocio = :entidade_negocio AND id_distrib = :id_distrib AND id_produto = :id_produto`;
+                     SET qt_distrib = :qt_distrib, id_distrib = :id_distrib
+                     WHERE entidade_negocio = :entidade_negocio AND id_vendedor = :id_vendedor AND id_produto = :id_produto`;
         } else {
 
 
             query = `INSERT INTO ${this.#tb_name} 
                      SET id_distrib = :id_distrib,
-                     id_produto = :id_produto, 
+                     id_produto = :id_produto,
+                     id_vendedor = :id_vendedor,
                      entidade_negocio = :entidade_negocio, 
                      qt_distrib = :qt_distrib`;
         }
 
-        return await this.#conn.query(query,this.#field);
+        if (this.#field.id_produto == 0) this.#field.id_produto = null;
+        if (this.#field.id_distrib == 0) this.#field.id_distrib = null;
+
+        void await this.#conn.query(query,this.#field);
         
     }
 
@@ -96,11 +105,11 @@ export default class ItensDistribuicoes {
             
         const query = `DELETE FROM ${this.#tb_name} 
                        WHERE entidade_negocio= :entidade_negocio AND 
-                       id_distrib = :id_distrib AND
-                       id_produto = : id_produto`;
+                       id_vendedor = :id_vendedor AND
+                       id_produto = :id_produto`;
 
         void await this.#conn.query(query,{
-            id_distrib: this.#field.id_distrib,
+            id_vendedor: this.#field.id_vendedor,
             id_produto: this.#field.id_produto,
             entidade_negocio: this.#field.entidade_negocio});  
         
