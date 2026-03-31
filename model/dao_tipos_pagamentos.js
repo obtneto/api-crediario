@@ -46,7 +46,7 @@ export default class TiposPagamentos {
 
     async ExecuteQuery(query, params = {}) {
 
-        const rows = await this.#conn.execute(query, params);
+        const rows = await this.#conn.query(query, params);
 
         return rows;
 

@@ -1209,11 +1209,11 @@ export class ControllerVendas {
              * Validações dos campos da venda
              ***********************/
             const dt_venda = body.dt_venda;
-            const id_vendedor = Number(body.id_vendedor);
-            const id_tipo_pag = Number(body.id_tipo_pag);
+            const id_vendedor = Number(body.id_vendedor || 0);
+            const id_tipo_pag = Number(body.id_tipo_pag || 0);
             const cpf_cliente = String(body.cpf_cliente).replace(/\D/g, '');
             const referencia = String(body.referencia).trim();
-            const val_tot_venda = parseFloat(body.val_tot_venda);
+            const val_tot_venda = parseFloat(body.val_tot_venda || 0);
             const dia_pagam = String(body.dia_pagam).trim();
             const val_desconto = parseFloat(body.val_desconto || 0);
             const itens = body.itens;
@@ -1266,6 +1266,7 @@ export class ControllerVendas {
             const estoque_mov = new Estoque_Mov(db.connection, entidade_negocio);
             const estoque = new Estoque(db.connection,entidade_negocio);
             const itensVendas = new ItensVendas(db.connection, entidade_negocio);
+            const itensDistrib = new ItensDistribuicoes(db.connection,entidade_negocio);
             const vendas = new Vendas(db.connection, entidade_negocio);
             const entidades = new Entidades(db.connection);
             const clientes = new Clientes(db.connection);
@@ -1333,6 +1334,7 @@ export class ControllerVendas {
             };
 
             for (const item of itens) {
+
                 qt_produto_antes = 0;
 
                 const id_item = Number(item.id || 0);
@@ -1365,6 +1367,7 @@ export class ControllerVendas {
                     throw error;
                 }
 
+                /***************************************************************************/
                 void await itensVendas.FindById(id_item,vendas.id)
 
                 if (itensVendas.found) qt_produto_antes = itensVendas.qt_produto;
@@ -1377,6 +1380,7 @@ export class ControllerVendas {
 
                 void await itensVendas.Save();
 
+                /***************************************************************************/
                 void await estoque.FindById(id_produto_item);
 
                 if (!estoque.found) {
@@ -1414,8 +1418,18 @@ export class ControllerVendas {
                     estoque.qt_reservada = Number(estoque.qt_reservada) + (qt_produto_antes - itensVendas.qt_produto)
                 }
 
-                void await estoque.Save();
+                /***************************************************************************/
+                void await itensDistrib.FindById(id_vendedor,id_produto_item);
 
+                if (Number(itensDistrib.qt_distrib) < Number(itensVendas.qt_produto)) {
+                    const error = new Error('Não existe saldo suficiente dispensado para esse produto.');
+                    error.statusCode = 403;
+                    throw error;
+                }
+
+                itensDistrib.qt_distrib = Number(itensDistrib.qt_distrib) - Number(itensVendas.qt_produto)
+
+                void await estoque.Save();
 
                 /******************************************************
                 * Registra a movimentação de estoque referente a venda.

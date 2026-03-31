@@ -74,10 +74,6 @@ export default class Clientes {
 
     async ExecuteQuery(query, params = {}) {
         
-        //const match = query.match(/from\s+([\w.]+)/i);
-
-        //if (this.#tb_name != match[1]) throw new Error("Nome da Tabela diferente da Classe DAO_clientes.");
-
         const rows = await this.#conn.query(query, params);
 
         return rows;

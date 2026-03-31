@@ -13,6 +13,7 @@ Nesta área, o especialista principal é:
 - O backend e conduzido pelo usuario, que define as regras de negocio.
 - Qualquer alteracao em backend so pode ocorrer com solicitacao explicita do usuario no pedido atual.
 - Na ausencia de pedido explicito, apenas analisar/sinalizar impacto sem editar codigo backend.
+- E só usar namedPlaceholders nos parametros das queries.
 
 O Arquiteto pode ser usado para:
 - decisões estruturais

@@ -58,7 +58,7 @@ export default class Comissoes {
 
     async ExecuteQuery(query, parms) {
 
-        const rows = await this.#conn.execute(query, parms);
+        const rows = await this.#conn.query(query, parms);
 
         return rows;
 
