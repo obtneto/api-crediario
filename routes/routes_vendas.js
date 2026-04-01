@@ -19,7 +19,7 @@ router.post('/salvar_distrib',ControllerDistribuicao.Salvar);
 /******* Vendas *******/
 router.get('/listar_vendas/:id_vendedor',ControllerVendas.Listar)
 router.get('/listar_vendas_periodo',ControllerVendas.ListarPeriodo)
-router.get('/imprimir_vendas_periodo',ControllerVendas.ImprimirResumoPeriodo)
+router.get('/imprimir_venda/:id',ControllerVendas.Imprimir)
 router.get('/destinar_venda/:com_rota_cobranca',ControllerVendas.ListarVendasDestinar)
 router.get('/editar_venda/:id',ControllerVendas.Editar)
 router.post('/salvar_venda',ControllerVendas.Salvar)

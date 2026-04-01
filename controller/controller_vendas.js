@@ -11,7 +11,7 @@ import Cobradores from '../model/dao_cobradores.js';
 import Rotas from '../model/dao_rotas.js';
 import GravarLog from '../utils/GravarLog.js';
 import {obterEntidadeNegocio} from '../utils/CheckEntidades.js';
-import {buildTableDocument, formatCurrencyBR, formatDateBR, sendPdfResponse} from '../utils/PdfReport.js';
+import {formatCurrencyBR, formatDateBR, sendPdfResponse} from '../utils/PdfReport.js';
 import isValidCpf from '../utils/DocumentValidator.js';
 
 const formatMaskIdDistrib = (value) => {
@@ -21,6 +21,16 @@ const formatMaskIdDistrib = (value) => {
     if (digits.length <= 4) return digits;
 
     return `${digits.slice(0, 4)}-${digits.slice(4)}`;
+};
+
+const formatMaskIdVenda = (value) => {
+    const digits = String(value ?? '').replace(/\D/g, '').slice(0, 12);
+
+    if (!digits) return '-';
+    if (digits.length <= 4) return digits;
+    if (digits.length <= 7) return `${digits.slice(0, 4)}-${digits.slice(4)}`;
+
+    return `${digits.slice(0, 4)}-${digits.slice(4, 7)}-${digits.slice(7, 12)}`;
 };
 
 export class ControllerDistribuicao{
@@ -1184,46 +1194,16 @@ export class ControllerVendas {
 
     }
 
-    static async ImprimirResumoPeriodo(req,res) {
+    static async Imprimir(req,res) {
 
         const db = new Database('dbcred');
 
         try {
             const entidade_negocio = obterEntidadeNegocio(req);
-            const dt_ini = String(req.query.dt_ini || '').trim();
-            const dt_fim = String(req.query.dt_fim || '').trim();
+            const id_venda = String(req.params.id || '').trim();
 
-            if (!dt_ini || !dt_fim) {
-                const error = new Error('Informe data inicial e data final.');
-                error.statusCode = 400;
-                throw error;
-            }
-
-            if (!/^\d{4}-\d{2}-\d{2}$/.test(dt_ini)) {
-                const error = new Error('Data inicial invalida.');
-                error.statusCode = 400;
-                throw error;
-            }
-
-            if (!/^\d{4}-\d{2}-\d{2}$/.test(dt_fim)) {
-                const error = new Error('Data final invalida.');
-                error.statusCode = 400;
-                throw error;
-            }
-
-            if (dt_ini > dt_fim) {
-                const error = new Error('Data inicial nao pode ser maior que data final.');
-                error.statusCode = 400;
-                throw error;
-            }
-
-            const dtIniDate = new Date(`${dt_ini}T00:00:00Z`);
-            const dtFimDate = new Date(`${dt_fim}T00:00:00Z`);
-            const diffMs = dtFimDate.getTime() - dtIniDate.getTime();
-            const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-            if (diffDays > 45) {
-                const error = new Error('Intervalo maximo permitido e de 45 dias.');
+            if (!id_venda || !/^\d+$/.test(id_venda)) {
+                const error = new Error('ID da venda invalido.');
                 error.statusCode = 400;
                 throw error;
             }
@@ -1231,70 +1211,366 @@ export class ControllerVendas {
             void await db.Connect();
 
             const vendas = new Vendas(db.connection, entidade_negocio);
-            const query = `SELECT v.id_vendedor, COALESCE(vd.nom_vendedor, 'Sem vendedor') AS nom_vendedor,
-                                  COUNT(*) AS qt_vendas, COALESCE(SUM(v.val_tot_venda), 0) AS total_vendido
-                           FROM tb_vendas v
-                           LEFT JOIN tb_vendedores vd ON vd.id = v.id_vendedor AND vd.entidade_negocio = v.entidade_negocio
-                           WHERE v.entidade_negocio = ?
-                             AND v.dt_venda >= ?
-                             AND v.dt_venda <= ?
-                           GROUP BY v.id_vendedor, vd.nom_vendedor
-                           ORDER BY total_vendido DESC, nom_vendedor ASC`;
+            const itensVendas = new ItensVendas(db.connection, entidade_negocio);
+            const entidades = new Entidades(db.connection);
 
-            const rows = await vendas.ExecuteQuery(query, [entidade_negocio, dt_ini, dt_fim]);
+            const queryVenda = `SELECT v.id, v.dt_venda, v.cpf_cliente, COALESCE(c.nom_cliente, '') AS nom_cliente,
+                                       COALESCE(c.nom_usual, '') AS nom_usual, COALESCE(v.val_tot_venda, 0) AS val_tot_venda,
+                                       COALESCE(v.val_desconto, 0) AS val_desconto,
+                                       COALESCE((
+                                           SELECT SUM(COALESCE(pg.vl_pagamento, 0))
+                                           FROM tb_pagamentos pg
+                                           WHERE pg.entidade_negocio = v.entidade_negocio
+                                             AND pg.id_venda = v.id
+                                       ), 0) AS val_pagamentos,
+                                       GREATEST(
+                                           (COALESCE(v.val_tot_venda, 0) - COALESCE(v.val_desconto, 0))
+                                           - COALESCE((
+                                               SELECT SUM(COALESCE(pg.vl_pagamento, 0))
+                                               FROM tb_pagamentos pg
+                                               WHERE pg.entidade_negocio = v.entidade_negocio
+                                                 AND pg.id_venda = v.id
+                                           ), 0),
+                                           0
+                                       ) AS saldo_a_pagar
+                                FROM tb_vendas v
+                                LEFT JOIN tb_clientes c ON c.cpf_cliente = v.cpf_cliente
+                                WHERE v.entidade_negocio = :entidade_negocio
+                                  AND v.id = :id_venda
+                                LIMIT 1`;
 
-            if (!Array.isArray(rows) || rows.length === 0) {
-                const error = new Error('Nao ha dados para impressao.');
+            const rowsVenda = await vendas.ExecuteQuery(queryVenda, { entidade_negocio, id_venda });
+            const venda = Array.isArray(rowsVenda) && rowsVenda[0] ? rowsVenda[0] : null;
+
+            if (!venda) {
+                const error = new Error('Venda nao encontrada para impressao.');
                 error.statusCode = 404;
                 throw error;
             }
 
-            const entidades = new Entidades(db.connection, entidade_negocio);
+            const queryItens = `SELECT i.id, i.id_produto, COALESCE(p.nom_produto, 'Produto nao encontrado') AS nom_produto,
+                                       COALESCE(p.mar_produto, '-') AS mar_produto, COALESCE(i.qt_produto, 0) AS qt_produto,
+                                       COALESCE(i.vl_unit, 0) AS vl_unit,
+                                       (COALESCE(i.qt_produto, 0) * COALESCE(i.vl_unit, 0)) AS vl_total_item,
+                                       COALESCE(i.forma_pagamnto, '-') AS forma_pagamnto
+                                FROM tb_itens_vendas i
+                                LEFT JOIN tb_produtos p ON p.entidade_negocio = i.entidade_negocio
+                                                       AND p.id = i.id_produto
+                                WHERE i.entidade_negocio = :entidade_negocio
+                                  AND i.id_venda = :id_venda
+                                ORDER BY i.id ASC, i.id_produto ASC`;
+
+            const itens = await itensVendas.ExecuteQuery(queryItens, { entidade_negocio, id_venda });
+
+            const queryPagamentos = `SELECT pg.id, pg.dt_pagamento, COALESCE(pg.vl_pagamento, 0) AS vl_pagamento,
+                                            COALESCE(pg.vl_desconto, 0) AS vl_desconto,
+                                            COALESCE(pg.num_recibo, '-') AS num_recibo,
+                                            COALESCE(cb.nom_cobrador, '-') AS nom_cobrador
+                                     FROM tb_pagamentos pg
+                                     LEFT JOIN tb_cobradores cb ON cb.entidade_negocio = pg.entidade_negocio
+                                                               AND cb.id = pg.id_cobrador
+                                     WHERE pg.entidade_negocio = :entidade_negocio
+                                       AND pg.id_venda = :id_venda
+                                     ORDER BY pg.dt_pagamento ASC, pg.id ASC`;
+
+            const pagamentos = await vendas.ExecuteQuery(queryPagamentos, { entidade_negocio, id_venda });
+
             const [entidade] = await entidades.ExecuteQuery(
-                `SELECT id, nom_entidade FROM tb_entidades WHERE id = ?`,
-                [entidade_negocio]
+                `SELECT id, nom_entidade FROM tb_entidades WHERE id = :id`,
+                { id: entidade_negocio }
             );
-            const totalQtVendas = rows.reduce((acc, item) => acc + Number(item?.qt_vendas || 0), 0);
-            const totalGeral = rows.reduce((acc, item) => acc + Number(item?.total_vendido || 0), 0);
-            const subtitle = `Periodo: ${formatDateBR(dt_ini)} a ${formatDateBR(dt_fim)}`;
-            const body = [
+
+            const idVendaMascara = formatMaskIdVenda(id_venda);
+            const nomeCliente = String(venda?.nom_usual || venda?.nom_cliente || '-');
+            const generatedAt = formatDateBR(new Date(), true);
+            const totalItens = Array.isArray(itens)
+                ? itens.reduce((acc, item) => acc + Number(item?.vl_total_item || 0), 0)
+                : 0;
+            const totalPagamentos = Array.isArray(pagamentos)
+                ? pagamentos.reduce((acc, item) => acc + Number(item?.vl_pagamento || 0), 0)
+                : 0;
+            const totalDescontosPag = Array.isArray(pagamentos)
+                ? pagamentos.reduce((acc, item) => acc + Number(item?.vl_desconto || 0), 0)
+                : 0;
+
+            const itensBody = [
                 [
-                    { text: 'Vendedor', bold: true, fontSize: 9, alignment: 'left' },
-                    { text: 'Qtd. vendas', bold: true, fontSize: 9, alignment: 'right' },
-                    { text: 'Total vendido', bold: true, fontSize: 9, alignment: 'right' }
-                ],
-                ...rows.map((item) => ([
-                    { text: String(item?.nom_vendedor || 'Sem vendedor'), alignment: 'left' },
-                    { text: String(Number(item?.qt_vendas || 0)), alignment: 'right' },
-                    { text: formatCurrencyBR(item?.total_vendido), alignment: 'right' }
-                ])),
-                [
-                    { text: 'TOTAL GERAL', bold: true, alignment: 'left' },
-                    { text: String(totalQtVendas), bold: true, alignment: 'right' },
-                    { text: formatCurrencyBR(totalGeral), bold: true, alignment: 'right' }
+                    { text: 'Item', bold: true, fontSize: 8, alignment: 'left' },
+                    { text: 'Produto', bold: true, fontSize: 8, alignment: 'left' },
+                    { text: 'Nome Produto', bold: true, fontSize: 8, alignment: 'left' },
+                    { text: 'Qtde', bold: true, fontSize: 8, alignment: 'right' },
+                    { text: 'Vlr Unit.', bold: true, fontSize: 8, alignment: 'right' },
+                    { text: 'Total Item', bold: true, fontSize: 8, alignment: 'right' }
                 ]
             ];
 
-            const document = buildTableDocument({
-                title: 'RELATORIO DE VENDAS POR VENDEDOR',
-                organizationName: entidade?.nom_entidade || String(entidade_negocio),
-                subtitle,
-                widths: ['52%', '18%', '30%'],
-                body
+            if (Array.isArray(itens) && itens.length > 0) {
+                itensBody.push(
+                    ...itens.map((item) => ([
+                        { text: String(item?.id || 0), alignment: 'left' },
+                        { text: String(item?.id_produto || 0), alignment: 'left' },
+                        { text: String(item?.nom_produto || '-'), alignment: 'left' },
+                        { text: String(Number(item?.qt_produto || 0)), alignment: 'right' },
+                        { text: formatCurrencyBR(item?.vl_unit), alignment: 'right' },
+                        { text: formatCurrencyBR(item?.vl_total_item), alignment: 'right' }
+                    ]))
+                );
+            } else {
+                itensBody.push([
+                    { text: 'Sem itens cadastrados para esta venda.', colSpan: 6, alignment: 'left' },
+                    {},
+                    {},
+                    {},
+                    {},
+                    {}
+                ]);
+            }
+
+            itensBody.push([
+                { text: 'TOTAL ITENS', bold: true, colSpan: 4, alignment: 'left' },
+                {},
+                {},
+                {},
+                {},
+                { text: formatCurrencyBR(totalItens), bold: true, alignment: 'right' }
+            ]);
+
+            const pagamentosBody = [
+                [
+                    { text: 'ID Pag.', bold: true, fontSize: 8, alignment: 'left' },
+                    { text: 'Dt. Pag.', bold: true, fontSize: 8, alignment: 'left' },
+                    { text: 'Cobrador', bold: true, fontSize: 8, alignment: 'left' },
+                    { text: 'Recibo', bold: true, fontSize: 8, alignment: 'left' },
+                    { text: 'Valor Pago', bold: true, fontSize: 8, alignment: 'right' },
+                    { text: 'Desc. Pgto', bold: true, fontSize: 8, alignment: 'right' }
+                ]
+            ];
+
+            if (Array.isArray(pagamentos) && pagamentos.length > 0) {
+                pagamentosBody.push(
+                    ...pagamentos.map((item) => ([
+                        { text: String(item?.id || 0), alignment: 'left' },
+                        { text: formatDateBR(item?.dt_pagamento), alignment: 'left' },
+                        { text: String(item?.nom_cobrador || '-'), alignment: 'left' },
+                        { text: String(item?.num_recibo || '-'), alignment: 'left' },
+                        { text: formatCurrencyBR(item?.vl_pagamento), alignment: 'right' },
+                        { text: formatCurrencyBR(item?.vl_desconto), alignment: 'right' }
+                    ]))
+                );
+            } else {
+                pagamentosBody.push([
+                    { text: 'Sem pagamentos registrados para esta venda.', colSpan: 6, alignment: 'left' },
+                    {},
+                    {},
+                    {},
+                    {},
+                    {}
+                ]);
+            }
+
+            pagamentosBody.push([
+                { text: 'TOTAL PAGAMENTOS', bold: true, colSpan: 4, alignment: 'left' },
+                {},
+                {},
+                {},
+                { text: formatCurrencyBR(totalPagamentos), bold: true, alignment: 'right' },
+                { text: formatCurrencyBR(totalDescontosPag), bold: true, alignment: 'right' }
+            ]);
+
+            const createInfoCard = (label, value) => ({
+                table: {
+                    widths: ['*'],
+                    body: [[{
+                        stack: [
+                            { text: String(label || ''), style: 'cardLabel' },
+                            { text: String(value || '-'), style: 'cardValue' }
+                        ],
+                        fillColor: '#f8fbff'
+                    }]]
+                },
+                layout: {
+                    hLineWidth: () => 0.9,
+                    vLineWidth: () => 0.9,
+                    hLineColor: () => '#d6e3f5',
+                    vLineColor: () => '#d6e3f5',
+                    paddingLeft: () => 8,
+                    paddingRight: () => 8,
+                    paddingTop: () => 7,
+                    paddingBottom: () => 7
+                }
             });
 
-            await sendPdfResponse(res, `relatorio-vendas-${dt_ini}-${dt_fim}.pdf`, document);
+            const document = {
+                pageSize: 'A4',
+                pageOrientation: 'portrait',
+                pageMargins: [18, 84, 18, 36],
+                defaultStyle: {
+                    font: 'Roboto',
+                    fontSize: 8
+                },
+                header: () => ({
+                    margin: [18, 12, 18, 0],
+                    stack: [
+                        {
+                            columns: [
+                                { text: String(entidade?.nom_entidade || entidade_negocio), style: 'reportBrand' },
+                                { text: generatedAt, style: 'reportMeta', alignment: 'right' }
+                            ]
+                        },
+                        { text: 'RELATORIO DE VENDA', style: 'reportName' },
+                        { text: `Venda: ${idVendaMascara} | Cliente: ${nomeCliente}`, style: 'reportSubtitle' }
+                    ]
+                }),
+                content: [
+                    {
+                        columns: [
+                            {
+                                width: '28%',
+                                ...createInfoCard('Nr Venda', idVendaMascara)
+                            },
+                            {
+                                width: '24%',
+                                ...createInfoCard('Data Venda', formatDateBR(venda?.dt_venda))
+                            },
+                            {
+                                width: '48%',
+                                ...createInfoCard('Cliente', nomeCliente)
+                            }
+                        ],
+                        columnGap: 8,
+                        margin: [0, 0, 0, 6]
+                    },
+                    {
+                        columns: [
+                            {
+                                width: '25%',
+                                ...createInfoCard('Valor Total', formatCurrencyBR(venda?.val_tot_venda))
+                            },
+                            {
+                                width: '25%',
+                                ...createInfoCard('Desconto', formatCurrencyBR(venda?.val_desconto))
+                            },
+                            {
+                                width: '25%',
+                                ...createInfoCard('Pagamentos', formatCurrencyBR(venda?.val_pagamentos))
+                            },
+                            {
+                                width: '25%',
+                                ...createInfoCard('Saldo a Pagar', formatCurrencyBR(venda?.saldo_a_pagar))
+                            }
+                        ],
+                        columnGap: 8,
+                        margin: [0, 0, 0, 8]
+                    },
+                    {
+                        text: 'Itens da venda',
+                        style: 'itemsTitle',
+                        margin: [0, 6, 0, 4]
+                    },
+                    {
+                        layout: {
+                            hLineWidth: (i) => (i === 1 ? 0.7 : 0.3),
+                            vLineWidth: () => 0,
+                            hLineColor: () => '#cfd4dc',
+                            paddingLeft: () => 2,
+                            paddingRight: () => 2,
+                            paddingTop: (i) => (i === 0 ? 4 : 2),
+                            paddingBottom: () => 2
+                        },
+                        table: {
+                            headerRows: 1,
+                            widths: ['8%', '14%', '36%', '10%', '16%', '16%'],
+                            body: itensBody
+                        }
+                    },
+                    {
+                        text: 'Pagamentos da venda',
+                        style: 'itemsTitle',
+                        margin: [0, 10, 0, 4]
+                    },
+                    {
+                        layout: {
+                            hLineWidth: (i) => (i === 1 ? 0.7 : 0.3),
+                            vLineWidth: () => 0,
+                            hLineColor: () => '#cfd4dc',
+                            paddingLeft: () => 2,
+                            paddingRight: () => 2,
+                            paddingTop: (i) => (i === 0 ? 4 : 2),
+                            paddingBottom: () => 2
+                        },
+                        table: {
+                            headerRows: 1,
+                            widths: ['10%', '14%', '32%', '14%', '15%', '15%'],
+                            body: pagamentosBody
+                        }
+                    }
+                ],
+                footer(currentPage, pageCount) {
+                    return {
+                        margin: [18, 0, 18, 12],
+                        columns: [
+                            { text: `Emitido em ${generatedAt}`, style: 'footerMeta' },
+                            { text: `Pagina ${currentPage} de ${pageCount}`, alignment: 'right', style: 'footerMeta' }
+                        ]
+                    };
+                },
+                styles: {
+                    reportBrand: {
+                        fontSize: 8,
+                        bold: true,
+                        color: '#1f4f96'
+                    },
+                    reportMeta: {
+                        fontSize: 7,
+                        color: '#516174'
+                    },
+                    reportName: {
+                        fontSize: 12,
+                        bold: true,
+                        color: '#10213d',
+                        margin: [0, 6, 0, 2]
+                    },
+                    reportSubtitle: {
+                        fontSize: 8,
+                        color: '#4a5568'
+                    },
+                    cardLabel: {
+                        fontSize: 7,
+                        color: '#4a5568',
+                        margin: [0, 0, 0, 2]
+                    },
+                    cardValue: {
+                        bold: true,
+                        fontSize: 8,
+                        color: '#0f172a'
+                    },
+                    itemsTitle: {
+                        fontSize: 9,
+                        bold: true,
+                        color: '#1e293b'
+                    },
+                    footerMeta: {
+                        fontSize: 7,
+                        color: '#64748b'
+                    }
+                }
+            };
+
+            await sendPdfResponse(res, `relatorio-venda-${id_venda}.pdf`, document);
         } catch (error) {
+
+            const err = Number(error.statusCode || 500);
+
             if (!res.headersSent) {
-                res.status(Number(error.statusCode || 500)).json({
-                    err: Number(error.statusCode || 500),
+                res.status(err).json({
+                    err,
                     msg: error.message,
-                    status: Number(error.statusCode || 500),
+                    status: err,
                     data: []
                 });
             }
 
-            GravarLog('ControllerVendas.ImprimirResumoPeriodo', error.stack);
+            if (err === 500) GravarLog('ControllerVendas.Imprimir', error.stack);
         }
 
         void await db.Close();
