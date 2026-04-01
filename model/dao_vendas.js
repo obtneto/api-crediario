@@ -186,6 +186,7 @@ export default class Vendas {
 
         if(this.#field.id_cobrador === 0) this.#field.id_cobrador = null;
         if(this.#field.id_rota === 0) this.#field.id_rota = null;
+        if(this.#field.num_recibo === '0') this.#field.num_recibo = null;
 
         return await this.#conn.query(query,this.#field);
         

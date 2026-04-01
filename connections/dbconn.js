@@ -49,6 +49,7 @@ export default class Database {
     }
 
     async CreateEvents() {
+        
         const scriptSituacaoVendas = `
             CREATE EVENT IF NOT EXISTS atualizar_situacao_vendas_horario
                 ON SCHEDULE EVERY 1 HOUR
@@ -64,19 +65,15 @@ export default class Database {
         `;
 
         const scriptStatusDistribuicao = `
-            CREATE EVENT IF NOT EXISTS atualizar_status_distribuicao
-                ON SCHEDULE EVERY 1 MINUTE
-                DO
-                UPDATE tb_distribuicao d
-                LEFT JOIN tb_itens_distrib i
-                    ON i.entidade_negocio = d.entidade_negocio
-                    AND i.id_distrib = d.id
-                    AND i.qt_distrib > 0
-                SET d.situacao = 1
-                WHERE i.id_distrib IS NULL
-                    AND d.situacao <> 1;
-        `;
+            CREATE EVENT IF NOT EXISTS atualizar_status_distribuicao ON SCHEDULE EVERY 1 MINUTE DO UPDATE tb_distribuicao d
+            LEFT JOIN tb_itens_distrib i
+                ON i.entidade_negocio = d.entidade_negocio
+                AND i.id_distrib = d.id
+                AND i.qt_distrib > 0
+            SET d.situacao = IF(i.id_distrib IS NULL, 1, 0)
+            WHERE d.situacao <> IF(i.id_distrib IS NULL, 1, 0);`;
 
+        // SELECT @@global.event_scheduler;
         //await this.#conn.query("SET GLOBAL event_scheduler = ON");
         await this.#conn.query(scriptSituacaoVendas);
         await this.#conn.query(scriptStatusDistribuicao);

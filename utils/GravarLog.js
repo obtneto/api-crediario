@@ -1,4 +1,10 @@
 import fs from 'fs';
+import path from 'path';
+import {fileURLToPath} from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const LOG_FILE_PATH = path.resolve(__dirname, '../Logs/logs.txt');
 
 export default function GravarLog(scriptname,mensagem) {
 
@@ -10,10 +16,16 @@ export default function GravarLog(scriptname,mensagem) {
 
     const logMessage = `[${data} ${hora}] ${scriptname}: ${mensagem}\n\n`;
 
-    fs.appendFile('./Logs/logs.txt', logMessage, (err) => {
-        if (err) {
-            throw err;
-        }
-    });
+    try {
+        fs.mkdirSync(path.dirname(LOG_FILE_PATH), {recursive: true});
+
+        fs.appendFile(LOG_FILE_PATH, logMessage, (err) => {
+            if (err) {
+                console.error('Falha ao gravar log:', err.message);
+            }
+        });
+    } catch (error) {
+        console.error('Falha ao preparar escrita de log:', error.message);
+    }
     
 };

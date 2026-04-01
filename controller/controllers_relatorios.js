@@ -28,7 +28,49 @@ function validarAnoMes(req) {
 }
 
 async function consultarRelatorioGerencial(connection, anobase, mesbase) {
-    return await connection.query(QUERY_RELATORIO_GERENCIAL, {anobase, mesbase});
+    const rows = await connection.query(QUERY_RELATORIO_GERENCIAL, {anobase, mesbase});
+    return normalizeJsonValue(rows);
+}
+
+function normalizeJsonValue(value) {
+    if (typeof value === 'bigint') {
+        return value.toString();
+    }
+
+    if (Array.isArray(value)) {
+        return value.map((item) => normalizeJsonValue(item));
+    }
+
+    if (value && typeof value === 'object') {
+        const normalized = {};
+        for (const [key, currentValue] of Object.entries(value)) {
+            normalized[key] = normalizeJsonValue(currentValue);
+        }
+        return normalized;
+    }
+
+    return value;
+}
+
+function getErrorMessage(error, fallback = 'Erro interno ao processar relatorio gerencial.') {
+    const message = String(
+        error?.message ||
+        error?.text ||
+        error?.sqlMessage ||
+        error?.cause?.message ||
+        ''
+    ).trim();
+
+    if (message) {
+        return message;
+    }
+
+    const toStringMessage = String(error || '').trim();
+    if (toStringMessage) {
+        return toStringMessage;
+    }
+
+    return fallback;
 }
 
 function toCellText(value) {
@@ -50,17 +92,20 @@ export class ControllerRelatorios{
         }
 
         try {
+
             const {anobase, mesbase} = validarAnoMes(req);
 
             void await db.Connect();
+
             resdata.data = await consultarRelatorioGerencial(db.connection, anobase, mesbase);
+
             
          } catch (error) {
             resdata.err = Number(error.statusCode || 500);
-            resdata.msg = error.message;
+            resdata.msg = getErrorMessage(error);
             resdata.status = Number(error.statusCode || 500);
 
-            if (resdata.err === 500) GravarLog('ControllerRelatorios.RelatorioGerencial', error.stack);
+            GravarLog('ControllerRelatorios.RelatorioGerencial', error.stack);
         }
 
         void await db.Close();
@@ -133,7 +178,7 @@ export class ControllerRelatorios{
             if (!res.headersSent) {
                 res.status(err).json({
                     err,
-                    msg: error.message,
+                    msg: getErrorMessage(error),
                     status: err,
                     data: []
                 });

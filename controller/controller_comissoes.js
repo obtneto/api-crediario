@@ -1486,7 +1486,7 @@ export class ControllerComissoes {
             LEFT JOIN tb_clientes cl ON cl.cpf_cliente = vd.cpf_cliente
             LEFT JOIN tb_cobradores cb ON cb.id = pg.id_cobrador AND cb.entidade_negocio = pg.entidade_negocio
             WHERE pg.entidade_negocio = :entidade_negocio AND pg.id_cobrador = :id_cobrador 
-            AND (pg.dt_pagamento >= :dt_ini AND pg.dt_pagamento <= :dt_fim) AND pg.num_recibo IS NULL
+            AND (pg.dt_pagamento >= :dt_ini AND pg.dt_pagamento <= :dt_fim) AND (pg.num_recibo IS NULL OR pg.num_recibo = '0')
             GROUP BY pg.id_venda,cl.nom_cliente`
             
             resdata.data.vendas = await pagamentos.ExecuteQuery(quey,{
@@ -1879,7 +1879,7 @@ export class ControllerComissoes {
             LEFT JOIN tb_clientes cl ON cl.cpf_cliente = vd.cpf_cliente
             LEFT JOIN tb_vendedores vr ON vr.id = vd.id_vendedor AND vr.entidade_negocio = vd.entidade_negocio
             WHERE vd.entidade_negocio = :entidade_negocio AND vd.id_vendedor = :id_vendedor 
-            AND (vd.dt_venda >= :dt_ini AND dt_venda <= :dt_fim) AND vd.num_recibo IS NULL
+            AND (vd.dt_venda >= :dt_ini AND dt_venda <= :dt_fim) AND (vd.num_recibo IS NULL OR vd.num_recibo = '0')
             GROUP BY vd.id,cl.nom_cliente`
             
             resdata.data.vendas = await vendas.ExecuteQuery(quey,{

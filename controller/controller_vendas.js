@@ -58,6 +58,7 @@ export class ControllerDistribuicao{
         try {
             
             const id_vendedor = Number(req.params.id_vendedor || 0);
+            const situacao = String(req.query.situacao ?? '*').trim();
             const entidade_negocio = obterEntidadeNegocio(req);
             const dt_ini = String(req.query.dt_ini || '').trim();
             const dt_fim = String(req.query.dt_fim || '').trim();
@@ -67,6 +68,12 @@ export class ControllerDistribuicao{
 
             if (id_vendedor <= 0) {
                 const error = new Error('Vendedor invalido.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (!['*', '0', '1'].includes(situacao)) {
+                const error = new Error('Situação da distribuição inválida.');
                 error.statusCode = 400;
                 throw error;
             }
@@ -120,10 +127,15 @@ export class ControllerDistribuicao{
                 params.push(dt_fim);
             }
 
-            let query = `SELECT d.id, d.dt_distrib, v.nom_vendedor
+            if (situacao !== '*') {
+                whereClause.push('d.situacao = ?');
+                params.push(Number(situacao));
+            }
+
+            let query = `SELECT d.id, d.dt_distrib, v.nom_vendedor,d.situacao
                          FROM tb_distribuicao d
                          LEFT JOIN tb_vendedores v ON v.id = d.id_vendedor AND v.entidade_negocio = d.entidade_negocio
-                         WHERE ${whereClause.join(' AND ')} AND d.situacao = 0
+                         WHERE ${whereClause.join(' AND ')}
                          ORDER BY d.dt_distrib DESC, d.id DESC
                          LIMIT ? OFFSET ?`;
 
@@ -189,6 +201,7 @@ export class ControllerDistribuicao{
             
             const id_vendedor = Number(req.params.id_vendedor || 0);
             const nom_produto = req.params.nom_produto;
+            const situacao = String(req.query.situacao ?? '*').trim();
             const entidade_negocio = obterEntidadeNegocio(req);
             const dt_ini = String(req.query.dt_ini || '').trim();
             const dt_fim = String(req.query.dt_fim || '').trim();
@@ -198,6 +211,12 @@ export class ControllerDistribuicao{
 
             if (id_vendedor <= 0) {
                 const error = new Error('Vendedor invalido.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (!['*', '0', '1'].includes(situacao)) {
+                const error = new Error('Situação da distribuição inválida.');
                 error.statusCode = 400;
                 throw error;
             }
@@ -251,11 +270,16 @@ export class ControllerDistribuicao{
                 params.push(dt_fim);
             }
 
+            if (situacao !== '*') {
+                whereClause.push('d.situacao = ?');
+                params.push(Number(situacao));
+            }
+
             whereClause.push('d.qt_distrib > 0');
             whereClause.push('p.nom_produto LIKE ?');
             params.push(`%${String(nom_produto || '').trim()}%`);
 
-            let query = `SELECT d.id, d.dt_distrib, p.nom_produto, p.mar_produto, p.und_produto, d.qt_distrib
+            let query = `SELECT d.id, d.dt_distrib, d.situacao, p.nom_produto, p.mar_produto, p.und_produto, d.qt_distrib
                          FROM tb_distribuicao d
                          LEFT JOIN tb_produtos p ON p.id = d.id_produto AND p.entidade_negocio = d.entidade_negocio
                          WHERE ${whereClause.join(' AND ')}
@@ -320,7 +344,7 @@ export class ControllerDistribuicao{
             const query = `SELECT i.id_produto, p.nom_produto, p.mar_produto,p.und_produto, i.qt_distrib as saldo 
             FROM tb_itens_distrib i
             LEFT JOIN tb_produtos p ON p.entidade_negocio = i.entidade_negocio AND p.id = i.id_produto 
-            WHERE i.entidade_negocio = ? AND i.id_vendedor = ? AND p.ativo = 1 AND i.qt_distrib > 0 `;
+            WHERE i.entidade_negocio = ? AND i.id_vendedor = ? AND i.qt_distrib > 0 `;
 
             const rows = await itens.ExecuteQuery(query, [entidade_negocio, id_vendedor]);
 
