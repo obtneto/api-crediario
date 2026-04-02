@@ -22,7 +22,7 @@ process.env.TZ ='-03:00';
 
 const app = express();
 
-process.env.TZ = 'America/Bahia'
+process.env.TZ = 'America/Maceio'
 
 app.disable('x-powered-by');
 app.use(helmet());
