@@ -411,7 +411,15 @@ export class ControllerCobranca {
             const document = buildTableDocument({
                 title: 'RELATORIO DE COBRANCA POR RESPONSAVEL',
                 organizationName: entidade?.nom_entidade || String(entidade_negocio),
+                description: 'Resumo financeiro consolidado',
                 subtitle,
+                summaryCards: [
+                    { label: 'Periodo', value: `${formatDateBR(dt_ini)} a ${formatDateBR(dt_fim)}`, width: '34%' },
+                    { label: 'Agrupamento', value: responsavelLabel, width: '22%' },
+                    { label: 'Qtde Pagamentos', value: String(totalQt), width: '20%' },
+                    { label: 'Total Recebido', value: formatCurrencyBR(totalRecebido), width: '24%' }
+                ],
+                tableTitle: 'Resumo por responsavel',
                 widths: ['52%', '18%', '30%'],
                 body,
                 orientation: 'portrait'

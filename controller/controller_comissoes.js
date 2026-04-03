@@ -6,7 +6,37 @@ import Adiantamentos from '../model/dao_adiantamentos.js';
 import Pagamentos from '../model/dao_pagamentos.js';
 import Vendas from '../model/dao_vendas.js';
 import Comissoes from '../model/dao_comissoes.js';
-import {buildTableDocument, formatCurrencyBR, formatDateBR, sendPdfResponse} from '../utils/PdfReport.js';
+import {
+    buildTableDocument,
+    createInfoCard,
+    createReportFooter,
+    createReportHeader,
+    createSectionTitle,
+    createStandardTable,
+    formatCurrencyBR,
+    formatDateBR,
+    getReportStyles,
+    sendPdfResponse
+} from '../utils/PdfReport.js';
+
+function buildInfoCardColumns(cards = [], margin = [0, 0, 0, 8]) {
+    const normalizedCards = Array.isArray(cards)
+        ? cards.filter((item) => item && (item.label || item.value))
+        : [];
+
+    if (normalizedCards.length === 0) {
+        return null;
+    }
+
+    return {
+        columns: normalizedCards.map((item) => ({
+            width: item?.width || `${(100 / normalizedCards.length).toFixed(2)}%`,
+            ...createInfoCard(item?.label, item?.value)
+        })),
+        columnGap: 8,
+        margin
+    };
+}
 
 function buildReceiptSummaryBox({
     descricao,
@@ -21,8 +51,8 @@ function buildReceiptSummaryBox({
         layout: {
             hLineWidth: () => 0.8,
             vLineWidth: () => 0.8,
-            hLineColor: () => '#cfd4dc',
-            vLineColor: () => '#cfd4dc',
+            hLineColor: () => '#d6e3f5',
+            vLineColor: () => '#d6e3f5',
             paddingLeft: () => 14,
             paddingRight: () => 14,
             paddingTop: () => 12,
@@ -32,6 +62,7 @@ function buildReceiptSummaryBox({
             widths: ['*'],
             body: [[{
                 border: [true, true, true, true],
+                fillColor: '#f8fbff',
                 stack: [
                     { text: descricao, lineHeight: 1.3 },
                     { text: `Tipo de recibo: ${tipoRecibo}`, margin: [0, 10, 0, 0] },
@@ -120,6 +151,8 @@ export class ControllerComissoes {
             const fieldname = req.params.fieldname;  //id_vendedor ou id_cobrador
             const fieldnamePermitido = fieldname === 'id_vendedor' || fieldname === 'id_cobrador';
 
+            console.log(id,fieldname)
+
             if (!id || id <= 0) {
                 const error = new Error('ID do cobrador ou vendedor invalido.');
                 error.statusCode = 400;
@@ -137,7 +170,6 @@ export class ControllerComissoes {
             const query = `SELECT id, dt_adiant as dt_adiantamento, vl_adiant as vl_adiantamento 
             FROM tb_adiantamentos 
             WHERE entidade_negocio = ? AND ${fieldname} = ?
-            AND num_recibo IS NULL
             ORDER BY dt_adiant DESC, id DESC`;
 
             resdata.data.adiantamentos = await adiantamentos.ExecuteQuery(query, [ 
@@ -196,7 +228,6 @@ export class ControllerComissoes {
                            FROM tb_adiantamentos a
                            LEFT JOIN ${tabelaDestino} d ON d.id = a.${fieldname} AND d.entidade_negocio = a.entidade_negocio
                            WHERE a.entidade_negocio = ? AND a.${fieldname} = ?
-                           AND a.num_recibo IS NULL
                            ORDER BY a.dt_adiant DESC, a.id DESC`;
 
             let rows = await adiantamentos.ExecuteQuery(query, [entidade_negocio, id]);
@@ -256,7 +287,15 @@ export class ControllerComissoes {
             const document = buildTableDocument({
                 title: 'RELATORIO DE ADIANTAMENTOS',
                 organizationName: entidade?.nom_entidade || String(entidade_negocio),
+                description: 'Historico de adiantamentos do destino selecionado',
                 subtitle,
+                summaryCards: [
+                    { label: labelDestino, value: nomeDestino, width: '38%' },
+                    { label: 'Registros', value: String(rows.length), width: '18%' },
+                    { label: 'Total Adiantado', value: formatCurrencyBR(total), width: '24%' },
+                    { label: 'Situacao', value: 'Todos os registros', width: '20%' }
+                ],
+                tableTitle: 'Adiantamentos vinculados',
                 widths: ['12%', '36%', '30%', '22%'],
                 body
             });
@@ -648,28 +687,30 @@ export class ControllerComissoes {
                     {},
                     {}
                 ]];
+            const generatedAt = formatDateBR(new Date(), true);
+            const summaryCards = buildInfoCardColumns([
+                { label: 'Recibo', value: String(itemRecibo?.num_recibo || '-'), width: '18%' },
+                { label: 'Data', value: formatDateBR(itemRecibo?.dt_recibo), width: '18%' },
+                { label: 'Cobrador', value: nomeCobrador, width: '34%' },
+                { label: 'Valor Liquido', value: formatCurrencyBR(valorLiquido), width: '30%' }
+            ]);
 
             const document = {
                 pageSize: 'A4',
-                pageMargins: [28, 28, 28, 36],
+                pageMargins: [18, 84, 18, 36],
                 defaultStyle: {
                     font: 'Roboto',
-                    fontSize: 9
+                    fontSize: 8
                 },
+                header: () => createReportHeader({
+                    title: 'RECIBO DE COMISSAO',
+                    organizationName: nomeEntidade,
+                    description: 'Comprovante financeiro',
+                    subtitle: `Recibo: ${String(itemRecibo?.num_recibo || '-')} | Data: ${formatDateBR(itemRecibo?.dt_recibo)}`,
+                    generatedAt
+                }),
                 content: [
-                    {
-                        columns: [
-                            [
-                                { text: nomeEntidade, bold: true, fontSize: 14 },
-                                { text: `Recibo de Comissao`, fontSize: 11, margin: [0, 2, 0, 0] }
-                            ],
-                            [
-                                { text: `Recibo Nº ${itemRecibo.num_recibo}`, alignment: 'right', bold: true, fontSize: 11 },
-                                { text: `Data: ${formatDateBR(itemRecibo.dt_recibo)}`, alignment: 'right', margin: [0, 2, 0, 0] }
-                            ]
-                        ],
-                        margin: [0, 0, 0, 18]
-                    },
+                    summaryCards,
                     {
                         ...buildReceiptSummaryBox({
                             descricao: `Recebi de ${nomeEntidade} a importancia liquida de ${formatCurrencyBR(valorLiquido)} referente ao pagamento de comissao do cobrador ${nomeCobrador}.`,
@@ -684,55 +725,30 @@ export class ControllerComissoes {
                     },
                     {
                         columns: [
-                            { text: `Cobrador: ${nomeCobrador}`, bold: true },
-                            { text: `Entidade: ${nomeEntidade}`, alignment: 'right' }
+                            {
+                                width: '50%',
+                                ...createInfoCard('Entidade', nomeEntidade)
+                            },
+                            {
+                                width: '50%',
+                                ...createInfoCard('Base de Pagamentos', formatCurrencyBR(totalPagamentos))
+                            }
                         ],
+                        columnGap: 8,
                         margin: [0, 0, 0, 8]
                     },
-                    {
-                        text: 'Pagamentos vinculados',
-                        bold: true,
-                        fontSize: 10,
-                        margin: [0, 8, 0, 6]
-                    },
-                    {
-                        layout: {
-                            hLineWidth: (i) => (i === 1 ? 0.8 : 0.2),
-                            vLineWidth: () => 0,
-                            hLineColor: () => '#cfd4dc',
-                            paddingLeft: () => 3,
-                            paddingRight: () => 3,
-                            paddingTop: (i) => (i === 0 ? 4 : 3),
-                            paddingBottom: () => 3
-                        },
-                        table: {
-                            headerRows: Array.isArray(rowsPagamentos) && rowsPagamentos.length > 0 ? 1 : 0,
-                            widths: ['14%', '*', '18%', '18%'],
-                            body: pagamentosBody
-                        }
-                    },
-                    {
-                        text: 'Adiantamentos vinculados',
-                        bold: true,
-                        fontSize: 10,
-                        margin: [0, 14, 0, 6]
-                    },
-                    {
-                        layout: {
-                            hLineWidth: (i) => (i === 1 ? 0.8 : 0.2),
-                            vLineWidth: () => 0,
-                            hLineColor: () => '#cfd4dc',
-                            paddingLeft: () => 3,
-                            paddingRight: () => 3,
-                            paddingTop: (i) => (i === 0 ? 4 : 3),
-                            paddingBottom: () => 3
-                        },
-                        table: {
-                            headerRows: Array.isArray(rowsAdiantamentos) && rowsAdiantamentos.length > 0 ? 1 : 0,
-                            widths: ['16%', '54%', '30%'],
-                            body: adiantamentosBody
-                        }
-                    },
+                    createSectionTitle('Pagamentos vinculados', [0, 8, 0, 4]),
+                    createStandardTable({
+                        headerRows: Array.isArray(rowsPagamentos) && rowsPagamentos.length > 0 ? 1 : 0,
+                        widths: ['14%', '*', '18%', '18%'],
+                        body: pagamentosBody
+                    }),
+                    createSectionTitle('Adiantamentos vinculados', [0, 10, 0, 4]),
+                    createStandardTable({
+                        headerRows: Array.isArray(rowsAdiantamentos) && rowsAdiantamentos.length > 0 ? 1 : 0,
+                        widths: ['16%', '54%', '30%'],
+                        body: adiantamentosBody
+                    }),
                     {
                         ...buildReceiptTotalsAndSignature({
                             totals: [],
@@ -740,15 +756,9 @@ export class ControllerComissoes {
                             signatoryLabel: 'Assinatura do cobrador'
                         })
                     }
-                ],
-                footer(currentPage, pageCount) {
-                    return {
-                        margin: [28, 0, 28, 16],
-                        text: `Pagina ${currentPage} de ${pageCount}`,
-                        alignment: 'right',
-                        fontSize: 7
-                    };
-                }
+                ].filter(Boolean),
+                footer: createReportFooter(generatedAt),
+                styles: getReportStyles()
             };
 
             await sendPdfResponse(res, `recibo-comissao-${num_recibo}.pdf`, document);
@@ -890,28 +900,30 @@ export class ControllerComissoes {
                     {},
                     {}
                 ]];
+            const generatedAt = formatDateBR(new Date(), true);
+            const summaryCards = buildInfoCardColumns([
+                { label: 'Recibo', value: String(itemRecibo?.num_recibo || '-'), width: '18%' },
+                { label: 'Data', value: formatDateBR(itemRecibo?.dt_recibo), width: '18%' },
+                { label: 'Vendedor', value: nomeVendedor, width: '34%' },
+                { label: 'Valor Liquido', value: formatCurrencyBR(valorLiquido), width: '30%' }
+            ]);
 
             const document = {
                 pageSize: 'A4',
-                pageMargins: [28, 28, 28, 36],
+                pageMargins: [18, 84, 18, 36],
                 defaultStyle: {
                     font: 'Roboto',
-                    fontSize: 9
+                    fontSize: 8
                 },
+                header: () => createReportHeader({
+                    title: 'RECIBO DE COMISSAO',
+                    organizationName: nomeEntidade,
+                    description: 'Comprovante financeiro',
+                    subtitle: `Recibo: ${String(itemRecibo?.num_recibo || '-')} | Data: ${formatDateBR(itemRecibo?.dt_recibo)}`,
+                    generatedAt
+                }),
                 content: [
-                    {
-                        columns: [
-                            [
-                                { text: nomeEntidade, bold: true, fontSize: 14 },
-                                { text: `Recibo de Comissao`, fontSize: 11, margin: [0, 2, 0, 0] }
-                            ],
-                            [
-                                { text: `Recibo Nº ${itemRecibo.num_recibo}`, alignment: 'right', bold: true, fontSize: 11 },
-                                { text: `Data: ${formatDateBR(itemRecibo.dt_recibo)}`, alignment: 'right', margin: [0, 2, 0, 0] }
-                            ]
-                        ],
-                        margin: [0, 0, 0, 18]
-                    },
+                    summaryCards,
                     {
                         ...buildReceiptSummaryBox({
                             descricao: `Recebi de ${nomeEntidade} a importancia liquida de ${formatCurrencyBR(valorLiquido)} referente ao pagamento de comissao do vendedor ${nomeVendedor}.`,
@@ -925,49 +937,31 @@ export class ControllerComissoes {
                         })
                     },
                     {
-                        text: 'Vendas vinculados',
-                        bold: true,
-                        fontSize: 10,
-                        margin: [0, 8, 0, 6]
+                        columns: [
+                            {
+                                width: '50%',
+                                ...createInfoCard('Entidade', nomeEntidade)
+                            },
+                            {
+                                width: '50%',
+                                ...createInfoCard('Base de Vendas', formatCurrencyBR(totalVendas))
+                            }
+                        ],
+                        columnGap: 8,
+                        margin: [0, 0, 0, 8]
                     },
-                    {
-                        layout: {
-                            hLineWidth: (i) => (i === 1 ? 0.8 : 0.2),
-                            vLineWidth: () => 0,
-                            hLineColor: () => '#cfd4dc',
-                            paddingLeft: () => 3,
-                            paddingRight: () => 3,
-                            paddingTop: (i) => (i === 0 ? 4 : 3),
-                            paddingBottom: () => 3
-                        },
-                        table: {
-                            headerRows: Array.isArray(rowsVendas) && rowsVendas.length > 0 ? 1 : 0,
-                            widths: ['14%', '*', '18%', '18%'],
-                            body: vendasBody
-                        }
-                    },
-                    {
-                        text: 'Adiantamentos vinculados',
-                        bold: true,
-                        fontSize: 10,
-                        margin: [0, 14, 0, 6]
-                    },
-                    {
-                        layout: {
-                            hLineWidth: (i) => (i === 1 ? 0.8 : 0.2),
-                            vLineWidth: () => 0,
-                            hLineColor: () => '#cfd4dc',
-                            paddingLeft: () => 3,
-                            paddingRight: () => 3,
-                            paddingTop: (i) => (i === 0 ? 4 : 3),
-                            paddingBottom: () => 3
-                        },
-                        table: {
-                            headerRows: Array.isArray(rowsAdiantamentos) && rowsAdiantamentos.length > 0 ? 1 : 0,
-                            widths: ['16%', '54%', '30%'],
-                            body: adiantamentosBody
-                        }
-                    },
+                    createSectionTitle('Vendas vinculadas', [0, 8, 0, 4]),
+                    createStandardTable({
+                        headerRows: Array.isArray(rowsVendas) && rowsVendas.length > 0 ? 1 : 0,
+                        widths: ['14%', '*', '18%', '18%'],
+                        body: vendasBody
+                    }),
+                    createSectionTitle('Adiantamentos vinculados', [0, 10, 0, 4]),
+                    createStandardTable({
+                        headerRows: Array.isArray(rowsAdiantamentos) && rowsAdiantamentos.length > 0 ? 1 : 0,
+                        widths: ['16%', '54%', '30%'],
+                        body: adiantamentosBody
+                    }),
                     {
                         ...buildReceiptTotalsAndSignature({
                             totals: [],
@@ -975,15 +969,9 @@ export class ControllerComissoes {
                             signatoryLabel: 'Assinatura do vendedor'
                         })
                     }
-                ],
-                footer(currentPage, pageCount) {
-                    return {
-                        margin: [28, 0, 28, 16],
-                        text: `Pagina ${currentPage} de ${pageCount}`,
-                        alignment: 'right',
-                        fontSize: 7
-                    };
-                }
+                ].filter(Boolean),
+                footer: createReportFooter(generatedAt),
+                styles: getReportStyles()
             };
 
             await sendPdfResponse(res, `recibo-comissao-${num_recibo}.pdf`, document);
@@ -1654,15 +1642,16 @@ export class ControllerComissoes {
                 throw error;
             }
 
-            const updated_vendas = `UPDATE tb_vendas SET num_recibo = Null
-            WHERE entidade_negocio = :entidade_negocio AND id_vendedor = :id_vendedor AND num_recibo = :num_recibo`;
-
-            void await db.connection.execute(updated_vendas,{entidade_negocio,id_vendedor,num_recibo});
 
             const updated_adiantamentos = `UPDATE tb_adiantamentos SET num_recibo = Null
             WHERE entidade_negocio = :entidade_negocio AND id_vendedor = :id_vendedor AND num_recibo = :num_recibo`;
 
             void await db.connection.execute(updated_adiantamentos,{entidade_negocio,id_vendedor,num_recibo});
+
+            const updated_vendas = `UPDATE tb_vendas SET num_recibo = Null
+            WHERE entidade_negocio = :entidade_negocio AND id_vendedor = :id_vendedor AND num_recibo = :num_recibo`;
+
+            void await db.connection.execute(updated_vendas,{entidade_negocio,id_vendedor,num_recibo});
 
             await comissoes.Excluir();
 

@@ -148,9 +148,9 @@ export class ControllerEstoque {
                 title: 'RELATORIO DE ESTOQUE',
                 organizationName: entidade?.nom_entidade || String(entidade_negocio),
                 subtitle,
-                widths: ['8%', '34%', '18%', '10%', '15%', '15%'],
+                widths: ['10%', '34%', '14%', '10%', '16%', '16%'],
                 body,
-                orientation: 'landscape'
+                orientation: 'portrait'
             });
 
             await sendPdfResponse(res, 'relatorio-estoque.pdf', document);

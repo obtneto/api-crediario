@@ -11,7 +11,17 @@ import Cobradores from '../model/dao_cobradores.js';
 import Rotas from '../model/dao_rotas.js';
 import GravarLog from '../utils/GravarLog.js';
 import {obterEntidadeNegocio} from '../utils/CheckEntidades.js';
-import {formatCurrencyBR, formatDateBR, sendPdfResponse} from '../utils/PdfReport.js';
+import {
+    createInfoCard,
+    createReportFooter,
+    createReportHeader,
+    createSectionTitle,
+    createStandardTable,
+    formatCurrencyBR,
+    formatDateBR,
+    getReportStyles,
+    sendPdfResponse
+} from '../utils/PdfReport.js';
 import isValidCpf from '../utils/DocumentValidator.js';
 
 const formatMaskIdDistrib = (value) => {
@@ -785,6 +795,23 @@ export class ControllerDistribuicao{
 
             void await distrib.FindById(id);
 
+            if (!distrib.found) {
+
+                const query = `SELECT d.id FROM tb_distribuicao d 
+                               WHERE d.situacao = 0 AND 
+                               entidade_negocio = :entidade_negocio AND
+                               id_vendedor = :id_vendedor
+                               LIMIT 1`;
+
+                const [rows] = await distrib.ExecuteQuery(query,{entidade_negocio,id_vendedor});
+
+                if (rows) {
+                    const error = new Error('Existe uma distribuiçao ativa para esse vendedor.');
+                    error.statusCode = 403;
+                    throw error;
+                }
+            }
+
             distrib.id = id;
             distrib.dt_distrib = dt_distrib;
             distrib.id_vendedor = id_vendedor;
@@ -1313,10 +1340,6 @@ export class ControllerVendas {
             const totalPagamentos = Array.isArray(pagamentos)
                 ? pagamentos.reduce((acc, item) => acc + Number(item?.vl_pagamento || 0), 0)
                 : 0;
-            const totalDescontosPag = Array.isArray(pagamentos)
-                ? pagamentos.reduce((acc, item) => acc + Number(item?.vl_desconto || 0), 0)
-                : 0;
-
             const itensBody = [
                 [
                     { text: 'Item', bold: true, fontSize: 8, alignment: 'left' },
@@ -1365,8 +1388,7 @@ export class ControllerVendas {
                     { text: 'Dt. Pag.', bold: true, fontSize: 8, alignment: 'left' },
                     { text: 'Cobrador', bold: true, fontSize: 8, alignment: 'left' },
                     { text: 'Recibo', bold: true, fontSize: 8, alignment: 'left' },
-                    { text: 'Valor Pago', bold: true, fontSize: 8, alignment: 'right' },
-                    { text: 'Desc. Pgto', bold: true, fontSize: 8, alignment: 'right' }
+                    { text: 'Valor Pago', bold: true, fontSize: 8, alignment: 'right' }
                 ]
             ];
 
@@ -1377,14 +1399,12 @@ export class ControllerVendas {
                         { text: formatDateBR(item?.dt_pagamento), alignment: 'left' },
                         { text: String(item?.nom_cobrador || '-'), alignment: 'left' },
                         { text: String(item?.num_recibo || '-'), alignment: 'left' },
-                        { text: formatCurrencyBR(item?.vl_pagamento), alignment: 'right' },
-                        { text: formatCurrencyBR(item?.vl_desconto), alignment: 'right' }
+                        { text: formatCurrencyBR(item?.vl_pagamento), alignment: 'right' }
                     ]))
                 );
             } else {
                 pagamentosBody.push([
-                    { text: 'Sem pagamentos registrados para esta venda.', colSpan: 6, alignment: 'left' },
-                    {},
+                    { text: 'Sem pagamentos registrados para esta venda.', colSpan: 5, alignment: 'left' },
                     {},
                     {},
                     {},
@@ -1397,32 +1417,8 @@ export class ControllerVendas {
                 {},
                 {},
                 {},
-                { text: formatCurrencyBR(totalPagamentos), bold: true, alignment: 'right' },
-                { text: formatCurrencyBR(totalDescontosPag), bold: true, alignment: 'right' }
+                { text: formatCurrencyBR(totalPagamentos), bold: true, alignment: 'right' }
             ]);
-
-            const createInfoCard = (label, value) => ({
-                table: {
-                    widths: ['*'],
-                    body: [[{
-                        stack: [
-                            { text: String(label || ''), style: 'cardLabel' },
-                            { text: String(value || '-'), style: 'cardValue' }
-                        ],
-                        fillColor: '#f8fbff'
-                    }]]
-                },
-                layout: {
-                    hLineWidth: () => 0.9,
-                    vLineWidth: () => 0.9,
-                    hLineColor: () => '#d6e3f5',
-                    vLineColor: () => '#d6e3f5',
-                    paddingLeft: () => 8,
-                    paddingRight: () => 8,
-                    paddingTop: () => 7,
-                    paddingBottom: () => 7
-                }
-            });
 
             const document = {
                 pageSize: 'A4',
@@ -1432,18 +1428,12 @@ export class ControllerVendas {
                     font: 'Roboto',
                     fontSize: 8
                 },
-                header: () => ({
-                    margin: [18, 12, 18, 0],
-                    stack: [
-                        {
-                            columns: [
-                                { text: String(entidade?.nom_entidade || entidade_negocio), style: 'reportBrand' },
-                                { text: generatedAt, style: 'reportMeta', alignment: 'right' }
-                            ]
-                        },
-                        { text: 'RELATORIO DE VENDA', style: 'reportName' },
-                        { text: `Venda: ${idVendaMascara} | Cliente: ${nomeCliente}`, style: 'reportSubtitle' }
-                    ]
+                header: () => createReportHeader({
+                    title: 'RELATORIO DE VENDA',
+                    organizationName: String(entidade?.nom_entidade || entidade_negocio),
+                    description: 'Resumo detalhado da venda',
+                    subtitle: `Venda: ${idVendaMascara} | Cliente: ${nomeCliente}`,
+                    generatedAt
                 }),
                 content: [
                     {
@@ -1486,98 +1476,19 @@ export class ControllerVendas {
                         columnGap: 8,
                         margin: [0, 0, 0, 8]
                     },
-                    {
-                        text: 'Itens da venda',
-                        style: 'itemsTitle',
-                        margin: [0, 6, 0, 4]
-                    },
-                    {
-                        layout: {
-                            hLineWidth: (i) => (i === 1 ? 0.7 : 0.3),
-                            vLineWidth: () => 0,
-                            hLineColor: () => '#cfd4dc',
-                            paddingLeft: () => 2,
-                            paddingRight: () => 2,
-                            paddingTop: (i) => (i === 0 ? 4 : 2),
-                            paddingBottom: () => 2
-                        },
-                        table: {
-                            headerRows: 1,
-                            widths: ['8%', '14%', '36%', '10%', '16%', '16%'],
-                            body: itensBody
-                        }
-                    },
-                    {
-                        text: 'Pagamentos da venda',
-                        style: 'itemsTitle',
-                        margin: [0, 10, 0, 4]
-                    },
-                    {
-                        layout: {
-                            hLineWidth: (i) => (i === 1 ? 0.7 : 0.3),
-                            vLineWidth: () => 0,
-                            hLineColor: () => '#cfd4dc',
-                            paddingLeft: () => 2,
-                            paddingRight: () => 2,
-                            paddingTop: (i) => (i === 0 ? 4 : 2),
-                            paddingBottom: () => 2
-                        },
-                        table: {
-                            headerRows: 1,
-                            widths: ['10%', '14%', '32%', '14%', '15%', '15%'],
-                            body: pagamentosBody
-                        }
-                    }
+                    createSectionTitle('Itens da venda'),
+                    createStandardTable({
+                        widths: ['8%', '14%', '36%', '10%', '16%', '16%'],
+                        body: itensBody
+                    }),
+                    createSectionTitle('Pagamentos da venda', [0, 10, 0, 4]),
+                    createStandardTable({
+                        widths: ['10%', '16%', '40%', '14%', '20%'],
+                        body: pagamentosBody
+                    })
                 ],
-                footer(currentPage, pageCount) {
-                    return {
-                        margin: [18, 0, 18, 12],
-                        columns: [
-                            { text: `Emitido em ${generatedAt}`, style: 'footerMeta' },
-                            { text: `Pagina ${currentPage} de ${pageCount}`, alignment: 'right', style: 'footerMeta' }
-                        ]
-                    };
-                },
-                styles: {
-                    reportBrand: {
-                        fontSize: 8,
-                        bold: true,
-                        color: '#1f4f96'
-                    },
-                    reportMeta: {
-                        fontSize: 7,
-                        color: '#516174'
-                    },
-                    reportName: {
-                        fontSize: 12,
-                        bold: true,
-                        color: '#10213d',
-                        margin: [0, 6, 0, 2]
-                    },
-                    reportSubtitle: {
-                        fontSize: 8,
-                        color: '#4a5568'
-                    },
-                    cardLabel: {
-                        fontSize: 7,
-                        color: '#4a5568',
-                        margin: [0, 0, 0, 2]
-                    },
-                    cardValue: {
-                        bold: true,
-                        fontSize: 8,
-                        color: '#0f172a'
-                    },
-                    itemsTitle: {
-                        fontSize: 9,
-                        bold: true,
-                        color: '#1e293b'
-                    },
-                    footerMeta: {
-                        fontSize: 7,
-                        color: '#64748b'
-                    }
-                }
+                footer: createReportFooter(generatedAt),
+                styles: getReportStyles()
             };
 
             await sendPdfResponse(res, `relatorio-venda-${id_venda}.pdf`, document);
@@ -1948,7 +1859,7 @@ export class ControllerVendas {
         res.status(resdata.status).json(resdata);
     }
 
-    static async Excluir(req,res) {
+    static async ExcluirItemVenda(req,res) {
 
         const db = new Database('dbcred');
 
@@ -1987,7 +1898,7 @@ export class ControllerVendas {
              * para que o estoque seja atualizado corretamente, aumentando 
              * a quantidade disponível do produto.
              *******/
-            void await itensVendas.FindById(id_item,id_venda)
+            void await itensVendas.FindById(id_venda,id_item)
 
             if (itensVendas.found) {
 

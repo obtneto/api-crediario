@@ -14,7 +14,6 @@ import helmet from 'helmet';
 
 config({quiet:true,path:'../.env'});
 
-process.env.TZ ='-03:00';
 
 /*const options = {
     cert: fs.readFileSync('certicate/icpbrasilv5.crt')
@@ -48,6 +47,7 @@ const defaultAllowedOrigins = [
 ];
 
 const envAllowedOrigins = String(process.env.CORS_ORIGIN || '');
+
 const allowedOrigins = String(envAllowedOrigins || defaultAllowedOrigins.join(','))
     .split(',')
     .map((item) => item.trim())

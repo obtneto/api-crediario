@@ -62,7 +62,7 @@ export default class ItensVendas {
         
     }
 
-    async FindById(id,id_venda) {
+    async FindById(id_venda,id) {
 
         const query = `SELECT * FROM ${this.#tb_name}
         WHERE entidade_negocio = :entidade_negocio AND id_venda = :id_venda AND id = :id`;
