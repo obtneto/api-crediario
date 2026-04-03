@@ -18,7 +18,8 @@ export default class Clientes {
         cep_cliente: '',
         lat_cliente: '',
         lon_cliente: '',
-        dat_cadastro: ''
+        dat_cadastro: '',
+        com_restricao_credito: null
     }
 
     constructor(connection) {
@@ -72,6 +73,9 @@ export default class Clientes {
     set lon_cliente(lon_cliente) {this.#field.lon_cliente = lon_cliente}
     get lon_cliente() {return this.#field.lon_cliente}
 
+    set com_restricao_credito(com_restricao_credito) {this.#field.com_restricao_credito = Boolean(com_restricao_credito)}
+    get com_restricao_credito() {return Boolean(this.#field.com_restricao_credito)}
+
     async ExecuteQuery(query, params = {}) {
         
         const rows = await this.#conn.query(query, params);
@@ -101,6 +105,7 @@ export default class Clientes {
             this.lat_cliente = rows.lat_cliente;
             this.lon_cliente = rows.lon_cliente;
             this.dat_cadastro = rows.dat_cadastro;
+            this.com_restricao_credito = rows.com_restricao_credito;
 
             this.#found = true;
         } else {
@@ -132,6 +137,7 @@ export default class Clientes {
             this.lat_cliente = rows.lat_cliente;
             this.lon_cliente = rows.lon_cliente;
             this.dat_cadastro = rows.dat_cadastro;
+            this.com_restricao_credito = rows.com_restricao_credito;
 
             this.#found = true;
         } else {
@@ -147,19 +153,24 @@ export default class Clientes {
         let query;
 
         if (this.#found) {
-            query = `UPDATE ${this.#tb_name} SET cpf_cliente = :cpf_cliente, nom_cliente = :nom_cliente,nom_usual = :nom_usual,
-            cel_cliente = :cel_cliente, end_cliente = :end_cliente, num_cliente = :num_cliente, bai_cliente = :bai_cliente,
-            cid_cliente = :cid_cliente, uf_cliente = :uf_cliente, cep_cliente = :cep_cliente,
-            lat_cliente = :lat_cliente, lon_cliente = :lon_cliente, dat_cadastro = :dat_cadastro
-            WHERE id = :id`;
+
+            query = `UPDATE ${this.#tb_name} SET cpf_cliente = :cpf_cliente, nom_cliente = :nom_cliente,
+                     nom_usual = :nom_usual, cel_cliente = :cel_cliente, end_cliente = :end_cliente, 
+                     num_cliente = :num_cliente, bai_cliente = :bai_cliente, cid_cliente = :cid_cliente, 
+                     uf_cliente = :uf_cliente, cep_cliente = :cep_cliente, lat_cliente = :lat_cliente, 
+                     lon_cliente = :lon_cliente, dat_cadastro = :dat_cadastro, com_restricao_credito = :com_restricao_credito 
+                     WHERE id = :id`;
+                     
         } else {
 
             this.id = await this.#newId();
 
-            query = `INSERT INTO ${this.#tb_name} SET cpf_cliente = :cpf_cliente, nom_cliente = :nom_cliente,nom_usual = :nom_usual,
-            cel_cliente = :cel_cliente, end_cliente = :end_cliente, num_cliente = :num_cliente, bai_cliente = :bai_cliente,
-            cid_cliente = :cid_cliente, uf_cliente = :uf_cliente, cep_cliente = :cep_cliente,
-            lat_cliente = :lat_cliente, lon_cliente = :lon_cliente, id = :id, dat_cadastro = :dat_cadastro`;
+            query = `INSERT INTO ${this.#tb_name} SET cpf_cliente = :cpf_cliente, nom_cliente = :nom_cliente,
+                     nom_usual = :nom_usual, cel_cliente = :cel_cliente, end_cliente = :end_cliente, 
+                     num_cliente = :num_cliente, bai_cliente = :bai_cliente, cid_cliente = :cid_cliente, 
+                     uf_cliente = :uf_cliente, cep_cliente = :cep_cliente,com_restricao_credito :com_restricao_credito,
+                     lat_cliente = :lat_cliente, lon_cliente = :lon_cliente, id = :id, dat_cadastro = :dat_cadastro`;
+
         }
 
         return await this.#conn.query(query,this.#field);

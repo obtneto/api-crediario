@@ -9,7 +9,7 @@ export default class RestrincaoCredito {
         id: 0,
         dt_restrincao: '',
         cpf_cliente: null,
-        com_restrincao: true,
+        com_restricao: true,
         entidade_negocio: ''
     }
 
@@ -39,11 +39,10 @@ export default class RestrincaoCredito {
     set cpf_cliente(cpf_cliente) {this.#field.cpf_cliente = String(cpf_cliente)}
     get cpf_cliente() {return String(this.#field.cpf_cliente)}
 
-    set com_restrincao(com_restrincao) { this.#field.com_restrincao = Boolean(com_restrincao)}
-    get com_restrincao() {return Boolean(this.#field.com_restrincao)}
+    set com_restricao(com_restricao) { this.#field.com_restricao = Boolean(com_restricao)}
+    get com_restricao() {return Boolean(this.#field.com_restricao)}
 
     get entidade_negocio() {return Number(this.#field.entidade_negocio)}
-
 
     async ExecuteQuery(query, params = {}) {
         
@@ -63,7 +62,7 @@ export default class RestrincaoCredito {
             this.id = Number(rows.id);
             this.dt_restrincao = Date(rows.nom_rota);
             this.cpf_cliente = String(rows.cpf_cliente);
-            this.com_restrincao = Boolean(rows.com_restrincao);
+            this.com_restricao = Boolean(rows.com_restricao);
             this.#found = true;
         } else {
             this.#found = false;
@@ -78,14 +77,14 @@ export default class RestrincaoCredito {
         let query;
 
         if (this.#found) {
-            query = `UPDATE ${this.#tb_name} SET dt_restrincao = :dt_restrincao, cpf_cliente = :cpf_cliente,
-                     com_restrincao = :restrincao
+            query = `UPDATE ${this.#tb_name} SET dt_restricao = :dt_restricao, cpf_cliente = :cpf_cliente,
+                     com_restricao = :restricao
                      WHERE entidade_negocio = :entidade_negocio AND id = :id`;
         } else {
             this.#field.id = await this.#newId();
 
             query = `INSERT INTO ${this.#tb_name} SET dt_restrincao = :dt_restrincao, cpf_cliente = :cpf_cliente,
-                     com_restrincao = :com_restrincao,entidade_negocio = :entidade_negocio, id = :id`;
+                     com_restricao = :com_restricao,entidade_negocio = :entidade_negocio, id = :id`;
         }
 
         return await this.#conn.query(query,this.#field);
