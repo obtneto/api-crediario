@@ -1554,7 +1554,23 @@ export class ControllerVendas {
             const rows = await vendas.ExecuteQuery(query, { entidade_negocio, id_venda: id });
 
             resdata.data.vendas = Array.isArray(rows) && rows[0] ? rows[0] : {};
-            resdata.data.itens = await itens.FindByVenda(id);
+
+            const queryItens = `SELECT i.*,
+                                       COALESCE(p.nom_produto, '') AS nom_produto,
+                                       COALESCE(p.mar_produto, '') AS mar_produto,
+                                       COALESCE(p.prc_vista, 0) AS prc_vista,
+                                       COALESCE(p.prc_prazo, 0) AS prc_prazo,
+                                       COALESCE(i.vl_unit, 0) AS vlr_unitario,
+                                       COALESCE(i.forma_pagamnto, '') AS forma_pagamento
+                                FROM tb_itens_vendas i
+                                LEFT JOIN tb_produtos p
+                                       ON p.entidade_negocio = i.entidade_negocio
+                                      AND p.id = i.id_produto
+                                WHERE i.entidade_negocio = :entidade_negocio
+                                  AND i.id_venda = :id_venda
+                                ORDER BY i.id_produto ASC, i.id ASC`;
+
+            resdata.data.itens = await itens.ExecuteQuery(queryItens, { entidade_negocio, id_venda: id });
             
         } catch (error) {
              
