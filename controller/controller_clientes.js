@@ -339,4 +339,25 @@ export class ControllerClientes {
         res.status(resdata.status).json(resdata);
 
     }
+
+    static async EditarRestricao(req,res){
+
+        const db = new Database('dbcred');
+
+        const resdata = {
+            err: 0,
+            msg: '',
+            status: 200,
+            data: []
+        }
+
+        try {
+
+            void await db.Connect();
+            
+        } catch (error) {
+            
+        }
+
+    }
 }
