@@ -2,13 +2,14 @@ export default class RestricaoCredito {
 
     #conn = null;
     #found = null;
-    #tb_name = 'tb_restrincao_credito';
+    #tb_name = 'tb_restricao_credito';
     #entidade_negocio = 0;
 
     #field = {
         id: 0,
-        dt_restrincao: '',
+        dt_restricao: '',
         cpf_cliente: null,
+        id_venda : null,
         com_restricao: true,
         entidade_negocio: ''
     }
@@ -33,11 +34,22 @@ export default class RestricaoCredito {
     set id(id) {this.#field.id = Number(id)}
     get id() {return Number(this.#field.id)}
 
-    set dt_restrincao(dt_restrincao) {this.#field.dt_restrincao = Date(dt_restrincao)}
-    get dt_restrincao() {return Date(this.#field.dt_restrincao)}
+    set dt_restricao(dt_restricao) {this.#field.dt_restricao = dt_restricao}
+    get dt_restricao() {return this.#field.dt_restricao}
 
     set cpf_cliente(cpf_cliente) {this.#field.cpf_cliente = String(cpf_cliente)}
     get cpf_cliente() {return String(this.#field.cpf_cliente)}
+
+    set id_venda(id_venda) {
+        if (id_venda === null || id_venda === undefined) {
+            this.#field.id_venda = null;
+            return;
+        }
+
+        const valor = String(id_venda).trim();
+        this.#field.id_venda = valor && valor.toLowerCase() !== 'null' ? valor : null;
+    }
+    get id_venda() {return this.#field.id_venda}
 
     set com_restricao(com_restricao) { this.#field.com_restricao = Boolean(com_restricao)}
     get com_restricao() {return Boolean(this.#field.com_restricao)}
@@ -60,8 +72,9 @@ export default class RestricaoCredito {
 
         if (rows) {
             this.id = Number(rows.id);
-            this.dt_restrincao = Date(rows.nom_rota);
+            this.dt_restricao = Date(rows.dt_restricao);
             this.cpf_cliente = String(rows.cpf_cliente);
+            this.id_venda = rows.id_venda;
             this.com_restricao = Boolean(rows.com_restricao);
             this.#found = true;
         } else {
@@ -78,13 +91,13 @@ export default class RestricaoCredito {
 
         if (this.#found) {
             query = `UPDATE ${this.#tb_name} SET dt_restricao = :dt_restricao, cpf_cliente = :cpf_cliente,
-                     com_restricao = :restricao
+                     com_restricao = :restricao, id_venda = :id_venda
                      WHERE entidade_negocio = :entidade_negocio AND id = :id`;
         } else {
             this.#field.id = await this.#newId();
 
-            query = `INSERT INTO ${this.#tb_name} SET dt_restrincao = :dt_restrincao, cpf_cliente = :cpf_cliente,
-                     com_restricao = :com_restricao,entidade_negocio = :entidade_negocio, id = :id`;
+            query = `INSERT INTO ${this.#tb_name} SET dt_restricao = :dt_restricao, cpf_cliente = :cpf_cliente,
+                     com_restricao = :com_restricao, id_venda = :id_venda, entidade_negocio = :entidade_negocio, id = :id`;
         }
 
         return await this.#conn.query(query,this.#field);

@@ -599,6 +599,7 @@ export class ControllerCobranca {
                 vendas.dia_pagam = prox_dia_pagamento;
                 vendas.val_desconto += parseFloat(vl_desconto);
                 vendas.ult_dat_pagamto = dt_pagamento;
+                vendas.situacao = 0;
 
                 if ( ( parseFloat(rows.saldo_pagar) - parseFloat(vl_desconto) ) - parseFloat(vl_pagamento) == 0) {
                     vendas.situacao = 9;
@@ -613,6 +614,11 @@ export class ControllerCobranca {
 
                 void await restricao.Excluir();
 
+            } else {
+                
+                const error = new Error('Numero da Venda não encontrada.');
+                error.statusCode = 404;
+                throw error;
             }
 
             void await db.Commit();
@@ -623,6 +629,8 @@ export class ControllerCobranca {
             resdata.data.saldo_pagar = parseFloat(rows.saldo_pagar);
 
         } catch (error) {
+
+            void await db.RollBack();
 
             resdata.err = Number(error.statusCode || 500);
             resdata.msg = error.message;

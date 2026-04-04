@@ -68,6 +68,8 @@ export class ControllerClientes {
             
         } catch (error) {
 
+            void await db.RollBack();
+
             resdata.err = Number(error.statusCode || 500);
             resdata.msg = error.message;
             resdata.status = Number(error.statusCode || 500);
@@ -105,6 +107,8 @@ export class ControllerClientes {
             resdata.data = rows;
             
         } catch (error) {
+
+            void await db.RollBack();
 
             resdata.err = Number(error.statusCode || 500);
             resdata.msg = error.message;
@@ -249,6 +253,8 @@ export class ControllerClientes {
             
         } catch (error) {
 
+            void await db.RollBack();
+
             resdata.err = Number(error.statusCode || 500);
             resdata.msg = error.message;
             resdata.status = Number(error.statusCode || 500);
@@ -296,7 +302,7 @@ export class ControllerClientes {
             const whereSql = filtroAtivo ? 'WHERE c.nom_cliente LIKE :pesq' : '';
             const queryParams = filtroAtivo ? { pesq: `%${pesq}%` } : {};
 
-            let query = `SELECT r.id,r.dt_restricao, r.id_venda, c.cpf_cliente, c.nom_cliente, c.nom_usual, c.cel_cliente, 
+            let query = `SELECT r.id,r.dt_restricao, r.id_venda, r.com_restricao, c.cpf_cliente, c.nom_cliente, c.nom_usual, c.cel_cliente, 
                          c.end_cliente, c.num_cliente,c.bai_cliente, c.cid_cliente, c.uf_cliente, c.cep_cliente
                          FROM tb_restricao_credito r
                          LEFT JOIN tb_clientes c ON c.cpf_cliente = r.cpf_cliente
@@ -354,10 +360,173 @@ export class ControllerClientes {
         try {
 
             void await db.Connect();
+
+            const entidade_negocio = obterEntidadeNegocio(req);
+            const cpf = String(req.params.cpf)
+
+            if (!cpf || !CheckCPF(cpf)) {
+                const error = new Error("CPF do cliente invalido.");
+                error.statusCode = 403;
+                throw error; 
+            }
+
+            const clientes = new Clientes(db.connection,entidade_negocio);
+
+            void await clientes.FindByCpf(cpf);
+
+            if (!clientes.found) {
+                const error = new Error("Cliente não encontado.");
+                error.statusCode = 404;
+                throw error;
+            }
+
+            resdata.data = {
+                id: clientes.id,
+                nom_cliente: clientes.nom_cliente,
+                nome_usual: clientes.nom_usual,
+                end_cliente: clientes.end_cliente,
+                bai_cliente: clientes.bai_cliente,
+                cid_cliente: clientes.cid_cliente,
+                num_cliente: clientes.num_cliente
+            };
+
             
         } catch (error) {
-            
+
+            resdata.err = Number(error.statusCode || 500);
+            resdata.msg = error.message;
+            resdata.status = Number(error.statusCode || 500);
+
+             if (resdata.err == 500) GravarLog(`Erro ao editar cliente: ${error.stack}`);
         }
+
+        void await db.Close();
+
+        res.status(resdata.status).json(resdata);
+
+    }
+
+    static async SalvarRestricao(req,res) {
+
+        const db = new Database('dbcred');
+
+        const resdata = {
+            err: 0,
+            msg: '',
+            status: 200,
+            data: []
+        }
+
+        try {
+            
+            void await db.Connect();
+
+            void await db.Begin();
+
+            const entidade_negocio = obterEntidadeNegocio(req);
+            const cpf = String(req.body.cpf);
+            const date = req.body.date;
+
+            if (!cpf || !CheckCPF(cpf)) {
+                const error = new Error('CPF invalido.');
+                error.statusCode = 403;
+                throw error;
+            }
+
+            const restricao = new RestricaoCredito(db.connection,entidade_negocio);
+
+            void await restricao.FindByCpf(cpf);
+
+            if (restricao.found) {
+                const error = new Error('Ja existe uma restrição de cpf.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            restricao.dt_restricao = date;
+            restricao.cpf_cliente = cpf;
+            restricao.com_restricao = false;
+
+            void await restricao.Save();
+
+            void await db.Commit();
+
+            resdata.msg = "Restrição Salva com sucesso."
+
+        } catch (error) {
+
+            void await db.RollBack();
+
+            resdata.err = Number(error.statusCode || 500);
+            resdata.msg = error.message;
+            resdata.status = Number(error.statusCode || 500);
+
+            if (resdata.err == 500) GravarLog(`Erro ao editar cliente: ${error.stack}`);
+        }
+
+        void await db.Close();
+
+        res.status(resdata.status).json(resdata);
+
+    }
+
+    static async ExcluirRestricao(req,res) {
+
+        const db = new Database('dbcred');
+
+        const resdata = {
+            err: 0,
+            msg: '',
+            status: 200,
+            data: []
+        }
+
+        try {
+
+             void await db.Connect();
+
+            void await db.Begin();
+
+            const entidade_negocio = obterEntidadeNegocio(req);
+            const cpf = String(req.params.cpf);
+
+            if (!cpf || !CheckCPF(cpf)) {
+                const error = new Error('CPF invalido.');
+                error.statusCode = 403;
+                throw error;
+            }
+
+            const restricao = new RestricaoCredito(db.connection,entidade_negocio);
+
+            void await restricao.FindByCpf(cpf);
+
+            if (String(restricao.id_venda || '').trim() !== '') {
+                const error = new Error('Restrição gerada automaticamente pelo sistema, não pode ser excluir.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            void await restricao.Excluir();
+
+            void await db.Commit();
+
+            resdata.msg = 'Restricao excluida com sucesso.';
+
+            
+        } catch (error) {
+
+            void await db.RollBack();
+
+            resdata.err = Number(error.statusCode || 500);
+            resdata.msg = error.message;
+            resdata.status = Number(error.statusCode || 500);
+
+            if (resdata.err == 500) GravarLog(`Erro ao editar cliente: ${error.stack}`);
+        }
+
+        void await db.Close();
+
+        res.status(resdata.status).json(resdata);
 
     }
 }
