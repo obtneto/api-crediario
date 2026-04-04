@@ -1,7 +1,9 @@
 import Database from '../connections/dbconn.js';
 import Clientes from '../model/dao_clientes.js';
+import RestricaoCredito from '../model/dao_restricao_credito.js';
 import GravarLog from '../utils/GravarLog.js'; 
 import CheckCPF from '../utils/DocumentValidator.js';
+import { obterEntidadeNegocio } from '../utils/CheckEntidades.js';
 
 export class ControllerClientes {
 
@@ -92,7 +94,7 @@ export class ControllerClientes {
         
         try {
 
-            const cpf = req.params.cpf;
+            const cpf =  String(req.params.cpf).replace(/\D/g, '');
 
             void await db.Connect();
 
@@ -108,7 +110,7 @@ export class ControllerClientes {
             resdata.msg = error.message;
             resdata.status = Number(error.statusCode || 500);
 
-             if (resdata.err == 500) GravarLog(`Erro ao editar cliente: ${error.message}`);
+             if (resdata.err == 500) GravarLog(`Erro ao editar cliente: ${error.stack}`);
         }
 
         void await db.Close();
@@ -192,6 +194,144 @@ export class ControllerClientes {
             resdata.status = Number(error.statusCode || 500);
 
             if (resdata.err == 500) GravarLog(`Erro ao salvar cliente: ${error.stack}`);
+        }
+
+        void await db.Close();
+
+        res.status(resdata.status).json(resdata);
+
+    }
+
+    static async RetiraRestricao(req,res) {
+
+        const db = new Database('dbcred');
+
+        const resdata = {
+            err: 0,
+            msg: '',
+            status: 200,
+            data: []
+        }
+
+        try {
+
+            void await db.Connect();
+
+            void await db.Begin();
+
+            const entidade_negocio = obterEntidadeNegocio(req);
+            const cpf =  String(req.params.cpf).replace(/\D/g, '');
+
+            if (!cpf || !CheckCPF(cpf)) {
+                const error = new Error('CPF do cliente invalido.');
+                error.statusCode = 403;
+                throw error; 
+            }
+
+            const restricao = new RestricaoCredito(db.connection,entidade_negocio);
+
+            void await restricao.FindByCpf(cpf);
+
+            if (!restricao.found) {
+                const error = new Error("Cliente não encontrado.");
+                error.statusCode = 404;
+                throw error;
+            }
+
+            restricao.com_restricao = false;
+
+            void await restricao.Salvar();
+
+            void await db.Commit();
+
+            resdata.msg = "Restrição de credito retida.";
+
+            
+        } catch (error) {
+
+            resdata.err = Number(error.statusCode || 500);
+            resdata.msg = error.message;
+            resdata.status = Number(error.statusCode || 500);
+
+             if (resdata.err == 500) GravarLog(`Erro ao Retirae Restrição de Credito: ${error.staack}`);
+        }
+
+        void await db.Close();
+
+        res.status(resdata.status).json(resdata);
+
+    }
+
+    static async ListarRestricoes(req,res) {
+
+        const db = new Database('dbcred');
+
+        const resdata = {
+            err: 0,
+            msg: '',
+            status: 200,
+            data: {
+                restricoes: [],
+                paginacao: {
+                    page: 1,
+                    limit: 50,
+                    total: 0,
+                    total_pages: 0
+                }
+            }
+        }
+
+        try {
+
+            void await db.Connect();
+
+            const entidade_negocio = obterEntidadeNegocio(req);
+            const pesq = String(req.params.pesq || '*').trim();
+            const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+            const limit = Math.min(200, Math.max(1, parseInt(req.query.limit, 10) || 50));
+            const offset = (page - 1) * limit;
+
+            const restricoes = new RestricaoCredito(db.connection,entidade_negocio);
+            const filtroAtivo = pesq !== '*';
+            const whereSql = filtroAtivo ? 'WHERE c.nom_cliente LIKE :pesq' : '';
+            const queryParams = filtroAtivo ? { pesq: `%${pesq}%` } : {};
+
+            let query = `SELECT r.id,r.dt_restricao, r.id_venda, c.cpf_cliente, c.nom_cliente, c.nom_usual, c.cel_cliente, 
+                         c.end_cliente, c.num_cliente,c.bai_cliente, c.cid_cliente, c.uf_cliente, c.cep_cliente
+                         FROM tb_restricao_credito r
+                         LEFT JOIN tb_clientes c ON c.cpf_cliente = r.cpf_cliente
+                         ${whereSql}
+                         ORDER BY c.nom_cliente ASC, c.id DESC
+                         LIMIT :limit OFFSET :offset`;
+
+            resdata.data.restricoes = await restricoes.ExecuteQuery(query, { ...queryParams, limit, offset });
+
+            query = `SELECT COUNT(*) AS total
+                     FROM tb_restricao_credito r
+                     LEFT JOIN tb_clientes c ON c.cpf_cliente = r.cpf_cliente
+                     ${whereSql}`;
+
+            const [rows] = await restricoes.ExecuteQuery(query, queryParams);
+            const totalRaw = rows?.total ?? 0;
+            const total = typeof totalRaw === 'bigint'
+                ? Number(totalRaw)
+                : Number(totalRaw || 0);
+
+            resdata.data.paginacao = {
+                page,
+                limit,
+                total,
+                total_pages: total > 0 ? Math.ceil(total / limit) : 0  
+            };
+            
+            
+        } catch (error) {
+
+            resdata.err = Number(error.statusCode || 500);
+            resdata.msg = error.message;
+            resdata.status = Number(error.statusCode || 500);
+
+            if (resdata.err == 500) GravarLog(`Erro ao listar restricoes de credito: ${error.stack}`);
         }
 
         void await db.Close();

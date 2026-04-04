@@ -7,5 +7,6 @@ router.use(criarMiddlewareSessao());
 
 router.get('/listar_clientes/:pesq',ControllerClientes.Listar);
 router.post('/salvar_cliente',ControllerClientes.Salvar);
+router.get('/listar_restricoes/:pesq',ControllerClientes.ListarRestricoes)
 
 export default router;

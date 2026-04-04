@@ -1,4 +1,4 @@
-export default class RestrincaoCredito {
+export default class RestricaoCredito {
 
     #conn = null;
     #found = null;

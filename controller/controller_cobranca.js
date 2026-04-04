@@ -2,7 +2,8 @@ import Database from '../connections/dbconn.js';
 import GravarLog from '../utils/GravarLog.js';
 import {obterEntidadeNegocio} from '../utils/CheckEntidades.js';
 import Entidades from '../model/dao_entidades.js';
-import TiposPagamentos from '../model/dao_tipos_pagamentos.js'
+import TiposPagamentos from '../model/dao_tipos_pagamentos.js';
+import RestricaoCredito from '../model/dao_restricao_credito.js';
 import Vendas from '../model/dao_vendas.js';
 import Pagamentos from '../model/dao_pagamentos.js';
 import {buildTableDocument, formatCurrencyBR, formatDateBR, sendPdfResponse} from '../utils/PdfReport.js';
@@ -544,6 +545,7 @@ export class ControllerCobranca {
             const vendas = new Vendas(db.connection, entidade_negocio);
             const tipos = new TiposPagamentos(db.connection,entidade_negocio);
             const entidades = new Entidades(db.connection);
+            const restricao = new RestricaoCredito(db.connection,entidade_negocio);
             
             const query = `SELECT val_tot_venda,
             (COALESCE(val_tot_venda, 0) - COALESCE(val_desconto, 0)) - SUM(COALESCE(vl_pagamento, 0)) AS saldo_pagar
@@ -580,6 +582,9 @@ export class ControllerCobranca {
 
             void await pagamentos.Save();
 
+            /*********************************************************
+             * Atualiza dados da Venda
+            **********************************************************/
             void await vendas.FindById(id_venda);
 
             if(vendas.found) {
@@ -600,6 +605,14 @@ export class ControllerCobranca {
                 }
                 
                 void await vendas.Save();
+
+                /*****************************************************
+                 *  Retira a Restrição de Credito
+                ******************************************************/
+                void await restricao.FindByCpf(vendas.cpf_cliente);
+
+                void await restricao.Excluir();
+
             }
 
             void await db.Commit();

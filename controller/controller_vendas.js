@@ -22,6 +22,7 @@ import {
     getReportStyles,
     sendPdfResponse
 } from '../utils/PdfReport.js';
+
 import isValidCpf from '../utils/DocumentValidator.js';
 
 const formatMaskIdDistrib = (value) => {
@@ -2249,3 +2250,4 @@ export class ControllerVendas {
     }
 
 }
+
