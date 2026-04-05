@@ -12,5 +12,6 @@ router.get('/inserir_restricao/:cpf',ControllerClientes.EditarRestricao);
 router.post('/salvar_restricao',ControllerClientes.SalvarRestricao);
 router.get('/excluir_restricao/:cpf',ControllerClientes.ExcluirRestricao);
 router.get('/existe_restricao/:cpf',ControllerClientes.ExisteRestricao);
+router.get('/retira_restricao/:cpf',ControllerClientes.RetiraRestricao)
 
 export default router;

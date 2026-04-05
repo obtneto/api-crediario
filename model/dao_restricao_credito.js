@@ -72,7 +72,7 @@ export default class RestricaoCredito {
 
         if (rows) {
             this.id = Number(rows.id);
-            this.dt_restricao = Date(rows.dt_restricao);
+            this.dt_restricao = rows.dt_restricao;
             this.cpf_cliente = String(rows.cpf_cliente);
             this.id_venda = rows.id_venda;
             this.com_restricao = Boolean(rows.com_restricao);
@@ -88,6 +88,8 @@ export default class RestricaoCredito {
     async Save() {
 
         let query;
+
+        console.log(this.#field)
 
         if (this.#found) {
             query = `UPDATE ${this.#tb_name} SET dt_restricao = :dt_restricao, cpf_cliente = :cpf_cliente,

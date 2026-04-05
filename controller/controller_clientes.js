@@ -233,11 +233,13 @@ export class ControllerClientes {
             }
 
             const restricao = new RestricaoCredito(db.connection,entidade_negocio);
+            const clientes = new Clientes(db.connection);
 
+            /***********************************************************************/
             void await restricao.FindByCpf(cpf);
 
             if (!restricao.found) {
-                const error = new Error("Cliente não encontrado.");
+                const error = new Error("Restrição do Cliente não encontrado.");
                 error.statusCode = 404;
                 throw error;
             }
@@ -245,6 +247,23 @@ export class ControllerClientes {
             restricao.com_restricao = false;
 
             void await restricao.Save();
+
+            /***********************************************************************/
+            if (restricao.id_venda) {
+
+                void await clientes.FindByCpf(cpf);
+
+                if (!clientes.found) {
+                    const error = new Error("Cliente não encontrado.");
+                    error.statusCode = 404;
+                    throw error;
+                }
+
+                clientes.com_restricao_credito = false
+
+                void await clientes.Save();
+            }
+            /***********************************************************************/
 
             void await db.Commit();
 
@@ -365,7 +384,9 @@ export class ControllerClientes {
             err: 0,
             msg: '',
             status: 200,
-            data: []
+            data: {
+                com_restricao: null
+            }
         }
 
         try {
@@ -381,27 +402,16 @@ export class ControllerClientes {
                 throw error; 
             }
 
-            const query = `SELECT r.id, r.dt_restricao, r.id_venda, r.com_restricao,
-                                  c.cpf_cliente, c.nom_cliente, c.nom_usual, c.end_cliente,
-                                  c.bai_cliente, c.cid_cliente, c.num_cliente,
-                                  v.dt_venda, v.ult_dat_pagamto
-                           FROM tb_restricao_credito r
-                           LEFT JOIN tb_clientes c ON BINARY c.cpf_cliente = BINARY r.cpf_cliente
-                           LEFT JOIN tb_vendas v ON v.entidade_negocio = r.entidade_negocio
-                                                 AND r.id_venda IS NOT NULL
-                                                 AND r.id_venda <> ''
-                                                 AND v.id = CAST(r.id_venda AS UNSIGNED)
-                           WHERE r.cpf_cliente = :cpf_cliente
-                             AND r.entidade_negocio = :entidade_negocio
-                             AND r.com_restricao = 1
-                           ORDER BY r.dt_restricao DESC, r.id DESC`;
+            const query = `SELECT cpf_cliente FROM tb_clientes
+                           WHERE cpf_cliente = :cpf_cliente AND com_restricao_credito = 1
+                           LIMIT 1`;
 
             const rows = await db.connection.query(query,{
                 cpf_cliente: cpf,
                 entidade_negocio,
             });
 
-            resdata.data = rows;
+            resdata.data.com_restricao = rows.length > 0 ? true : false ;
             
         } catch (error) {
 
