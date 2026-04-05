@@ -91,7 +91,7 @@ export default class RestricaoCredito {
 
         if (this.#found) {
             query = `UPDATE ${this.#tb_name} SET dt_restricao = :dt_restricao, cpf_cliente = :cpf_cliente,
-                     com_restricao = :restricao, id_venda = :id_venda
+                     com_restricao = :com_restricao, id_venda = :id_venda
                      WHERE entidade_negocio = :entidade_negocio AND id = :id`;
         } else {
             this.#field.id = await this.#newId();

@@ -9,6 +9,7 @@ import Entidades from '../model/dao_entidades.js';
 import Clientes from '../model/dao_clientes.js';
 import Cobradores from '../model/dao_cobradores.js';
 import Rotas from '../model/dao_rotas.js';
+import RestricaoCredito from '../model/dao_restricao_credito.js';
 import GravarLog from '../utils/GravarLog.js';
 import {obterEntidadeNegocio} from '../utils/CheckEntidades.js';
 import {
@@ -1674,6 +1675,7 @@ export class ControllerVendas {
             const itensVendas = new ItensVendas(db.connection, entidade_negocio);
             const itensDistrib = new ItensDistribuicoes(db.connection,entidade_negocio);
             const vendas = new Vendas(db.connection, entidade_negocio);
+            const restricao = new RestricaoCredito(db.connection,entidade_negocio);
             const entidades = new Entidades(db.connection);
             const clientes = new Clientes(db.connection);
 
@@ -1719,6 +1721,17 @@ export class ControllerVendas {
             vendas.val_desconto = val_desconto;
 
             void await vendas.Save();
+
+            /***************************************************************************
+             * Verifica se o Cliente tem restricao de credito
+             *****************/
+            void await restricao.FindByCpf(cpf_cliente);
+
+            if (restricao.found && restricao.com_restricao == 1) {
+                const error = new Error('Cliente com restrição de credito.');
+                error.statusCode = 403;
+                throw error;
+            }
 
             /***************************************************************************
              * Salva os itens da venda e atualiza o estoque reservado.

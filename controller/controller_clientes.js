@@ -244,7 +244,7 @@ export class ControllerClientes {
 
             restricao.com_restricao = false;
 
-            void await restricao.Salvar();
+            void await restricao.Save();
 
             void await db.Commit();
 
@@ -259,12 +259,23 @@ export class ControllerClientes {
             resdata.msg = error.message;
             resdata.status = Number(error.statusCode || 500);
 
-             if (resdata.err == 500) GravarLog(`Erro ao Retirae Restrição de Credito: ${error.staack}`);
+             if (resdata.err == 500) GravarLog(`Erro ao Retirae Restrição de Credito: ${error.stack}`);
         }
 
         void await db.Close();
 
         res.status(resdata.status).json(resdata);
+
+    }
+
+    static async EditarRestricao(req,res) {
+
+        return res.status(410).json({
+            err: 410,
+            msg: 'Rota obsoleta. Utilize /salvar_restricao ou /excluir_restricao/:cpf.',
+            status: 410,
+            data: []
+        });
 
     }
 
@@ -346,7 +357,7 @@ export class ControllerClientes {
 
     }
 
-    static async EditarRestricao(req,res){
+    static async ExisteRestricao(req,res){
 
         const db = new Database('dbcred');
 
@@ -362,7 +373,7 @@ export class ControllerClientes {
             void await db.Connect();
 
             const entidade_negocio = obterEntidadeNegocio(req);
-            const cpf = String(req.params.cpf)
+            const cpf = String(req.params.cpf || '').replace(/\D/g, '');
 
             if (!cpf || !CheckCPF(cpf)) {
                 const error = new Error("CPF do cliente invalido.");
@@ -370,26 +381,27 @@ export class ControllerClientes {
                 throw error; 
             }
 
-            const clientes = new Clientes(db.connection,entidade_negocio);
+            const query = `SELECT r.id, r.dt_restricao, r.id_venda, r.com_restricao,
+                                  c.cpf_cliente, c.nom_cliente, c.nom_usual, c.end_cliente,
+                                  c.bai_cliente, c.cid_cliente, c.num_cliente,
+                                  v.dt_venda, v.ult_dat_pagamto
+                           FROM tb_restricao_credito r
+                           LEFT JOIN tb_clientes c ON BINARY c.cpf_cliente = BINARY r.cpf_cliente
+                           LEFT JOIN tb_vendas v ON v.entidade_negocio = r.entidade_negocio
+                                                 AND r.id_venda IS NOT NULL
+                                                 AND r.id_venda <> ''
+                                                 AND v.id = CAST(r.id_venda AS UNSIGNED)
+                           WHERE r.cpf_cliente = :cpf_cliente
+                             AND r.entidade_negocio = :entidade_negocio
+                             AND r.com_restricao = 1
+                           ORDER BY r.dt_restricao DESC, r.id DESC`;
 
-            void await clientes.FindByCpf(cpf);
+            const rows = await db.connection.query(query,{
+                cpf_cliente: cpf,
+                entidade_negocio,
+            });
 
-            if (!clientes.found) {
-                const error = new Error("Cliente não encontado.");
-                error.statusCode = 404;
-                throw error;
-            }
-
-            resdata.data = {
-                id: clientes.id,
-                nom_cliente: clientes.nom_cliente,
-                nome_usual: clientes.nom_usual,
-                end_cliente: clientes.end_cliente,
-                bai_cliente: clientes.bai_cliente,
-                cid_cliente: clientes.cid_cliente,
-                num_cliente: clientes.num_cliente
-            };
-
+            resdata.data = rows;
             
         } catch (error) {
 
@@ -397,7 +409,7 @@ export class ControllerClientes {
             resdata.msg = error.message;
             resdata.status = Number(error.statusCode || 500);
 
-             if (resdata.err == 500) GravarLog(`Erro ao editar cliente: ${error.stack}`);
+            if (resdata.err == 500) GravarLog(`Erro ao editar cliente: ${error.stack}`);
         }
 
         void await db.Close();
@@ -445,7 +457,7 @@ export class ControllerClientes {
 
             restricao.dt_restricao = date;
             restricao.cpf_cliente = cpf;
-            restricao.com_restricao = false;
+            restricao.com_restricao = true;
 
             void await restricao.Save();
 
