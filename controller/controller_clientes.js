@@ -248,7 +248,7 @@ export class ControllerClientes {
 
             void await restricao.Save();
 
-            /***********************************************************************/
+            /***********************************************************************
             if (restricao.id_venda) {
 
                 void await clientes.FindByCpf(cpf);
@@ -402,16 +402,31 @@ export class ControllerClientes {
                 throw error; 
             }
 
-            const query = `SELECT cpf_cliente FROM tb_clientes
-                           WHERE cpf_cliente = :cpf_cliente AND com_restricao_credito = 1
-                           LIMIT 1`;
+            const clientes = new Clientes(db.connection);
+            const restricao = new RestricaoCredito(db.connection,entidade_negocio);
 
-            const rows = await db.connection.query(query,{
-                cpf_cliente: cpf,
-                entidade_negocio,
-            });
+            void await clientes.FindByCpf(cpf);
 
-            resdata.data.com_restricao = rows.length > 0 ? true : false ;
+            if (!clientes.found) {
+                const error = new Error('Clientes não encontrado');
+                error.statusCode = 404;
+                throw error;
+            }
+
+            void await restricao.FindByCpf(cpf);
+
+            if (clientes.com_restricao_credito == 1) {
+
+                if (!restricao.found || (restricao.found && restricao.com_restricao == 1)) {
+                    resdata.data.com_restricao = true;
+                } else {
+                    resdata.data.com_restricao = false;
+                }
+
+            } else {
+                resdata.data.com_restricao = false;
+            }
+
             
         } catch (error) {
 

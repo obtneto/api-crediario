@@ -7,6 +7,7 @@ import RestricaoCredito from '../model/dao_restricao_credito.js';
 import Vendas from '../model/dao_vendas.js';
 import Pagamentos from '../model/dao_pagamentos.js';
 import {buildTableDocument, formatCurrencyBR, formatDateBR, sendPdfResponse} from '../utils/PdfReport.js';
+import Clientes from '../model/dao_clientes.js';
 
 export class ControllerCobranca {
 
@@ -546,6 +547,7 @@ export class ControllerCobranca {
             const tipos = new TiposPagamentos(db.connection,entidade_negocio);
             const entidades = new Entidades(db.connection);
             const restricao = new RestricaoCredito(db.connection,entidade_negocio);
+            const clientes = new Clientes(db.connection, entidade_negocio);
             
             const query = `SELECT val_tot_venda,
             (COALESCE(val_tot_venda, 0) - COALESCE(val_desconto, 0)) - SUM(COALESCE(vl_pagamento, 0)) AS saldo_pagar
@@ -612,7 +614,22 @@ export class ControllerCobranca {
                 ******************************************************/
                 void await restricao.FindByCpf(vendas.cpf_cliente);
 
-                void await restricao.Excluir();
+                if (restricao.found) {
+
+                    if (restricao.id_venda && restricao.id_venda == id_venda) {
+
+                        void await clientes.FindByCpf(restricao.cpf_cliente);
+
+                        clientes.com_restricao_credito = false;
+
+                        void await clientes.Save();
+
+                    }
+                    
+                    void await restricao.Excluir();
+
+                }
+
 
             } else {
                 

@@ -1727,10 +1727,15 @@ export class ControllerVendas {
              *****************/
             void await restricao.FindByCpf(cpf_cliente);
 
-            if (restricao.found && restricao.com_restricao == 1) {
-                const error = new Error('Cliente com restrição de credito.');
-                error.statusCode = 403;
-                throw error;
+            if (clientes.com_restricao_credito == 1) {
+
+                if (!restricao.found || (restricao.found && restricao.com_restricao == 1)){
+
+                    const error = new Error('Cliente com restrição de credito.');
+                    error.statusCode = 403;
+                    throw error;
+                
+                }
             }
 
             /***************************************************************************
