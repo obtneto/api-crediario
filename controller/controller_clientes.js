@@ -470,7 +470,22 @@ export class ControllerClientes {
                 throw error;
             }
 
+            const clientes = new Clientes(db.connection);
             const restricao = new RestricaoCredito(db.connection,entidade_negocio);
+
+            void await clientes.FindByCpf(cpf);
+
+            if (!clientes.found) {
+                const error = new Error("Cliente não encontrado.");
+                error.statusCode = 404;
+                throw error;
+            }
+
+            if (!clientes.com_restricao_credito == 0) {
+                const error = new Error("Clintes com situacao adiplente. Não pode possuir restrição de credito.");
+                error.statusCode = 403;
+                throw error;
+            }
 
             void await restricao.FindByCpf(cpf);
 
