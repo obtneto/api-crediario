@@ -13,7 +13,7 @@ export default class ItensVendas {
         vl_unit: 0,
         vl_tot_item: 0,
         forma_pagamnto: '',
-        id_venda: ''
+        id_venda: null
     }
 
     constructor(connection, entidade_negocio = 0) {
@@ -43,7 +43,7 @@ export default class ItensVendas {
     get qt_produto() {return Number(this.#field.qt_produto)}
 
     set id_venda(id_venda) {this.#field.id_venda = String(id_venda)}
-    get id_venda() {return this.#field.id_venda}
+    get id_venda() {return String(this.#field.id_venda)}
 
     set vl_unit(vl_unit) {this.#field.vl_unit = parseFloat(vl_unit)}
     get vl_unit() {return parseFloat(this.#field.vl_unit)}
@@ -53,7 +53,7 @@ export default class ItensVendas {
 
     get vl_tot_item() {return parseFloat(this.vl_tot_item)}
 
-    get entidade_negocio() {return this.#field.entidade_negocio}
+    get entidade_negocio() {return Number(this.#field.entidade_negocio)}
 
     async ExecuteQuery(query, params = {}) {
         
@@ -65,15 +65,15 @@ export default class ItensVendas {
     async FindById(id_venda,id) {
 
         const query = `SELECT * FROM ${this.#tb_name}
-        WHERE entidade_negocio = :entidade_negocio AND id_venda = :id_venda AND id = :id`;
+                       WHERE entidade_negocio = :entidade_negocio AND id_venda = :id_venda AND id = :id`;
 
         const [rows] = await this.#conn.query(query,{id,id_venda,entidade_negocio: this.#entidade_negocio});
 
         if (rows) {
-            this.id_produto = Number(rows.id_produto);
-            this.id = Number(rows.id);
-            this.qt_produto = Number(rows.qt_produto);
-            this.id_venda = String(rows.id_venda);
+            this.id_produto = rows.id_produto;
+            this.id = rows.id;
+            this.qt_produto = rows.qt_produto;
+            this.id_venda = rows.id_venda;
             this.#found = true;
         } else {
             this.#found = false;
@@ -100,15 +100,27 @@ export default class ItensVendas {
         let query;
 
         if (this.#found) {
-            query = `UPDATE ${this.#tb_name} SET qt_produto = :qt_produto,id_produto = :id_produto,
-            vl_unit = :vl_unit, forma_pagamnto = :forma_pagamnto 
-            WHERE entidade_negocio = :entidade_negocio AND id_venda = :id_venda AND id = :id`;
+
+            query = `UPDATE ${this.#tb_name} 
+                     SET qt_produto = :qt_produto,
+                     id_produto = :id_produto,
+                     vl_unit = :vl_unit, 
+                     forma_pagamnto = :forma_pagamnto 
+                     WHERE entidade_negocio = :entidade_negocio AND 
+                     id_venda = :id_venda AND 
+                     id = :id`;
         } else {
 
             this.id = await this.#newId();
 
-            query = `INSERT INTO ${this.#tb_name} SET entidade_negocio = :entidade_negocio, id_produto = :id_produto,
-            id = :id, qt_produto = :qt_produto, id_venda = :id_venda,vl_unit = :vl_unit,forma_pagamnto = :forma_pagamnto`;
+            query = `INSERT INTO ${this.#tb_name} 
+                     SET entidade_negocio = :entidade_negocio, 
+                     id_produto = :id_produto, 
+                     id = :id, 
+                     qt_produto = :qt_produto, 
+                     id_venda = :id_venda,
+                     vl_unit = :vl_unit,
+                     forma_pagamnto = :forma_pagamnto`;
         }
 
         if(this.#field.id_produto === 0) this.#field.id_produto = null;
@@ -120,7 +132,7 @@ export default class ItensVendas {
     async Excluir() {
 
         const query = `DELETE FROM ${this.#tb_name}
-        WHERE entidade_negocio = :entidade_negocio AND id_venda = :id_venda AND id = :id`;
+                       WHERE entidade_negocio = :entidade_negocio AND id_venda = :id_venda AND id = :id`;
 
         void await this.#conn.query(query,{
             id:this.#field.id,
@@ -133,7 +145,8 @@ export default class ItensVendas {
     async #newId() {
 
         const query = `SELECT IFNULL(MAX(id),0) + 1 as newid FROM ${this.#tb_name}
-        WHERE entidade_negocio = :entidade_negocio AND id_venda = :id_venda`;
+                       WHERE entidade_negocio = :entidade_negocio AND 
+                       id_venda = :id_venda`;
 
         const [rows] = await this.#conn.query(query,{entidade_negocio: this.#field.entidade_negocio,id_venda: this.#field.id_venda});
 

@@ -610,7 +610,7 @@ export class ControllerCobranca {
                 void await vendas.Save();
 
                 /*****************************************************
-                 *  Retira a Restrição de Credito
+                 *  Verifica / Retira a Restrição de Credito
                 ******************************************************/
                 void await restricao.FindByCpf(vendas.cpf_cliente);
 

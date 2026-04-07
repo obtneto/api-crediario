@@ -6,7 +6,7 @@ export default class ItensDistribuicoes {
     #entidade_negocio = 0;
 
     #field = {
-        id_distrib:0,
+        id_distrib: null,
         id_produto: 0,
         id_vendedor: 0,
         qt_distrib: 0,
@@ -36,8 +36,8 @@ export default class ItensDistribuicoes {
     set id_vendedor(id_vendedor) {this.#field.id_vendedor = Number(id_vendedor)}
     get id_vendedor() {return Number(this.#field.id_vendedor)}
 
-    set id_distrib(id_distrib) {this.#field.id_distrib = Number(id_distrib)}
-    get id_distrib() {return Number(this.#field.id_distrib)}
+    set id_distrib(id_distrib) {this.#field.id_distrib = id_distrib}
+    get id_distrib() {return this.#field.id_distrib}
 
     set qt_distrib(qt_distrib) {this.#field.qt_distrib = Number(qt_distrib)}
     get qt_distrib() {return Number(this.#field.qt_distrib)}
@@ -61,10 +61,10 @@ export default class ItensDistribuicoes {
         const [rows] = await this.#conn.query(query,{id_produto,id_vendedor,entidade_negocio: this.#entidade_negocio});
 
         if (rows) {
-            this.id_distrib = Number(rows.id_distrib);
-            this.id_produto = String(rows.id_produto);
-            this.qt_distrib = Number(rows.qt_distrib);
-            this.id_vendedor = Number(rows.id_vendedor);
+            this.id_distrib = rows.id_distrib;
+            this.id_produto = rows.id_produto;
+            this.qt_distrib = rows.qt_distrib;
+            this.id_vendedor = rows.id_vendedor;
             this.#found = true;
         } else {
             this.#found = false;

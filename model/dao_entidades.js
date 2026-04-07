@@ -52,8 +52,8 @@ export default class Entidades {
     set percent_desconto_cobranca(percent) {this.#field.percent_desconto_cobranca = parseFloat(percent)}
     get percent_desconto_cobranca() {return parseFloat(this.#field.percent_desconto_cobranca)}
 
-    set com_rota_cobranca(com_rota_cobranca) {this.#field.com_rota_cobranca = com_rota_cobranca}
-    get com_rota_cobranca() {return this.#field.com_rota_cobranca}
+    set com_rota_cobranca(com_rota_cobranca) {this.#field.com_rota_cobranca = Boolean(com_rota_cobranca)}
+    get com_rota_cobranca() {return Boolean(this.#field.com_rota_cobranca)}
 
     set ativo(ativo) {this.#field.ativo = Number(ativo)}
     get ativo() { return Number(this.#field.ativo)}
@@ -96,22 +96,33 @@ export default class Entidades {
         let query;
 
         if (this.#found) {
-            query = `UPDATE tb_entidades SET 
-            nom_entidade = :nom_entidade, nom_responsavel = :nom_responsavel, cel_whatsapp_bussiness = :cel_whatsapp_bussiness, 
-            num_cnpj = :num_cnpj, cel_contato = :cel_contato, com_rota_cobranca = :com_rota_cobranca,
-            percent_desconto_venda = :percent_desconto_venda, percent_desconto_cobranca = :percent_desconto_cobranca, ativo = :ativo
-            WHERE id = :id`;
+
+            query = `UPDATE tb_entidades 
+                     SET nom_entidade = :nom_entidade, 
+                     nom_responsavel = :nom_responsavel, 
+                     cel_whatsapp_bussiness = :cel_whatsapp_bussiness, 
+                     num_cnpj = :num_cnpj, 
+                     cel_contato = :cel_contato, 
+                     com_rota_cobranca = :com_rota_cobranca,
+                     percent_desconto_venda = :percent_desconto_venda, 
+                     percent_desconto_cobranca = :percent_desconto_cobranca, 
+                     ativo = :ativo
+                     WHERE id = :id`;
+
         } else {
 
             this.#field.id = await this.newId()
 
-            query = `INSERT INTO tb_entidades SET 
-            nom_entidade = :nom_entidade, nom_responsavel = :nom_responsavel, 
-            num_cnpj = :num_cnpj, cel_contato = :cel_contato,
-            cel_whatsapp_bussiness = :cel_whatsapp_bussiness,
-            percent_desconto_venda = :percent_desconto_venda,
-            percent_desconto_cobranca = :percent_desconto_cobranca,
-            com_rota_cobranca = :com_rota_cobranca, id = :id, ativo = :ativo`
+            query = `INSERT INTO tb_entidades 
+                     SET nom_entidade = :nom_entidade, 
+                     nom_responsavel = :nom_responsavel, 
+                     num_cnpj = :num_cnpj, cel_contato = :cel_contato,
+                     cel_whatsapp_bussiness = :cel_whatsapp_bussiness,
+                     percent_desconto_venda = :percent_desconto_venda,
+                     percent_desconto_cobranca = :percent_desconto_cobranca,
+                     com_rota_cobranca = :com_rota_cobranca, 
+                     id = :id, 
+                     ativo = :ativo`;
         }
 
         void await this.#conn.query(query,this.#field);
@@ -120,7 +131,9 @@ export default class Entidades {
 
     async newId() {
         
-        const query =  `SELECT IFNULL(MAX(id),0) + 1 as newid FROM tb_entidades`;
+        const query =  `SELECT IFNULL(MAX(id),0) + 1 as newid 
+                        FROM tb_entidades`;
+                        
         const [rows] = await this.#conn.query(query);
 
         return rows.newid;

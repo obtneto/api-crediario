@@ -38,7 +38,7 @@ export default class Estoque {
     set qt_disponivel(qt_disponivel) {this.#field.qt_disponivel = Number(qt_disponivel)}
     get qt_disponivel() {return Number(this.#field.qt_disponivel)}
 
-    get entidade_negocio() {return this.#field.entidade_negocio}
+    get entidade_negocio() {return Number(this.#field.entidade_negocio)}
 
     async ExecuteQuery(query, params = {}) {
 
@@ -50,14 +50,15 @@ export default class Estoque {
 
     async FindById(id_produto) {
 
-        const query = `SELECT * FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio AND id_produto = :id_produto`;
+        const query = `SELECT * FROM ${this.#tb_name} 
+                       WHERE entidade_negocio = :entidade_negocio AND id_produto = :id_produto`;
 
         const [rows] = await this.#conn.query(query,{entidade_negocio:this.#entidade_negocio,id_produto});
 
         if (rows) {
-            this.id_produto = Number(rows.id_produto);
-            this.qt_reservada = Number(rows.qt_reservada);
-            this.qt_disponivel = Number(rows.qt_disponivel);
+            this.id_produto = rows.id_produto;
+            this.qt_reservada = rows.qt_reservada;
+            this.qt_disponivel = rows.qt_disponivel;
 
             this.#found = true;
         } else {
@@ -74,11 +75,16 @@ export default class Estoque {
 
         if (this.#found) {
             query = `UPDATE ${this.#tb_name} SET qt_reservada = :qt_reservada, qt_disponivel = :qt_disponivel
-            WHERE entidade_negocio = :entidade_negocio AND id_produto = :id_produto`;
+                     WHERE entidade_negocio = :entidade_negocio AND 
+                     id_produto = :id_produto`;
         } else {
             //this.#field.id = await this.#newId();
-            query = `INSERT INTO ${this.#tb_name} SET id_produto = :id_produto, qt_reservada = :qt_reservada, 
-            qt_disponivel = :qt_disponivel, entidade_negocio = :entidade_negocio`
+
+            query = `INSERT INTO ${this.#tb_name} 
+                     SET id_produto = :id_produto, 
+                     qt_reservada = :qt_reservada, 
+                     qt_disponivel = :qt_disponivel, 
+                     entidade_negocio = :entidade_negocio`
         
         }
 
@@ -89,7 +95,7 @@ export default class Estoque {
     async Excluir() {
             
         const query = `DELETE FROM ${this.#tb_name} 
-        WHERE entidade_negocio= :entidade_negocio AND id_produto = :id_produto`;
+                       WHERE entidade_negocio= :entidade_negocio AND id_produto = :id_produto`;
 
         void await this.#conn.query(query,{
             entidade_negocio: this.#field.entidade_negocio,

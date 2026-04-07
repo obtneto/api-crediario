@@ -11,9 +11,9 @@ export default class Comissoes {
         tp_recibo: '',
         vl_recibo: 0,
         vl_adiant: 0,
-        id_cobrador: null,
-        id_vendedor: null,
-        entidade_negocio: '',
+        id_cobrador: 0,
+        id_vendedor: 0,
+        entidade_negocio: 0,
     }
 
     constructor(connection, entidade_negocio = 0) {

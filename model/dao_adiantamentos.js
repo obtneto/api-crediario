@@ -35,8 +35,8 @@ export default class Adiantamentos {
     set id(id) {this.#field.id = Number(id)}
     get id() {return Number(this.#field.id)}
 
-    set num_recibo(num_recibo) {this.#field.num_recibo = Number(num_recibo)}
-    get num_recibo() {return Number(this.#field.num_recibo)}
+    set num_recibo(num_recibo) {this.#field.num_recibo = num_recibo}
+    get num_recibo() {return this.#field.num_recibo}
 
     set id_vendedor(id_vendedor) {this.#field.id_vendedor = Number(id_vendedor)}
     get id_vendedor() {return Number(this.#field.id_vendedor)}
@@ -105,7 +105,7 @@ export default class Adiantamentos {
     async Excluir() {
  
         const query = `DELETE FROM ${this.#tb_name} 
-        WHERE entidade_negocio= :entidade_negocio AND id = :id`;
+                       WHERE entidade_negocio= :entidade_negocio AND id = :id`;
 
         void await this.#conn.query(query,{
             id: this.#field.id, 
@@ -117,7 +117,7 @@ export default class Adiantamentos {
     async #newId() {
 
         const query =  `SELECT IFNULL(MAX(id),0) + 1 as newid FROM ${this.#tb_name} 
-        WHERE entidade_negocio = :entidade_negocio`;
+                        WHERE entidade_negocio = :entidade_negocio`;
 
         const [rows] = await this.#conn.query(query,{
             entidade_negocio: this.#field.entidade_negocio

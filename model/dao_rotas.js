@@ -34,6 +34,7 @@ export default class Rotas {
 
     set nom_rota(nom_rota) {this.#field.nom_rota = nom_rota}
     get nom_rota() {return this.#field.nom_rota}
+
     get entidade_negocio() {return Number(this.#field.entidade_negocio)}
 
     set ativo(ativo) {this.#field.ativo = Number(ativo)}
@@ -48,14 +49,15 @@ export default class Rotas {
 
     async FindById(id) {
         
-        let query = `SELECT * FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio AND id = :id`;
+        let query = `SELECT * FROM ${this.#tb_name} 
+                     WHERE entidade_negocio = :entidade_negocio AND id = :id`;
         
         const [rows] = await this.#conn.query(query,{id,entidade_negocio: this.#entidade_negocio});
 
         if (rows) {
-            this.id = Number(rows.id);
-            this.nom_rota = String(rows.nom_rota);
-            this.ativo = Number(rows.ativo);
+            this.id = rows.id;
+            this.nom_rota = rows.nom_rota;
+            this.ativo = rows.ativo;
             this.#found = true;
         } else {
             this.#found = false;
@@ -70,13 +72,22 @@ export default class Rotas {
         let query;
 
         if (this.#found) {
-            query = `UPDATE ${this.#tb_name} SET nom_rota = :nom_rota, entidade_negocio = :entidade_negocio, ativo = :ativo
-            WHERE entidade_negocio = :entidade_negocio AND id = :id`;
-        } else {
+
+            query = `UPDATE ${this.#tb_name} 
+                     SET nom_rota = :nom_rota, 
+                     entidade_negocio = :entidade_negocio, 
+                     ativo = :ativo
+                     WHERE entidade_negocio = :entidade_negocio AND id = :id`;
+        } 
+        else {
+
             this.#field.id = await this.#newId();
 
-            query = `INSERT INTO ${this.#tb_name} SET nom_rota = :nom_rota, entidade_negocio = :entidade_negocio, ativo = :ativo,
-            id = :id`;
+            query = `INSERT INTO ${this.#tb_name} 
+                     SET nom_rota = :nom_rota, 
+                     entidade_negocio = :entidade_negocio, 
+                     ativo = :ativo,
+                     id = :id`;
         }
 
         return await this.#conn.query(query,this.#field);
@@ -85,7 +96,8 @@ export default class Rotas {
 
     async Excluir(id) {
             
-        const query = `DELETE FROM ${this.#tb_name} WHERE entidade_negocio= :entidade_negocio AND id = :id`;
+        const query = `DELETE FROM ${this.#tb_name} 
+                       WHERE entidade_negocio= :entidade_negocio AND id = :id`;
 
         void await this.#conn.query(query,{id,entidade_negocio: this.#field.entidade_negocio});  
         
@@ -93,7 +105,10 @@ export default class Rotas {
 
     async #newId() {
     
-        const query =  `SELECT IFNULL(MAX(id),0) + 1 as newid FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio`;
+        const query =  `SELECT IFNULL(MAX(id),0) + 1 as newid 
+                        FROM ${this.#tb_name} 
+                        WHERE entidade_negocio = :entidade_negocio`;
+                        
         const [rows] = await this.#conn.query(query,{entidade_negocio: this.#field.entidade_negocio});
 
         return Number(rows.newid);

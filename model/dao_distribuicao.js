@@ -6,9 +6,9 @@ export default class Distribuicao {
     #entidade_negocio = 0;
 
     #field = {
-        id: null,
+        id: '',
         dt_distrib: '',
-        id_vendedor: null,
+        id_vendedor: 0,
         entidade_negocio: 0
     }
 
@@ -38,7 +38,7 @@ export default class Distribuicao {
     set id_vendedor(id_vendedor) {this.#field.id_vendedor = Number(id_vendedor)}
     get id_vendedor() {return Number(this.#field.id_vendedor)}
 
-    get entidade_negocio() {return this.#field.entidade_negocio}
+    get entidade_negocio() {return Number(this.#field.entidade_negocio)}
 
     async ExecuteQuery(query, params = {}) {
 

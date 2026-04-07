@@ -75,7 +75,8 @@ export default class Produtos {
 
     async FindById(id) {
 
-        let query = `SELECT * FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio AND id = :id`;
+        let query = `SELECT * FROM ${this.#tb_name} 
+                     WHERE entidade_negocio = :entidade_negocio AND id = :id`;
             
         const [rows] = await this.#conn.query(query,{id,entidade_negocio:this.#entidade_negocio});
 
@@ -107,18 +108,32 @@ export default class Produtos {
 
         if (this.#found) {
 
-            query = `UPDATE ${this.#tb_name} SET nom_produto = :nom_produto, mar_produto = :mar_produto, 
-            und_produto = :und_produto, prc_vista = :prc_vista, prc_prazo = :prc_prazo, 
-            estq_max = :estq_max, estq_min = :estq_min, ativo = :ativo
-            WHERE entidade_negocio = :entidade_negocio AND id = :id`;
+            query = `UPDATE ${this.#tb_name} 
+                     SET nom_produto = :nom_produto, 
+                     mar_produto = :mar_produto, 
+                     und_produto = :und_produto, 
+                     prc_vista = :prc_vista, 
+                     prc_prazo = :prc_prazo, 
+                     estq_max = :estq_max, 
+                     estq_min = :estq_min, 
+                     ativo = :ativo
+                     WHERE entidade_negocio = :entidade_negocio AND id = :id`;
 
         } else {
 
             this.id = await this.#newId();
 
-            query = `INSERT INTO ${this.#tb_name} SET nom_produto = :nom_produto, mar_produto = :mar_produto, und_produto = :und_produto, 
-            prc_vista = :prc_vista, prc_prazo = :prc_prazo, estq_max = :estq_max, estq_min = :estq_min,
-            entidade_negocio = :entidade_negocio, ativo = :ativo, id = :id`
+            query = `INSERT INTO ${this.#tb_name} 
+                     SET nom_produto = :nom_produto, 
+                     mar_produto = :mar_produto, 
+                     und_produto = :und_produto, 
+                     prc_vista = :prc_vista, 
+                     prc_prazo = :prc_prazo, 
+                     estq_max = :estq_max, 
+                     estq_min = :estq_min,
+                     entidade_negocio = :entidade_negocio, 
+                     ativo = :ativo, 
+                     id = :id`
         }
 
         return await this.#conn.query(query,this.#field);
@@ -127,7 +142,8 @@ export default class Produtos {
 
     async Excluir(id) {
             
-        const query = `DELETE FROM ${this.#tb_name} WHERE entidade_negocio= :entidade_negocio AND id = :id`;
+        const query = `DELETE FROM ${this.#tb_name} 
+                       WHERE entidade_negocio= :entidade_negocio AND id = :id`;
 
         void await this.#conn.query(query,{id,entidade_negocio: this.#field.entidade_negocio});
 
@@ -135,7 +151,10 @@ export default class Produtos {
 
     async #newId() {
 
-        const query =  `SELECT IFNULL(MAX(id),0) + 1 as newid FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio`;
+        const query =  `SELECT IFNULL(MAX(id),0) + 1 as newid 
+                        FROM ${this.#tb_name} 
+                        WHERE entidade_negocio = :entidade_negocio`;
+                        
         const [rows] = await this.#conn.query(query,{entidade_negocio: this.#field.entidade_negocio});
 
         return Number(rows.newid);

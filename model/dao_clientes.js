@@ -19,7 +19,7 @@ export default class Clientes {
         lat_cliente: '',
         lon_cliente: '',
         dat_cadastro: '',
-        com_restricao_credito: null
+        com_restricao_credito: false
     }
 
     constructor(connection) {
@@ -105,7 +105,7 @@ export default class Clientes {
             this.lat_cliente = rows.lat_cliente;
             this.lon_cliente = rows.lon_cliente;
             this.dat_cadastro = rows.dat_cadastro;
-            this.com_restricao_credito = rows.com_restricao_credito;
+            this.com_restricao_credito = Boolean(rows.com_restricao_credito);
 
             this.#found = true;
         } else {

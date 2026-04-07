@@ -37,8 +37,8 @@ export default class RestricaoCredito {
     set dt_restricao(dt_restricao) {this.#field.dt_restricao = dt_restricao}
     get dt_restricao() {return this.#field.dt_restricao}
 
-    set cpf_cliente(cpf_cliente) {this.#field.cpf_cliente = String(cpf_cliente)}
-    get cpf_cliente() {return String(this.#field.cpf_cliente)}
+    set cpf_cliente(cpf_cliente) {this.#field.cpf_cliente = cpf_cliente}
+    get cpf_cliente() {return this.#field.cpf_cliente}
 
     set id_venda(id_venda) {
         if (id_venda === null || id_venda === undefined) {
@@ -73,7 +73,7 @@ export default class RestricaoCredito {
         if (rows) {
             this.id = Number(rows.id);
             this.dt_restricao = rows.dt_restricao;
-            this.cpf_cliente = String(rows.cpf_cliente);
+            this.cpf_cliente = rows.cpf_cliente;
             this.id_venda = rows.id_venda;
             this.com_restricao = Boolean(rows.com_restricao);
             this.#found = true;

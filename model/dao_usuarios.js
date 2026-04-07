@@ -83,16 +83,16 @@ export default class Usuarios {
         const [rows] = await this.#conn.query(query,{usuario});
 
         if (rows) {
-            this.id = Number(rows.id);
-            this.usuario = String(rows.usuario);
-            this.nom_completo = String(rows.nom_completo);
-            this.email = String(rows.email);
-            this.senha = String(rows.senha);
-            this.reset_password = Number(rows.reset_password);
-            this.iniciais = String(rows.iniciais);
-            this.id_perfil = Number(rows.id_perfil);
+            this.id = rows.id;
+            this.usuario = rows.usuario;
+            this.nom_completo = rows.nom_completo;
+            this.email = rows.email;
+            this.senha = rows.senha;
+            this.reset_password = rows.reset_password;
+            this.iniciais = rows.iniciais;
+            this.id_perfil = rows.id_perfil;
             this.modo_acesso = rows.modo_acesso;
-            this.num_verificacao = String(rows.num_verificacao);
+            this.num_verificacao = rows.num_verificacao;
             this.#found = true;
         } else {
             this.#found = false;
@@ -104,23 +104,23 @@ export default class Usuarios {
     
     async FindById(id) {
             
-        let query = `SELECT * FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio AND id = :id`;
+        let query = `SELECT * FROM ${this.#tb_name} 
+                     WHERE entidade_negocio = :entidade_negocio AND id = :id`;
         
-        console.log(this.#entidade_negocio)
 
         const [rows] = await this.#conn.query(query,({entidade_negocio:this.#entidade_negocio,id}));
 
         if (rows) {
-            this.id = Number(rows.id);
-            this.usuario = String(rows.usuario);
-            this.nom_completo = String(rows.nom_completo);
-            this.email = String(rows.email);
-            this.senha = String(rows.senha);
-            this.reset_password = Number(rows.reset_password)
-            this.iniciais = String(rows.iniciais);
-            this.id_perfil = Number(rows.id_perfil);
+            this.id = rows.id;
+            this.usuario = rows.usuario;
+            this.nom_completo = rows.nom_completo;
+            this.email = rows.email;
+            this.senha = rows.senha;
+            this.reset_password = rows.reset_password
+            this.iniciais = rows.iniciais;
+            this.id_perfil = rows.id_perfil;
             this.modo_acesso = rows.modo_acesso;
-            this.num_verificacao = String(rows.num_verificacao)
+            this.num_verificacao = rows.num_verificacao;
             this.#found = true;
         } else {
             this.#found = false;
@@ -135,16 +135,36 @@ export default class Usuarios {
         let query;
 
         if (this.#found) {
-            query = `UPDATE tb_usuarios SET usuario = :usuario,nom_completo = :nom_completo, email = :email, 
-            senha = :senha, entidade_negocio = :entidade_negocio, id_perfil = :id_perfil, modo_acesso = :modo_acesso, reset_password = :reset_password, 
-            iniciais = :iniciais, num_verificacao = :num_verificacao
-            WHERE entidade_negocio = :entidade_negocio AND id = :id`;
+
+            query = `UPDATE tb_usuarios 
+                     SET usuario = :usuario,
+                     nom_completo = :nom_completo, 
+                     email = :email, 
+                     senha = :senha,
+                     entidade_negocio = :entidade_negocio, 
+                     id_perfil = :id_perfil, 
+                     modo_acesso = :modo_acesso, 
+                     reset_password = :reset_password, 
+                     iniciais = :iniciais, 
+                     num_verificacao = :num_verificacao
+                     WHERE entidade_negocio = :entidade_negocio AND id = :id`;
+
         } else {
+
             this.id = await this.#newId();
 
-            query = `INSERT INTO tb_usuarios SET usuario = :usuario, nom_completo = :nom_completo, email = :email, num_verificacao = :num_verificacao,
-            senha = :senha, entidade_negocio = :entidade_negocio, id_perfil = :id_perfil, modo_acesso = :modo_acesso, reset_password = :reset_password, iniciais = :iniciais, 
-            id = :id`
+            query = `INSERT INTO tb_usuarios 
+                    SET usuario = :usuario, 
+                    nom_completo = :nom_completo, 
+                    email = :email, 
+                    num_verificacao = :num_verificacao,
+                    senha = :senha, 
+                    entidade_negocio = :entidade_negocio, 
+                    id_perfil = :id_perfil, 
+                    modo_acesso = :modo_acesso, 
+                    reset_password = :reset_password, 
+                    iniciais = :iniciais, 
+                    id = :id`
         }
 
         return await this.#conn.query(query,this.#field);
@@ -153,7 +173,8 @@ export default class Usuarios {
 
     async Excluir(id) {
         
-        const query = `DELETE FROM ${this.#tb_name} WHERE entidade_negocio= :entidade_negocio AND id = :id`;
+        const query = `DELETE FROM ${this.#tb_name} 
+                       WHERE entidade_negocio= :entidade_negocio AND id = :id`;
 
         void await this.#conn.query(query,{id,entidade_negocio: this.#field.entidade_negocio});
     
@@ -161,7 +182,10 @@ export default class Usuarios {
 
     async #newId() {
 
-        const query =  `SELECT IFNULL(MAX(id),0) + 1 as newid FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio`;
+        const query =  `SELECT IFNULL(MAX(id),0) + 1 as newid 
+                        FROM ${this.#tb_name} 
+                        WHERE entidade_negocio = :entidade_negocio`;
+                        
         const [rows] = await this.#conn.query(query,{entidade_negocio: this.#field.entidade_negocio});
 
         return Number(rows.newid);

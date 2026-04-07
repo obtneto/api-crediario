@@ -39,8 +39,8 @@ export default class Perfis {
     set id_venda(id_venda) {this.#field.id_venda = String(id_venda)}
     get id_venda() {return String(this.#field.id_venda)}
 
-    set dt_pagamento(dt_pagamento) {this.#field.dt_pagamento = String(dt_pagamento)}
-    get dt_pagamento() {return String(this.#field.dt_pagamento)}
+    set dt_pagamento(dt_pagamento) {this.#field.dt_pagamento = dt_pagamento}
+    get dt_pagamento() {return this.#field.dt_pagamento}
 
     set vl_pagamento(vl_pagamento) {this.#field.vl_pagamento = parseFloat(vl_pagamento)}
     get vl_pagamento() {return parseFloat(this.#field.vl_pagamento)}
@@ -51,8 +51,8 @@ export default class Perfis {
     set id_cobrador(id_cobrador) {this.#field.id_cobrador = Number(id_cobrador)}
     get id_cobrador() {return Number(this.#field.id_cobrador)}
 
-    set num_recibo(num_recibo) {this.#field.num_recibo = String(num_recibo)}
-    get num_recibo() { return String(this.#field.num_recibo)}
+    set num_recibo(num_recibo) {this.#field.num_recibo =num_recibo}
+    get num_recibo() { return this.#field.num_recibo}
 
     get entidade_negocio() {return Number(this.#field.entidade_negocio)}
 
@@ -73,13 +73,13 @@ export default class Perfis {
 
         if (rows) {
             
-            this.id = Number(rows.id);
-            this.id_venda = String(rows.id_venda);
-            this.dt_pagamento = String(rows.dt_pagamento);
-            this.vl_pagamento = parseFloat(rows.vl_pagamento);
-            this.vl_desconto = parseFloat(rows.vl_desconto);
-            this.id_cobrador = Number(rows.id_cobrador);
-            this.num_recibo = String(rows.num_recibo);
+            this.id = rows.id;
+            this.id_venda = rows.id_venda;
+            this.dt_pagamento = rows.dt_pagamento;
+            this.vl_pagamento = rows.vl_pagamento;
+            this.vl_desconto = rows.vl_desconto;
+            this.id_cobrador = rows.id_cobrador;
+            this.num_recibo = rows.num_recibo;
 
             this.#found = true;
             
@@ -98,17 +98,29 @@ export default class Perfis {
 
         if (this.#found) {
 
-            query = `UPDATE ${this.#tb_name} SET dt_pagamento = :dt_pagamento, vl_pagamento = :vl_pagamento, 
-            id_cobrador = :id_cobrador, num_recibo = :num_recibo, vl_desconto = :vl_desconto
-            WHERE entidade_negocio = :entidade_negocio AND id_venda = :id_venda AND id = :id`;
+            query = `UPDATE ${this.#tb_name} 
+                     SET dt_pagamento = :dt_pagamento, 
+                     vl_pagamento = :vl_pagamento,
+                     id_cobrador = :id_cobrador, 
+                     num_recibo = :num_recibo, 
+                     vl_desconto = :vl_desconto
+                     WHERE entidade_negocio = :entidade_negocio AND 
+                     id_venda = :id_venda AND 
+                     id = :id`;
             
         } else {
 
             this.id = await this.#newId();
 
-            query = `INSERT INTO ${this.#tb_name} SET dt_pagamento = :dt_pagamento, vl_pagamento = :vl_pagamento, 
-            id_cobrador = :id_cobrador,num_recibo = :num_recibo, id_venda = :id_venda, vl_desconto = :vl_desconto,
-            id = :id, entidade_negocio = :entidade_negocio`
+            query = `INSERT INTO ${this.#tb_name} 
+                     SET dt_pagamento = :dt_pagamento, 
+                     vl_pagamento = :vl_pagamento, 
+                     id_cobrador = :id_cobrador,
+                     num_recibo = :num_recibo, 
+                     id_venda = :id_venda, 
+                     vl_desconto = :vl_desconto,
+                     id = :id, 
+                     entidade_negocio = :entidade_negocio`
         }
 
         if (this.#field.id_cobrador === 0) this.#field.id_cobrador = null;
@@ -120,7 +132,9 @@ export default class Perfis {
     async Excluir() {
 
         const query = `DELETE FROM ${this.#tb_name} 
-        WHERE entidade_negocio= :entidade_negocio AND id_venda = :id_venda AND id = :id`;
+                       WHERE entidade_negocio= :entidade_negocio AND 
+                       id_venda = :id_venda AND 
+                       id = :id`;
 
         void await this.#conn.query(query,{id:this.#field.id,id_venda:this.#field.id_venda, entidade_negocio: this.#field.entidade_negocio}); 
 
@@ -128,7 +142,10 @@ export default class Perfis {
 
     async #newId() {
 
-        const query =  `SELECT IFNULL(MAX(id),0) + 1 as newid FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio AND id_venda = :id_venda`;
+        const query =  `SELECT IFNULL(MAX(id),0) + 1 as newid 
+                        FROM ${this.#tb_name} 
+                        WHERE entidade_negocio = :entidade_negocio AND id_venda = :id_venda`;
+                        
         const [rows] = await this.#conn.query(query,{entidade_negocio: this.#field.entidade_negocio, id_venda: this.#field.id_venda});
 
         return Number(rows.newid);
