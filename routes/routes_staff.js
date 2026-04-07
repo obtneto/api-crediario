@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { ControllerStaffAuth, ControllerStaffEntidades, ControllerStaffUsuarios } from '../controller/controller_staff.js';
+import { ControllerBackups } from '../controller/controller_backups.js';
 import { criarMiddlewareSessaoStaff } from '../utils/StaffRouteSessionMiddleware.js';
 
 const router = Router();
@@ -18,5 +19,6 @@ router.get('/usuarios', ControllerStaffUsuarios.Listar);
 router.get('/usuarios/:id', ControllerStaffUsuarios.Editar);
 router.post('/usuarios', ControllerStaffUsuarios.Salvar);
 router.post('/usuarios/:id/excluir', ControllerStaffUsuarios.Excluir);
+router.get('/listar_backups', ControllerBackups.Listar);
 
 export default router;
