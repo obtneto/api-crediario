@@ -1086,7 +1086,16 @@ export class ControllerVendas {
                 params.push(dt_fim);
             }
 
-            let query = `SELECT * FROM vw_vendas
+            let query = `SELECT vw_vendas.*,
+                                  (
+                                      (COALESCE(vw_vendas.val_tot_venda, 0) - COALESCE(vw_vendas.val_desconto, 0))
+                                      - COALESCE((
+                                          SELECT SUM(COALESCE(pg.vl_pagamento, 0))
+                                          FROM tb_pagamentos pg
+                                          WHERE pg.entidade_negocio = vw_vendas.entidade_negocio
+                                            AND pg.id_venda = vw_vendas.id
+                                      ), 0)
+                                  ) AS saldo_a_pagar FROM vw_vendas
                          WHERE ${whereClause.join(' AND ')}
                          ORDER BY situacao, dt_venda DESC, id DESC
                          LIMIT ? OFFSET ?`;
@@ -1792,9 +1801,13 @@ export class ControllerVendas {
                 }
 
                 /***************************************************************************/
-                void await itensVendas.FindById(id_item,vendas.id)
+                void await itensVendas.FindById(vendas.id,id_item)
 
-                if (itensVendas.found) qt_produto_antes = itensVendas.qt_produto;
+                const itemJaExistia = itensVendas.found;
+
+                if (itemJaExistia) qt_produto_antes = itensVendas.qt_produto;
+
+                qt_produto_atual = qt_produto_item - qt_produto_antes;
 
                 itensVendas.id_produto = id_produto_item;
                 itensVendas.qt_produto = qt_produto_item;
@@ -1813,45 +1826,24 @@ export class ControllerVendas {
                     throw error
                 }
                 
-                if (!itensVendas.found) {
-
-                    if (estoque.qt_reservada < qt_produto_item) {
-                        const error = new Error('Não exite estoque suficiente para esse produto.');
-                        error.statusCode = 403;
-                        throw error;
-                    }
-
-                    qt_produto_atual = qt_produto_item;
-
-                }
-                else {
-
-                    if(estoque.qt_reservada < ((qt_produto_antes - itensVendas.qt_produto) * -1)) {
-                        const error = new Error('Não exite estoque suficiente para esse produto.');
-                        error.statusCode = 403;
-                        throw error;
-                    }
-
-                    qt_produto_atual = ((qt_produto_antes - itensVendas.qt_produto) * -1);
-
+                if (qt_produto_atual > 0 && Number(estoque.qt_reservada) < qt_produto_atual) {
+                    const error = new Error('Não exite estoque suficiente para esse produto.');
+                    error.statusCode = 403;
+                    throw error;
                 }
 
-                if (!itensVendas.found) {
-                    estoque.qt_reservada = Number(estoque.qt_reservada) - Number(qt_produto_item);
-                } else {
-                    estoque.qt_reservada = Number(estoque.qt_reservada) + (qt_produto_antes - itensVendas.qt_produto)
-                }
+                estoque.qt_reservada = Number(estoque.qt_reservada) - qt_produto_atual;
 
                 /***************************************************************************/
                 void await itensDistrib.FindById(id_vendedor,id_produto_item);
 
-                if (Number(itensDistrib.qt_distrib) < Number(itensVendas.qt_produto)) {
+                if (qt_produto_atual > 0 && Number(itensDistrib.qt_distrib) < qt_produto_atual) {
                     const error = new Error('Não existe saldo suficiente dispensado para esse produto.');
                     error.statusCode = 403;
                     throw error;
                 }
 
-                itensDistrib.qt_distrib = Number(itensDistrib.qt_distrib) - Number(itensVendas.qt_produto)
+                itensDistrib.qt_distrib = Number(itensDistrib.qt_distrib) - qt_produto_atual
 
                 void await itensDistrib.Save();
 
@@ -1862,12 +1854,14 @@ export class ControllerVendas {
 
                 estoque_mov.dt_mov = new Date();
                 estoque_mov.id_produto = id_produto_item;
-                estoque_mov.qt_mov = qt_produto_atual;
-                estoque_mov.tp_mov = (qt_produto_antes - itensVendas.qt_produto) < 0 ? 'VENDA' : 'DEVOL';
+                estoque_mov.qt_mov = Math.abs(qt_produto_atual);
+                estoque_mov.tp_mov = qt_produto_atual >= 0 ? 'VENDA' : 'DEVOL';
                 estoque_mov.nr_documento = String(vendas.id);
                 estoque_mov.descricao = `Movimentação de estoque referente a venda ID ${vendas.id}`;
 
-                void await estoque_mov.Save();
+                if (qt_produto_atual !== 0) {
+                    void await estoque_mov.Save();
+                }
 
                 itens_salvos++;
             }
@@ -1926,6 +1920,7 @@ export class ControllerVendas {
             const itensVendas = new ItensVendas(db.connection, entidade_negocio);
             const estoque_mov = new Estoque_Mov(db.connection, entidade_negocio);
             const estoque = new Estoque(db.connection, entidade_negocio);
+            const vendas = new Vendas(db.connection,entidade_negocio);
 
             /*****************************************************************
              * Ao excluir um item da venda, o sistema irá registrar uma 
@@ -1937,6 +1932,26 @@ export class ControllerVendas {
 
             if (itensVendas.found) {
 
+                /***************************************
+                *  Atualiza o valor total da venda
+                ****************************************/
+                void await vendas.FindById(id_venda);
+
+                if (!vendas.found) {
+                    const error = new Error("Venda não encontrada.");
+                    error.statusCode = 404;
+                    throw error;
+                }
+
+                vendas.val_tot_venda -= itensVendas.vl_tot_item;
+
+                console.log(vendas.val_tot_venda,itensVendas.vl_tot_item)
+
+                void await vendas.Save();
+
+                /***************************************
+                *  Registra a movimentação de estoque
+                ****************************************/
                 void await estoque_mov.FindById(0, new Date());
 
                 estoque_mov.dt_mov = new Date();
@@ -1958,6 +1973,9 @@ export class ControllerVendas {
 
                 void await estoque.Save();
 
+                /***************************************
+                *  Exclui o item da venda
+                ****************************************/
                 void await itensVendas.Excluir();
                 
                 resdata.msg = 'Item de venda excluido com sucesso.';

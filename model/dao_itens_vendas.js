@@ -51,7 +51,8 @@ export default class ItensVendas {
     set forma_pagamnto(forma_pagamnto) {this.#field.forma_pagamnto = forma_pagamnto}
     get forma_pagamnto() {return this.#field.forma_pagamnto}
 
-    get vl_tot_item() {return parseFloat(this.vl_tot_item)}
+    get vl_tot_item() {return parseFloat(this.#field.vl_tot_item)}
+    set vl_tot_item(vl_tot_item) {this.#field.vl_tot_item = parseFloat(vl_tot_item)}
 
     get entidade_negocio() {return Number(this.#field.entidade_negocio)}
 
@@ -74,6 +75,9 @@ export default class ItensVendas {
             this.id = rows.id;
             this.qt_produto = rows.qt_produto;
             this.id_venda = rows.id_venda;
+            this.vl_unit = rows.vl_unit;
+            this.forma_pagamnto = rows.forma_pagamnto;
+            this.vl_tot_item = rows.vl_tot_item;
             this.#found = true;
         } else {
             this.#found = false;
