@@ -120,7 +120,7 @@ export default class Adiantamentos {
                         WHERE entidade_negocio = :entidade_negocio`;
 
         const [rows] = await this.#conn.query(query,{
-            entidade_negocio: this.#field.entidade_negocio
+            entidade_negocio: this.#field.entidade_negocio,
         });
 
         return rows.newid;

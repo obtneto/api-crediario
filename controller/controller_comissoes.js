@@ -414,6 +414,7 @@ export class ControllerComissoes {
             }
 
             fieldname === 'id_cobrador' ? adiantamentos.id_cobrador = id : adiantamentos.id_vendedor = id;
+            
             adiantamentos.vl_adiant = vl_adiantamento;
 
             void await adiantamentos.Save();
@@ -536,9 +537,9 @@ export class ControllerComissoes {
             const adiantamentos = new Adiantamentos(db.connection, entidade_negocio);
 
             const query = `SELECT SUM(vl_adiant) as ValorAdiantamento FROM tb_adiantamentos
-                WHERE entidade_negocio = :entidade_negocio 
-                AND (:fieldname = 'id_vendedor' AND id_vendedor = :id)
-                OR (:fieldname = 'id_cobrador' AND id_cobrador = :id)`
+                            WHERE entidade_negocio = :entidade_negocio 
+                            AND (:fieldname = 'id_vendedor' AND id_vendedor = :id)
+                            OR (:fieldname = 'id_cobrador' AND id_cobrador = :id)`
 
             const [rows] = await adiantamentos(query,{
                 entidade_negocio,
