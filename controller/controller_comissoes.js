@@ -1644,12 +1644,12 @@ export class ControllerComissoes {
             }
 
 
-            const updated_adiantamentos = `UPDATE tb_adiantamentos SET num_recibo = Null
+            const updated_adiantamentos = `UPDATE tb_adiantamentos SET num_recibo = NULL
             WHERE entidade_negocio = :entidade_negocio AND id_vendedor = :id_vendedor AND num_recibo = :num_recibo`;
 
             void await db.connection.execute(updated_adiantamentos,{entidade_negocio,id_vendedor,num_recibo});
 
-            const updated_vendas = `UPDATE tb_vendas SET num_recibo = Null
+            const updated_vendas = `UPDATE tb_vendas SET num_recibo = NULL
             WHERE entidade_negocio = :entidade_negocio AND id_vendedor = :id_vendedor AND num_recibo = :num_recibo`;
 
             void await db.connection.execute(updated_vendas,{entidade_negocio,id_vendedor,num_recibo});
