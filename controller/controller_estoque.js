@@ -71,11 +71,11 @@ export class ControllerEstoque {
 
         } catch (error) {
 
-            resdata.err = 500;
-            resdata.msg = error.message;
-            resdata.status = 500;
+            resdata.err = Number(error.statusCode || 500);
+            resdata.msg = resdata.err === 500 ? 'Erro interno do servidor (500). Contate o administrador do sistema.' : error.message;
+            resdata.status = Number(error.statusCode || 500);
 
-            GravarLog.Gravar('ControllerEstoque.Listar', error.stack);
+            if(resdata.err === 500) GravarLog.Gravar('ControllerEstoque.Listar', error.stack);
             
         }
 
@@ -201,11 +201,11 @@ export class ControllerEstoque {
 
         } catch (error) {
 
-            resdata.err = 500;
-            resdata.msg = error.message;
-            resdata.status = 500;
+            resdata.err = Number(error.statusCode || 500);
+            resdata.msg = resdata.err === 500 ? 'Erro interno do servidor (500). Contate o administrador do sistema.' : error.message;
+            resdata.status = Number(error.statusCode || 500);
 
-            GravarLog.Gravar('ControllerEstoque.Editar', error.stack);
+            if(resdata.err === 500) GravarLog.Gravar('ControllerEstoque.Editar', error.stack);
         }
 
         void await db.Close();
@@ -248,12 +248,12 @@ export class ControllerEstoque {
         } catch (error) {
             
             void await db.RollBack();
+            
+            resdata.err = Number(error.statusCode || 500);
+            resdata.msg = resdata.err === 500 ? 'Erro interno do servidor (500). Contate o administrador do sistema.' : error.message;
+            resdata.status = Number(error.statusCode || 500);
 
-            resdata.err = 500;
-            resdata.msg = error.message;
-            resdata.status = 500;
-
-            GravarLog.Gravar('ControllerEstoque.Salvar', error.stack);
+            if(resdata.err === 500) GravarLog.Gravar('ControllerEstoque.Salvar', error.stack);
 
         }
 
@@ -294,11 +294,12 @@ export class ControllerEstoque {
             
             void await db.RollBack();
 
-            resdata.err = 500;
-            resdata.msg = error.message;
-            resdata.status = 500;
+            resdata.err = Number(error.statusCode || 500);
+            resdata.msg = resdata.err === 500 ? 'Erro interno do servidor (500). Contate o administrador do sistema.' : error.message;
+            resdata.status = Number(error.statusCode || 500);
 
-            GravarLog.Gravar('ControllerEstoque.Excluir', error.stack);
+
+            if(resdata.err === 500) GravarLog.Gravar('ControllerEstoque.Excluir', error.stack);
 
         }
 
@@ -327,6 +328,8 @@ export class ControllerEstoqMov {
         try {
 
             void await db.Connect();
+
+            void await db.Begin();
             
             const entidade_negocio = obterEntidadeNegocio(req)
 
@@ -358,15 +361,20 @@ export class ControllerEstoqMov {
 
             void await estoque.Save();
 
+            void await db.Commit();
+
             resdata.msg = 'Entrada no estoque realizada com sucesso.'
 
 
         } catch (error) {
-            resdata.err = 500;
-            resdata.msg = error.message;
-            resdata.status = 500;
 
-            GravarLog.Gravar('ControllerEstoqueMov.Salvar', error.stack);
+            void await db.RollBack();
+
+            resdata.err = Number(error.statusCode || 500);
+            resdata.msg = resdata.err === 500 ? 'Erro interno do servidor (500). Contate o administrador do sistema.' : error.message;
+            resdata.status = Number(error.statusCode || 500);
+
+           if(resdata.err === 500) GravarLog.Gravar('ControllerEstoqueMov.Salvar', error.stack);
         }
 
         void await db.Close();
@@ -419,12 +427,11 @@ export class ControllerEstoqMov {
 
             resdata.data.mov = await estqmov.ExecuteQuery(query,{entidade_negocio,id_produto,dt_ini,dt_fin});
 
-
         }
         catch (error) {
-        
+            
             resdata.err = Number(error.statusCode || 500);
-            resdata.msg = error.message;
+            resdata.msg = resdata.err === 500 ? 'Erro interno do servidor (500). Contate o administrador do sistema.' : error.message;
             resdata.status = Number(error.statusCode || 500);
 
             if (resdata.err == 500) GravarLog('ControllerCobranca.SalvarPagamento', error.stack);

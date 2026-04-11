@@ -108,7 +108,7 @@ export class ControllerCobranca {
                 whereClause.push('v.situacao IN (0, 3)');
             }
 
-            let query = `SELECT v.id, v.dt_venda, c.cpf_cliente, c.nom_cliente, c.end_cliente, c.bai_cliente, 
+            let query = `SELECT v.id, v.dt_venda, c.cpf_cliente, c.nom_cliente,c.nom_usual, c.end_cliente, c.bai_cliente, 
             c.cid_cliente, c.uf_cliente, v.val_tot_venda, v.val_desconto, COALESCE(SUM(p.vl_pagamento), 0) AS val_total_pago,
             GREATEST((v.val_tot_venda - val_desconto )- COALESCE(SUM(p.vl_pagamento), 0), 0) AS saldo_pagar, v.situacao
             FROM tb_vendas v
@@ -149,10 +149,10 @@ export class ControllerCobranca {
         } catch (error) {
 
             resdata.err = Number(error.statusCode || 500);
-            resdata.msg = error.message;
+            resdata.msg = resdata.err === 500 ? 'Erro interno do servidor (500). Contate o administrador do sistema.' : error.message;
             resdata.status = Number(error.statusCode || 500);
 
-             if (resdata.err == 500) GravarLog('ControllerCobranca.ListarCobrancas', error.stack);
+            if (resdata.err == 500) GravarLog('ControllerCobranca.ListarCobrancas', error.stack);
         }
 
         void await db.Close();
@@ -294,11 +294,12 @@ export class ControllerCobranca {
                 total_pages: total > 0 ? Math.ceil(total / limit) : 0
             };
         } catch (error) {
+            
             resdata.err = Number(error.statusCode || 500);
-            resdata.msg = error.message;
+            resdata.msg = resdata.err === 500 ? 'Erro interno do servidor (500). Contate o administrador do sistema.' : error.message;
             resdata.status = Number(error.statusCode || 500);
 
-             if (resdata.err == 500) GravarLog('ControllerCobranca.ListarCobrancasPeriodo', error.stack);
+            if (resdata.err == 500) GravarLog('ControllerCobranca.ListarCobrancasPeriodo', error.stack);
         }
 
         void await db.Close();
@@ -312,6 +313,7 @@ export class ControllerCobranca {
         const db = new Database('dbcred');
 
         try {
+
             const entidade_negocio = obterEntidadeNegocio(req);
             const com_rota_cobranca = Number(req.params.com_rota_cobranca || 0);
             const fieldname = com_rota_cobranca === 1 ? 'id_rota' : 'id_cobrador';
@@ -490,10 +492,10 @@ export class ControllerCobranca {
         } catch (error) {
             
             resdata.err = Number(error.statusCode || 500);
-            resdata.msg = error.message;
+            resdata.msg = resdata.err === 500 ? 'Erro interno do servidor (500). Contate o administrador do sistema.' : error.message;
             resdata.status = Number(error.statusCode || 500);
 
-             if (resdata.err == 500) GravarLog('ControllerCobranca.ListarPagamentos', error.stack);
+            if (resdata.err == 500) GravarLog('ControllerCobranca.ListarPagamentos', error.stack);
         }
 
         void await db.Close();
@@ -650,7 +652,7 @@ export class ControllerCobranca {
             void await db.RollBack();
 
             resdata.err = Number(error.statusCode || 500);
-            resdata.msg = error.message;
+            resdata.msg = resdata.err === 500 ? 'Erro interno do servidor (500). Contate o administrador do sistema.' : error.message;
             resdata.status = Number(error.statusCode || 500);
 
             if (resdata.err == 500) GravarLog('ControllerCobranca.SalvarPagamento', error.stack);
@@ -707,9 +709,9 @@ export class ControllerCobranca {
         } catch (error) {
 
             void await db.RollBack();
-                
+             
             resdata.err = Number(error.statusCode || 500);
-            resdata.msg = error.message;
+            resdata.msg = resdata.err === 500 ? 'Erro interno do servidor (500). Contate o administrador do sistema.' : error.message;
             resdata.status = Number(error.statusCode || 500);
 
             if (resdata.status === 500) {
@@ -772,8 +774,8 @@ export class ControllerCobranca {
             const vendas = new Vendas(db.connection, entidade_negocio);
 
             const query = `UPDATE tb_vendas SET marca_venda = Null
-            WHERE entidade_negocio = ? AND ${fieldname} = ? 
-            AND dt_venda >= ? AND dt_venda <= ?`;
+                            WHERE entidade_negocio = ? AND ${fieldname} = ? 
+                            AND dt_venda >= ? AND dt_venda <= ?`;
 
             await vendas.ExecuteQuery(query, [
                 entidade_negocio,
@@ -787,7 +789,7 @@ export class ControllerCobranca {
         } catch (error) {
             
             resdata.err = Number(error.statusCode || 500);
-            resdata.msg = error.message;
+            resdata.msg = resdata.err === 500 ? 'Erro interno do servidor (500). Contate o administrador do sistema.' : error.message;
             resdata.status = Number(error.statusCode || 500);
 
             if (resdata.status === 500) {

@@ -56,7 +56,7 @@ export class ControllerBackups {
         } catch (error) {
 
             resdata.err = Number(error.statusCode || 500);
-            resdata.msg = error.message;
+            resdata.msg = resdata.err === 500 ? 'Erro interno do servidor (500). Contate o administrador do sistema.' : error.message;
             resdata.status = Number(error.statusCode || 500);
 
             if (resdata.err === 500) GravarLog('ControllerBackups.Listar', error.stack || error.message);

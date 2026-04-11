@@ -130,7 +130,8 @@ export default class Distribuicao {
         const [rows_check] = await this.#conn.query(query_check_ano);
 
         const ano_corrente = rows_check.ano_corrente;
-        const ano = new Date(this.#field.dt_distrib).getFullYear();
+        const dtDistrib = String(this.#field.dt_distrib || '').trim();
+        const ano = Number(dtDistrib.slice(0, 4) || 0);
 
         const id = ano > ano_corrente ? String(ano) + '1'.padStart(4, '0') : 
         String(ano) + String(Number(String(rows.newid).substring(4,8)) + 1).padStart(4, '0');

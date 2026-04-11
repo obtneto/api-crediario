@@ -8,10 +8,47 @@ import {
 } from './AuthSession.js';
 
 const ROTAS_PUBLICAS_SEM_ENTIDADE = ['/auth/session', '/auth/logout', '/listar_entidades_publico'];
+const ENTITY_STATUS_CACHE_TTL_MS = 30000;
+const entityStatusCache = new Map();
+
+function getCachedEntityStatus(entidadeId = 0) {
+    const cacheKey = Number(entidadeId || 0);
+    const cached = entityStatusCache.get(cacheKey);
+
+    if (!cached) {
+        return null;
+    }
+
+    if (cached.expiresAt <= Date.now()) {
+        entityStatusCache.delete(cacheKey);
+        return null;
+    }
+
+    return cached.active;
+}
+
+function setCachedEntityStatus(entidadeId = 0, active = false) {
+    const cacheKey = Number(entidadeId || 0);
+
+    if (cacheKey <= 0) {
+        return;
+    }
+
+    entityStatusCache.set(cacheKey, {
+        active: Boolean(active),
+        expiresAt: Date.now() + ENTITY_STATUS_CACHE_TTL_MS
+    });
+}
 
 async function entidadeEstaAtiva(entidadeId = 0) {
     if (Number(entidadeId || 0) <= 0) {
         return false;
+    }
+
+    const cached = getCachedEntityStatus(entidadeId);
+
+    if (cached !== null) {
+        return cached;
     }
 
     const db = new Database('dbcred');
@@ -25,7 +62,9 @@ async function entidadeEstaAtiva(entidadeId = 0) {
             { id: Number(entidadeId || 0) }
         );
 
-        return Number(entidade?.ativo || 0) === 1;
+        const active = Number(entidade?.ativo || 0) === 1;
+        setCachedEntityStatus(entidadeId, active);
+        return active;
     } finally {
         void await db.Close();
     }

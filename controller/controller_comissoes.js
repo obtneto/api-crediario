@@ -168,9 +168,9 @@ export class ControllerComissoes {
             const adiantamentos = new Adiantamentos(db.connection, entidade_negocio);
 
             const query = `SELECT id, dt_adiant as dt_adiantamento, vl_adiant as vl_adiantamento 
-            FROM tb_adiantamentos 
-            WHERE entidade_negocio = ? AND ${fieldname} = ?
-            ORDER BY dt_adiant DESC, id DESC`;
+                            FROM tb_adiantamentos 
+                            WHERE entidade_negocio = ? AND ${fieldname} = ?
+                            ORDER BY dt_adiant DESC, id DESC`;
 
             resdata.data.adiantamentos = await adiantamentos.ExecuteQuery(query, [ 
                 entidade_negocio, 
@@ -180,7 +180,7 @@ export class ControllerComissoes {
         } catch (error) {
             
             resdata.err = Number(error.statusCode || 500);
-            resdata.msg = error.message;
+            resdata.msg = resdata.err === 500 ? 'Erro interno do servidor (500). Contate o administrador do sistema.' : error.message;
             resdata.status = Number(error.statusCode || 500);
 
             if (resdata.status === 500) {
@@ -360,7 +360,7 @@ export class ControllerComissoes {
         } catch (error) {
 
             resdata.err = Number(error.statusCode || 500);
-            resdata.msg = error.message;
+            resdata.msg = resdata.err === 500 ? 'Erro interno do servidor (500). Contate o administrador do sistema.' : error.message;
             resdata.status = Number(error.statusCode || 500);
 
             if (resdata.status === 500) {
@@ -426,9 +426,9 @@ export class ControllerComissoes {
         } catch (error) {
 
             void await db.RollBack();
-                
+             
             resdata.err = Number(error.statusCode || 500);
-            resdata.msg = error.message;    
+            resdata.msg = resdata.err === 500 ? 'Erro interno do servidor (500). Contate o administrador do sistema.' : error.message;
             resdata.status = Number(error.statusCode || 500);
 
             if (resdata.err == 500) GravarLog('ControllerCobranca.SalvarAdiantamento', error.stack);
@@ -484,9 +484,9 @@ export class ControllerComissoes {
         } catch (error) {
 
             void await db.RollBack();
-                
+            
             resdata.err = Number(error.statusCode || 500);
-            resdata.msg = error.message;
+            resdata.msg = resdata.err === 500 ? 'Erro interno do servidor (500). Contate o administrador do sistema.' : error.message;
             resdata.status = Number(error.statusCode || 500);
 
             if (resdata.status === 500) {
@@ -552,7 +552,7 @@ export class ControllerComissoes {
        } catch (error) {
             
             resdata.err = Number(error.statusCode || 500);
-            resdata.msg = error.message;
+            resdata.msg = resdata.err === 500 ? 'Erro interno do servidor (500). Contate o administrador do sistema.' : error.message;
             resdata.status = Number(error.statusCode || 500);
 
             if (resdata.status === 500) {
@@ -1026,9 +1026,9 @@ export class ControllerComissoes {
             const pagamentos = new Pagamentos(db.connection,entidade_negocio);
 
             let query = `SELECT pg.id_venda,pg.dt_pagamento,cl.nom_cliente,pg.vl_pagamento from tb_pagamentos pg
-            LEFT JOIN tb_vendas vd ON vd.id = pg.id_venda AND vd.entidade_negocio = pg.entidade_negocio
-            LEFT JOIN tb_clientes cl ON cl.cpf_cliente = vd.cpf_cliente
-            WHERE pg.entidade_negocio = :entidade_negocio AND pg.num_recibo = :num_recibo`
+                            LEFT JOIN tb_vendas vd ON vd.id = pg.id_venda AND vd.entidade_negocio = pg.entidade_negocio
+                            LEFT JOIN tb_clientes cl ON cl.cpf_cliente = vd.cpf_cliente
+                            WHERE pg.entidade_negocio = :entidade_negocio AND pg.num_recibo = :num_recibo`
             
             resdata.data.pagamentos = await pagamentos.ExecuteQuery(query,{
                 entidade_negocio,
@@ -1040,7 +1040,7 @@ export class ControllerComissoes {
         } catch (error) {
 
             resdata.err = Number(error.statusCode || 500);
-            resdata.msg = error.message;
+            resdata.msg = resdata.err === 500 ? 'Erro interno do servidor (500). Contate o administrador do sistema.' : error.message;
             resdata.status = Number(error.statusCode || 500);
 
             if (resdata.err == 500) GravarLog('ControllerComissoes.SalvarReciboCobrador', error.stack);
@@ -1091,7 +1091,7 @@ export class ControllerComissoes {
         } catch (error) {
             
             resdata.err = Number(error.statusCode || 500);
-            resdata.msg = error.message;
+            resdata.msg = resdata.err === 500 ? 'Erro interno do servidor (500). Contate o administrador do sistema.' : error.message;
             resdata.status = Number(error.statusCode || 500);
 
             if (resdata.status === 500) {
@@ -1195,7 +1195,7 @@ export class ControllerComissoes {
             void await db.RollBack();
 
             resdata.err = Number(error.statusCode || 500);
-            resdata.msg = error.message;
+            resdata.msg = resdata.err === 500 ? 'Erro interno do servidor (500). Contate o administrador do sistema.' : error.message;
             resdata.status = Number(error.statusCode || 500);
 
             if (resdata.err == 500) GravarLog('ControllerComissoes.SalvarReciboCobrador', error.stack);
@@ -1250,12 +1250,14 @@ export class ControllerComissoes {
             }
 
             const updated_pagamentos = `UPDATE tb_pagamentos SET num_recibo = Null
-            WHERE entidade_negocio = :entidade_negocio AND id_cobrador = :id_cobrador AND num_recibo = :num_recibo`;
+                                        WHERE entidade_negocio = :entidade_negocio AND 
+                                        id_cobrador = :id_cobrador AND num_recibo = :num_recibo`;
 
             void await db.connection.execute(updated_pagamentos,{entidade_negocio,id_cobrador,num_recibo});
 
             const updated_adiantamentos = `UPDATE tb_adiantamentos SET num_recibo = Null
-            WHERE entidade_negocio = :entidade_negocio AND id_cobrador = :id_cobrador AND num_recibo = :num_recibo`;
+                                           WHERE entidade_negocio = :entidade_negocio AND 
+                                           id_cobrador = :id_cobrador AND num_recibo = :num_recibo`;
 
             void await db.connection.execute(updated_adiantamentos,{entidade_negocio,id_cobrador,num_recibo});
 
@@ -1270,7 +1272,7 @@ export class ControllerComissoes {
             void await db.RollBack();
 
             resdata.err = Number(error.statusCode || 500);
-            resdata.msg = error.message;
+            resdata.msg = resdata.err === 500 ? 'Erro interno do servidor (500). Contate o administrador do sistema.' : error.message;
             resdata.status = Number(error.statusCode || 500);
 
             if (resdata.status === 500) {
@@ -1400,7 +1402,7 @@ export class ControllerComissoes {
         } catch (error) {
 
             resdata.err = Number(error.statusCode || 500);
-            resdata.msg = error.message;
+            resdata.msg = resdata.err === 500 ? 'Erro interno do servidor (500). Contate o administrador do sistema.' : error.message;
             resdata.status = Number(error.statusCode || 500);
 
             if (resdata.status === 500) {
@@ -1488,7 +1490,7 @@ export class ControllerComissoes {
         } catch (error) {
 
             resdata.err = Number(error.statusCode || 500);
-            resdata.msg = error.message;
+            resdata.msg = resdata.err === 500 ? 'Erro interno do servidor (500). Contate o administrador do sistema.' : error.message;
             resdata.status = Number(error.statusCode || 500);
 
             if (resdata.err == 500) GravarLog('ControllerComissoes.SalvarReciboCobrador', error.stack);
@@ -1566,12 +1568,14 @@ export class ControllerComissoes {
             await comissoes.Save();
 
             const updated_vendas = `UPDATE tb_vendas SET num_recibo = :num_recibo 
-            WHERE entidade_negocio = :entidade_negocio AND id_vendedor = :id_vendedor AND num_recibo IS NULL`;
+                                    WHERE entidade_negocio = :entidade_negocio AND 
+                                    id_vendedor = :id_vendedor AND num_recibo IS NULL`;
 
             void await db.connection.execute(updated_vendas,{entidade_negocio,id_vendedor,num_recibo: comissoes.num_recibo});
 
             const updated_adiantamentos = `UPDATE tb_adiantamentos SET num_recibo = :num_recibo 
-            WHERE entidade_negocio = :entidade_negocio AND id_vendedor = :id_vendedor AND num_recibo IS NULL`;
+                                           WHERE entidade_negocio = :entidade_negocio AND 
+                                           id_vendedor = :id_vendedor AND num_recibo IS NULL`;
 
             void await db.connection.execute(updated_adiantamentos,{entidade_negocio,id_vendedor,num_recibo: comissoes.num_recibo});
 
@@ -1587,9 +1591,9 @@ export class ControllerComissoes {
         } catch (error) {
 
             void await db.RollBack();
-
+            
             resdata.err = Number(error.statusCode || 500);
-            resdata.msg = error.message;
+            resdata.msg = resdata.err === 500 ? 'Erro interno do servidor (500). Contate o administrador do sistema.' : error.message;
             resdata.status = Number(error.statusCode || 500);
 
             if (resdata.err == 500) GravarLog('ControllerComissoes.SalvarReciboCobrador', error.stack);
@@ -1666,7 +1670,7 @@ export class ControllerComissoes {
             void await db.RollBack();
 
             resdata.err = Number(error.statusCode || 500);
-            resdata.msg = error.message;
+            resdata.msg = resdata.err === 500 ? 'Erro interno do servidor (500). Contate o administrador do sistema.' : error.message;
             resdata.status = Number(error.statusCode || 500);
 
             if (resdata.status === 500) {
@@ -1796,7 +1800,7 @@ export class ControllerComissoes {
         } catch (error) {
 
             resdata.err = Number(error.statusCode || 500);
-            resdata.msg = error.message;
+            resdata.msg = resdata.err === 500 ? 'Erro interno do servidor (500). Contate o administrador do sistema.' : error.message;
             resdata.status = Number(error.statusCode || 500);
 
             if (resdata.status === 500) {
@@ -1883,7 +1887,7 @@ export class ControllerComissoes {
         } catch (error) {
 
             resdata.err = Number(error.statusCode || 500);
-            resdata.msg = error.message;
+            resdata.msg = resdata.err === 500 ? 'Erro interno do servidor (500). Contate o administrador do sistema.' : error.message;
             resdata.status = Number(error.statusCode || 500);
 
             if (resdata.err == 500) GravarLog('ControllerComissoes.SalvarReciboCobrador', error.stack);

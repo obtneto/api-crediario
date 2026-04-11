@@ -8,6 +8,8 @@ import ItensVendas from '../model/dao_itens_vendas.js';
 import Entidades from '../model/dao_entidades.js';
 import Clientes from '../model/dao_clientes.js';
 import Cobradores from '../model/dao_cobradores.js';
+import Vendedores from '../model/dao_vendedores.js';
+import Produtos from '../model/dao_produtos.js';
 import Rotas from '../model/dao_rotas.js';
 import RestricaoCredito from '../model/dao_restricao_credito.js';
 import GravarLog from '../utils/GravarLog.js';
@@ -44,6 +46,28 @@ const formatMaskIdVenda = (value) => {
 
     return `${digits.slice(0, 4)}-${digits.slice(4, 7)}-${digits.slice(7, 12)}`;
 };
+
+const DATE_ONLY_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+
+const normalizeDateOnly = (value) => {
+    const text = String(value ?? '').trim();
+
+    if (!text) return '';
+    if (DATE_ONLY_REGEX.test(text)) return text;
+    if (/^\d{4}-\d{2}-\d{2}T/.test(text)) return text.slice(0, 10);
+
+    return '';
+};
+
+const isValidDateOnly = (value) => {
+    if (!DATE_ONLY_REGEX.test(value)) return false;
+    return !Number.isNaN(new Date(`${value}T12:00:00`).getTime());
+};
+
+const normalizeDistribRecord = (item) => ({
+    ...item,
+    dt_distrib: normalizeDateOnly(item?.dt_distrib) || String(item?.dt_distrib || '')
+});
 
 export class ControllerDistribuicao{
 
@@ -90,13 +114,13 @@ export class ControllerDistribuicao{
                 throw error;
             }
 
-            if (dt_ini && !/^\d{4}-\d{2}-\d{2}$/.test(dt_ini)) {
+            if (dt_ini && !DATE_ONLY_REGEX.test(dt_ini)) {
                 const error = new Error('Data inicial invalida.');
                 error.statusCode = 400;
                 throw error;
             }
 
-            if (dt_fim && !/^\d{4}-\d{2}-\d{2}$/.test(dt_fim)) {
+            if (dt_fim && !DATE_ONLY_REGEX.test(dt_fim)) {
                 const error = new Error('Data final invalida.');
                 error.statusCode = 400;
                 throw error;
@@ -135,7 +159,7 @@ export class ControllerDistribuicao{
             }
 
             if (dt_fim) {
-                whereClause.push('d.dt_distrib <= ?');
+                whereClause.push('d.dt_distrib < DATE_ADD(?, INTERVAL 1 DAY)');
                 params.push(dt_fim);
             }
 
@@ -153,7 +177,7 @@ export class ControllerDistribuicao{
 
             const paramsWithLimit = [...params, limit, offset];
 
-            resdata.data.distrib = await distrib.ExecuteQuery(query, paramsWithLimit);
+            resdata.data.distrib = (await distrib.ExecuteQuery(query, paramsWithLimit)).map(normalizeDistribRecord);
 
             query = `SELECT COUNT(*) AS total
                      FROM tb_distribuicao d
@@ -233,13 +257,13 @@ export class ControllerDistribuicao{
                 throw error;
             }
 
-            if (dt_ini && !/^\d{4}-\d{2}-\d{2}$/.test(dt_ini)) {
+            if (dt_ini && !DATE_ONLY_REGEX.test(dt_ini)) {
                 const error = new Error('Data inicial invalida.');
                 error.statusCode = 400;
                 throw error;
             }
 
-            if (dt_fim && !/^\d{4}-\d{2}-\d{2}$/.test(dt_fim)) {
+            if (dt_fim && !DATE_ONLY_REGEX.test(dt_fim)) {
                 const error = new Error('Data final invalida.');
                 error.statusCode = 400;
                 throw error;
@@ -278,7 +302,7 @@ export class ControllerDistribuicao{
             }
 
             if (dt_fim) {
-                whereClause.push('d.dt_distrib <= ?');
+                whereClause.push('d.dt_distrib < DATE_ADD(?, INTERVAL 1 DAY)');
                 params.push(dt_fim);
             }
 
@@ -299,7 +323,7 @@ export class ControllerDistribuicao{
                          LIMIT ? OFFSET ?`;
 
             const paramsWithLimit = [...params, limit, offset];
-            resdata.data.distrib = await distrib.ExecuteQuery(query, paramsWithLimit);
+            resdata.data.distrib = (await distrib.ExecuteQuery(query, paramsWithLimit)).map(normalizeDistribRecord);
 
             query = `SELECT COUNT(*) AS total
                      FROM tb_distribuicao d
@@ -396,13 +420,13 @@ export class ControllerDistribuicao{
                 throw error;
             }
 
-            if (dt_ini && !/^\d{4}-\d{2}-\d{2}$/.test(dt_ini)) {
+            if (dt_ini && !DATE_ONLY_REGEX.test(dt_ini)) {
                 const error = new Error('Data inicial invalida.');
                 error.statusCode = 400;
                 throw error;
             }
 
-            if (dt_fim && !/^\d{4}-\d{2}-\d{2}$/.test(dt_fim)) {
+            if (dt_fim && !DATE_ONLY_REGEX.test(dt_fim)) {
                 const error = new Error('Data final invalida.');
                 error.statusCode = 400;
                 throw error;
@@ -446,7 +470,7 @@ export class ControllerDistribuicao{
             }
 
             if (dt_fim) {
-                whereClause.push('d.dt_distrib <= :dt_fim');
+                whereClause.push('d.dt_distrib < DATE_ADD(:dt_fim, INTERVAL 1 DAY)');
                 params.dt_fim = dt_fim;
             }
 
@@ -472,7 +496,7 @@ export class ControllerDistribuicao{
                            WHERE ${whereClause.join(' AND ')} AND i.qt_distrib > 0
                            ORDER BY d.dt_distrib DESC, d.id DESC, p.nom_produto ASC, i.id_produto ASC`;
 
-            const rows = await distrib.ExecuteQuery(query, params);
+            const rows = (await distrib.ExecuteQuery(query, params)).map(normalizeDistribRecord);
 
             if (!Array.isArray(rows) || rows.length === 0) {
                 const error = new Error('Nao ha dados para impressao.');
@@ -725,6 +749,8 @@ export class ControllerDistribuicao{
                 throw error;
             }
 
+            resdata.data.distrib = normalizeDistribRecord(resdata.data.distrib);
+
             const query_itens_distrib = `SELECT d.id_distrib, d.id_produto, d.id_vendedor, d.qt_distrib, p.nom_produto, p.mar_produto
                                          FROM tb_itens_distrib d
                                          LEFT JOIN tb_produtos p ON p.entidade_negocio = d.entidade_negocio AND p.id = d.id_produto
@@ -762,13 +788,13 @@ export class ControllerDistribuicao{
         try {
 
             const id = String(req.body.id);
-            const dt_distrib = new Date(req.body.dt_distrib);
+            const dt_distrib = normalizeDateOnly(req.body.dt_distrib);
             const id_vendedor = Number(req.body.id_vendedor);
             const itens_distrib = req.body.itens;
 
             const entidade_negocio = obterEntidadeNegocio(req);
 
-            if (!dt_distrib || Number.isNaN(dt_distrib.getTime())) {
+            if (!isValidDateOnly(dt_distrib)) {
                 const error = new Error('Data de distribuição inválida.');
                 error.statusCode = 400;
                 throw error;
@@ -790,13 +816,22 @@ export class ControllerDistribuicao{
 
             void await db.Begin();
 
+            /*********************************************************
+            * Instancia as classes DAO's utilizada no procedimento
+            *********************************************************/
             const estoque = new Estoque(db.connection,entidade_negocio);
             const distrib = new Distribuicao(db.connection,entidade_negocio);
             const itens = new ItensDistribuicoes(db.connection,entidade_negocio);
             const estoque_mov = new Estoque_Mov(db.connection,entidade_negocio);
+            const produtos = new Produtos(db.connection,entidade_negocio);
+            const vendedores = new Vendedores(db.connection,entidade_negocio);
 
             void await distrib.FindById(id);
 
+            /******************************************************
+            * Verificação de existe alguma distribuição ativa antes
+            * de adicionar uma nova distribuição
+            *******************************************************/
             if (!distrib.found) {
 
                 const query = `SELECT d.id FROM tb_distribuicao d 
@@ -820,6 +855,9 @@ export class ControllerDistribuicao{
             
             void await distrib.Save();
 
+            /************************************************************
+            * Salva os items da distribuição
+            *************************************************************/
             const dt_mov = new Date().toLocaleString('sv-SE');
 
             for (const item_distrib of itens_distrib) {
@@ -835,27 +873,46 @@ export class ControllerDistribuicao{
 
                 void await itens.Save();
 
-                /*****************************************************************/
+                /**************************************************************
+                * Verifica e/ou Atualiza o estoque disponivel, se houver saldo
+                * transfere a quantidade distribuida do estique disponivel para
+                * o estoque reservado.
+                *************************************************************/
                 void await estoque.FindById(item_distrib.id_produto);
 
-                if (estoque.qt_disponivel < item_distrib.qt_distrib) {
-                    throw Error('Quantidade a ser distribuida não pode ser maior que saldo do estoque.')
+                if (!estoque.found) {
+                    const error = new Error("Produto não encontrado no estoque.");
+                    error.statusCode = 404;
+                    throw error;
                 }
 
-                estoque.qt_disponivel = parseFloat(estoque.qt_disponivel) - parseFloat(item_distrib.qt_distrib);
-                estoque.qt_reservada = parseFloat(estoque.qt_reservada) + parseFloat(item_distrib.qt_distrib);
+                if (estoque.qt_disponivel < item_distrib.qt_distrib) {
+
+                    void await produtos.FindById(item_distrib.id_produto);
+
+                    const error = new Error(`${produtos.nom_produto} não tem saldo do estoque para distribuição.`);
+                    error.statusCode = 400;
+                    throw error;
+                }
+
+                estoque.qt_disponivel = parseFloat(estoque.qt_disponivel) - (parseFloat(item_distrib.qt_distrib - qt_distrib_corrente ) * -1 );
+                estoque.qt_reservada = parseFloat(estoque.qt_reservada) + (parseFloat(item_distrib.qt_distrib - qt_distrib_corrente) * -1 );
 
                 void await estoque.Save();
 
-                /*****************************************************************/
+                /**************************************************************
+                * Registra a movimentação do estoque.
+                *************************************************************/
                 void await estoque_mov.FindById(0,dt_mov);
 
+                void await vendedores.FindById(distrib.id_vendedor);
+
                 estoque_mov.dt_mov = dt_mov;
-                estoque_mov.descricao = `Inserir/Atualizar itens da Distribuicao ${distrib.id}`
+                estoque_mov.descricao = `Distribuicao: ${distrib.id} Vendedor: ${String(id_vendedor).padStart(3,'0')} ${vendedores.nom_vendedor}`
                 estoque_mov.id_produto = item_distrib.id_produto;
                 estoque_mov.nr_documento = distrib.id
                 estoque_mov.qt_mov = item_distrib.qt_distrib
-                estoque_mov.tp_mov = "MOVIMENTAÇÃO";
+                estoque_mov.tp_mov = "DISTRIBUIÇÃO DE PRODUTO";
 
                 estoque_mov.Save();
 
@@ -877,7 +934,7 @@ export class ControllerDistribuicao{
             resdata.msg = error.message;
             resdata.status = Number(error.statusCode || 500);
 
-            GravarLog('ControllerDistribuicao.Salvar', error.stack);
+            if (resdata.err === 500) GravarLog('ControllerDistribuicao.Salvar', error.stack);
 
         }
 
@@ -1833,6 +1890,8 @@ export class ControllerVendas {
                 }
 
                 estoque.qt_reservada = Number(estoque.qt_reservada) - qt_produto_atual;
+
+                void await estoque.Save();
 
                 /***************************************************************************/
                 void await itensDistrib.FindById(id_vendedor,id_produto_item);
