@@ -1,17 +1,6 @@
 import {createConnection} from 'mariadb';
 //import json from './tabDigitacao.json' with { type: 'json' };
 
-const connection = await createConnection({
-    host: '172.23.42.17',
-    user: 'root',
-    password: 'M!r@g3ns',
-    database: 'fsph_farmacia',
-    namedPlaceholders: true,
-    decimalNumbers: true,
-    dateStrings: true,
-    initSql: "SET time_zone = '-03:00'" 
-});
-
 (async () => {
 
     try {
