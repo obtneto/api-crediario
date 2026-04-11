@@ -23,7 +23,7 @@ import Database from '../connections/dbconn.js';
                            dep_baixa = :dep_baixa,cod_pac = :cod_pac,
                            cod_indica = :cod_indica,cod_local = :cod_local`;
             
-            await db.connection.execute(query,{
+            void await db.connection.execute(query,{
                 num_req: item.NumReq,
                 lote: item.Lote,
                 cod_prod: item.CodProd,
@@ -40,16 +40,16 @@ import Database from '../connections/dbconn.js';
             
         }
 
-        await db.Commit();
+        void await db.Commit();
         
     } catch (error) {
 
-        await db.RollBack();
+        void await db.RollBack();
 
         console.log(error);
 
     } finally {
-        await db.Close(); 
+        void await db.Close(); 
     }
 
 })();
