@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import {createConnection} from 'mariadb';
 import {config} from 'dotenv';
 
-config({path:'../.env'});
+config({path:'../../.env'});
 
 async function backupEmpresa(empresaId) {
    
@@ -12,6 +12,7 @@ async function backupEmpresa(empresaId) {
     const connection = await createConnection({
         host: process.env.DB_HOST,
         user: process.env.DB_USER,
+        port: process.env.DB_PORT,
         password: process.env.DB_PASSWORD,
         database: dbname
     });
@@ -25,7 +26,7 @@ async function backupEmpresa(empresaId) {
     `);
 
     const tabelas = rows.map(r => r.TABLE_NAME);
-    const arquivoSaida = `backups/backup_empresa_${empresaId}.sql`;
+    const arquivoSaida = `./backup_empresa_${empresaId}.sql`;
 
     // Limpa o arquivo se já existir
     if (fs.existsSync(arquivoSaida)) fs.unlinkSync(arquivoSaida);
@@ -35,7 +36,7 @@ async function backupEmpresa(empresaId) {
     for (const tabela of tabelas) {
         // 2. Executa o mariadb-dump para cada tabela com o filtro WHERE
         // Usamos --no-create-info se quiser apenas os dados, ou remover para ter a estrutura
-        const comando = `mariadb-dump -u ${process.env.DB_USER} -p${process.env.DB_PASSWORD} ${dbname} ${tabela} --where="entidade_negocio=${empresaId}" --no-create-info >> ${arquivoSaida}`;
+        const comando = `mariadb-dump -u ${process.env.DB_USER} -p${process.env.DB_PASSWORD} ${dbname} ${tabela} --where="entidade_negocio=${empresaId} OR entidade_negocio=999" --no-create-info >> ${arquivoSaida}`;
         
         await new Promise((resolve, reject) => {
             exec(comando, (error) => {

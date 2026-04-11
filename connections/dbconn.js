@@ -6,7 +6,7 @@ export default class Database {
     #conn = null;
     //#script = null
 
-    constructor(database){
+    constructor(database) {
         if (!database) throw new Error('Forneça o nome do Banco de Dados');
         this.#dbname = database;
     }
@@ -21,12 +21,13 @@ export default class Database {
 
         this.#conn = await createConnection({
             host: process.env.DB_HOST,
-            user:  process.env.DB_USER, 
+            user:  process.env.DB_USER,
+            port: process.env.DB_PORT,
             database: this.#dbname,
             password: process.env.DB_PASSWORD, 
             namedPlaceholders: true,
+            decimalAsNumber: true,
             dateStrings: true,
-            timezone: '-03:00',
             initSql: "SET time_zone = '-03:00'" 
         });
 
@@ -45,11 +46,11 @@ export default class Database {
     }
 
     async Close() {
-        if (this.#conn) await  this.#conn.end();
+        if (this.#conn) await this.#conn.end();
     }
 
     async CreateEvents() {
-        
+
         const scriptSituacaoVendas = `
             CREATE EVENT IF NOT EXISTS atualiza_situacao_vendas_horario
                 ON SCHEDULE EVERY 1 HOUR
@@ -61,8 +62,7 @@ export default class Database {
                     WHEN DATEDIFF(CURRENT_DATE(),vd.dia_pagam) > (tp.dias_apos_pagamnto + 1) THEN 3
                     ELSE 0
                 END
-                WHERE vd.situacao = 0;
-        `;
+                WHERE vd.situacao = 0;`;
 
         const scriptStatusDistribuicao = `
             CREATE EVENT IF NOT EXISTS atualiza_status_distribuicao ON SCHEDULE EVERY 1 MINUTE DO UPDATE tb_distribuicao d
@@ -103,8 +103,7 @@ export default class Database {
 
             END`
 
-        const scriptAtualizaAnoBase = `
-            UPDATE tb_check_ano SET ano_corrente = YEAR(NOW()), id = 1;`
+        const scriptAtualizaAnoBase = `UPDATE tb_check_ano SET ano_corrente = YEAR(NOW()), id = 1;`
 
         // SELECT @@global.event_scheduler;
         //await this.#conn.query("SET GLOBAL event_scheduler = ON");

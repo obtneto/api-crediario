@@ -27,7 +27,10 @@ export class ControllerClientes {
         }
 
         try {
-            
+
+            /***********************************************************
+            * Obter dados do parametro e queries enviados pelo frontend
+            ************************************************************/
             const pesq = String(req.params.pesq || '*').trim();
             const page = Math.max(1, parseInt(req.query.page, 10) || 1);
             const limit = Math.min(200, Math.max(1, parseInt(req.query.limit, 10) || 50));
@@ -35,11 +38,17 @@ export class ControllerClientes {
 
             void await db.Connect();
 
+            /***********************************************************
+            * Instanciamento das classes DAO envolvidas no procedimento
+            ************************************************************/
             const clientes = new Clientes(db.connection);
             const filtroAtivo = pesq !== '*';
             const whereSql = filtroAtivo ? 'WHERE c.nom_cliente LIKE :pesq' : '';
             const queryParams = filtroAtivo ? { pesq: `%${pesq}%` } : {};
 
+            /************************************************************
+            * Execursão das queries para obter os dados do banco de dados
+            *************************************************************/
             let query = `SELECT c.id, c.cpf_cliente, c.nom_cliente, c.nom_usual, c.cel_cliente, c.end_cliente, c.num_cliente,
                          c.bai_cliente, c.cid_cliente, c.uf_cliente, c.cep_cliente, c.lat_cliente, c.lon_cliente
                          FROM tb_clientes c
@@ -69,10 +78,11 @@ export class ControllerClientes {
         } catch (error) {
 
             void await db.RollBack();
-
+            
             resdata.err = Number(error.statusCode || 500);
-            resdata.msg = error.message;
+            resdata.msg = resdata.err === 500 ? 'Erro interno do servidor (500). Contate o administrador do sistema.' : error.message;
             resdata.status = Number(error.statusCode || 500);
+
 
             if (resdata.err == 500) GravarLog(`Erro ao listar clientes: ${error.stack}`);
         }
@@ -101,8 +111,14 @@ export class ControllerClientes {
             void await db.Connect();
 
             const clientes = new Clientes(db.connection);
-
+      
             const rows = await clientes.FindByCpf(cpf);
+
+            if (!clientes.found) {
+                const error = new Error('Cliente não encontrado.');
+                error.statusCode = 404;
+                throw error;
+            }
 
             resdata.data = rows;
             
@@ -111,10 +127,10 @@ export class ControllerClientes {
             void await db.RollBack();
 
             resdata.err = Number(error.statusCode || 500);
-            resdata.msg = error.message;
+            resdata.msg = resdata.err === 500 ? 'Erro interno do servidor (500). Contate o administrador do sistema.' : error.message;
             resdata.status = Number(error.statusCode || 500);
 
-             if (resdata.err == 500) GravarLog(`Erro ao editar cliente: ${error.stack}`);
+            if (resdata.err == 500) GravarLog(`Erro ao editar cliente: ${error.stack}`);
         }
 
         void await db.Close();
@@ -194,7 +210,7 @@ export class ControllerClientes {
             void await db.RollBack();
 
             resdata.err = Number(error.statusCode || 500);
-            resdata.msg = error.message;
+            resdata.msg = resdata.err === 500 ? 'Erro interno do servidor (500). Contate o administrador do sistema.' : error.message;
             resdata.status = Number(error.statusCode || 500);
 
             if (resdata.err == 500) GravarLog(`Erro ao salvar cliente: ${error.stack}`);
@@ -275,10 +291,10 @@ export class ControllerClientes {
             void await db.RollBack();
 
             resdata.err = Number(error.statusCode || 500);
-            resdata.msg = error.message;
+            resdata.msg = resdata.err === 500 ? 'Erro interno do servidor (500). Contate o administrador do sistema.' : error.message;
             resdata.status = Number(error.statusCode || 500);
 
-             if (resdata.err == 500) GravarLog(`Erro ao Retirae Restrição de Credito: ${error.stack}`);
+            if (resdata.err == 500) GravarLog(`Erro ao Retirae Restrição de Credito: ${error.stack}`);
         }
 
         void await db.Close();
@@ -364,7 +380,7 @@ export class ControllerClientes {
         } catch (error) {
 
             resdata.err = Number(error.statusCode || 500);
-            resdata.msg = error.message;
+            resdata.msg = resdata.err === 500 ? 'Erro interno do servidor (500). Contate o administrador do sistema.' : error.message;
             resdata.status = Number(error.statusCode || 500);
 
             if (resdata.err == 500) GravarLog(`Erro ao listar restricoes de credito: ${error.stack}`);
@@ -426,12 +442,11 @@ export class ControllerClientes {
             } else {
                 resdata.data.com_restricao = false;
             }
-
             
         } catch (error) {
 
             resdata.err = Number(error.statusCode || 500);
-            resdata.msg = error.message;
+            resdata.msg = resdata.err === 500 ? 'Erro interno do servidor (500). Contate o administrador do sistema.' : error.message;
             resdata.status = Number(error.statusCode || 500);
 
             if (resdata.err == 500) GravarLog(`Erro ao editar cliente: ${error.stack}`);
@@ -510,7 +525,7 @@ export class ControllerClientes {
             void await db.RollBack();
 
             resdata.err = Number(error.statusCode || 500);
-            resdata.msg = error.message;
+            resdata.msg = resdata.err === 500 ? 'Erro interno do servidor (500). Contate o administrador do sistema.' : error.message;
             resdata.status = Number(error.statusCode || 500);
 
             if (resdata.err == 500) GravarLog(`Erro ao editar cliente: ${error.stack}`);
@@ -570,7 +585,7 @@ export class ControllerClientes {
             void await db.RollBack();
 
             resdata.err = Number(error.statusCode || 500);
-            resdata.msg = error.message;
+            resdata.msg = resdata.err === 500 ? 'Erro interno do servidor (500). Contate o administrador do sistema.' : error.message;
             resdata.status = Number(error.statusCode || 500);
 
             if (resdata.err == 500) GravarLog(`Erro ao editar cliente: ${error.stack}`);

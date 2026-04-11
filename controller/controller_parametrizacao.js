@@ -273,10 +273,18 @@ export class ControllerAuth {
             if (resdata.err == 500) GravarLog('ControllerAuth.IniciarSessao', error.stack);
         }
         finally {
-            void await db.CreateEvents();
+            if (db.connection) {
+                void db.CreateEvents()
+                    .catch((eventError) => {
+                        GravarLog('ControllerAuth.IniciarSessao.CreateEvents', eventError.stack);
+                    })
+                    .finally(() => {
+                        void db.Close();
+                    });
+            } else {
+                void db.Close();
+            }
         }
-
-        void await db.Close();
 
         res.status(resdata.status).json(resdata);
     }
@@ -1974,6 +1982,10 @@ export class ControllerProdutos {
 
             void await produtos.FindById(id);
 
+            if (!produtos.found) {
+                ativo = 1
+            }
+
             produtos.nom_produto = nom_produto;
             produtos.mar_produto = mar_produto;
             produtos.und_produto = und_produto;
@@ -1985,9 +1997,9 @@ export class ControllerProdutos {
 
             void await produtos.Save();
 
-            const rows = await estoque.FindById(produtos.id);
+            void await estoque.FindById(produtos.id);
 
-            if (!rows) {
+            if (!estoque.found) {
 
                 estoque.id_produto = produtos.id;
                 estoque.qt_disponivel = 0;

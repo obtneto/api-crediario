@@ -12,12 +12,19 @@ import route_backups from './routes/routes_backups.js';
 
 import {config} from 'dotenv';
 import helmet from 'helmet';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-config({quiet:true,path:'../.env'});
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+config({ quiet: true, path: path.resolve(__dirname, '../.env') });
 
 const app = express();
 
 process.env.TZ = 'America/Maceio'
+const PORT = Number(process.env.PORT || 3000);
+const HOST = String(process.env.HOST || '::');
 
 app.disable('x-powered-by');
 app.use(helmet());
@@ -33,13 +40,12 @@ app.use(
 app.use(express.json({limit:'8kb'}));
 
 const defaultAllowedOrigins = [
+    'http://localhost',
+    'http://127.0.0.1',
     'http://localhost:5173',
     'http://127.0.0.1:5173',
-    'http://192.168.0.7:8080',
-    'http://10.0.0.99:8080',
     'http://localhost:8080',
-    'http://localhost',
-    'http://192.168.0.7',
+    'http://127.0.0.1:8080',
 ];
 
 const envAllowedOrigins = String(process.env.CORS_ORIGIN || '');
@@ -48,6 +54,24 @@ const allowedOrigins = String(envAllowedOrigins || defaultAllowedOrigins.join(',
     .split(',')
     .map((item) => item.trim())
     .filter(Boolean);
+
+const localHostnames = new Set(['localhost', '127.0.0.1', '::1']);
+
+function normalizeHostname(hostname = '') {
+    return String(hostname || '').trim().replace(/^\[|\]$/g, '');
+}
+
+function isPrivateIpv4(hostname = '') {
+    return /^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname)
+        || /^192\.168\.\d{1,3}\.\d{1,3}$/.test(hostname)
+        || /^172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}$/.test(hostname);
+}
+
+function isPrivateIpv6(hostname = '') {
+    return /^fc[0-9a-f]{2}:/i.test(hostname)
+        || /^fd[0-9a-f]{2}:/i.test(hostname)
+        || /^fe80:/i.test(hostname);
+}
 
 function isAllowedOrigin(origin) {
     if (!origin) {
@@ -59,8 +83,13 @@ function isAllowedOrigin(origin) {
     }
 
     try {
-        const { hostname } = new URL(origin);
-        return hostname === 'localhost' || hostname === '127.0.0.1';
+        const parsedOrigin = new URL(origin);
+        const hostname = normalizeHostname(parsedOrigin.hostname);
+
+        return localHostnames.has(hostname)
+            || hostname.endsWith('.local')
+            || isPrivateIpv4(hostname)
+            || isPrivateIpv6(hostname);
     } catch {
         return false;
     }
@@ -96,7 +125,9 @@ app.use(route_comissoes);
 app.use(route_relatorios);
 app.use(route_backups);
 
-app.listen(3000,() => {console.log('API executando na PORTA 3000')});
+app.listen(PORT, HOST, () => {
+    console.log(`API executando em ${HOST}:${PORT}`);
+});
 
 /*https.createServer(options,app).listen(443, () => {
     console.log('Servidor HTTPS rodando na porta 443');
