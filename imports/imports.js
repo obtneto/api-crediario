@@ -1,15 +1,19 @@
-import {createConnection} from 'mariadb';
+import Database from '../connections/dbconn.js';
 //import json from './tabDigitacao.json' with { type: 'json' };
 
 (async () => {
 
+    const db = new Database('dbcred');
+
     try {
+
+        void await db.Connect();
 
         console.clear();
 
         let i = 0;
 
-        await connection.beginTransaction();
+        await db.Begin();
 
         for (const item of json) {
             
@@ -19,7 +23,7 @@ import {createConnection} from 'mariadb';
                            dep_baixa = :dep_baixa,cod_pac = :cod_pac,
                            cod_indica = :cod_indica,cod_local = :cod_local`;
             
-            await connection.execute(query,{
+            await db.connection.execute(query,{
                 num_req: item.NumReq,
                 lote: item.Lote,
                 cod_prod: item.CodProd,
@@ -36,16 +40,16 @@ import {createConnection} from 'mariadb';
             
         }
 
-        await connection.commit();
+        await db.Commit();
         
     } catch (error) {
 
-        await connection.rollback();
+        await db.RollBack();
 
         console.log(error);
 
     } finally {
-        await connection.end(); 
+        await db.Close(); 
     }
 
 })();
