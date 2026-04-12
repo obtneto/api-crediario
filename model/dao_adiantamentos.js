@@ -35,8 +35,8 @@ export default class Adiantamentos {
     set id(id) {this.#field.id = Number(id)}
     get id() {return Number(this.#field.id)}
 
-    set num_recibo(num_recibo) {this.#field.num_recibo = num_recibo}
-    get num_recibo() {return this.#field.num_recibo}
+    set num_recibo(num_recibo) {this.#field.num_recibo = String(num_recibo)}
+    get num_recibo() {return String(this.#field.num_recibo)}
 
     set id_vendedor(id_vendedor) {this.#field.id_vendedor = Number(id_vendedor)}
     get id_vendedor() {return Number(this.#field.id_vendedor)}

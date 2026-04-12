@@ -1906,7 +1906,7 @@ export class ControllerVendas {
 
                 /******************************************************
                 * Registra a movimentação de estoque referente a venda.
-                ********************/
+                *******************************************************/
                 void await estoque_mov.FindById(0, new Date());
 
                 estoque_mov.dt_mov = new Date();
