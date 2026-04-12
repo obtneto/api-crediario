@@ -90,8 +90,8 @@ export default class ItensVendas {
     async FindByVenda(id_venda) {
 
         const query = `SELECT * FROM ${this.#tb_name}
-        WHERE entidade_negocio = :entidade_negocio AND id_venda = :id_venda
-        ORDER BY id_produto ASC, id ASC`;
+                       WHERE entidade_negocio = :entidade_negocio AND id_venda = :id_venda
+                       ORDER BY id_produto ASC, id ASC`;
 
         const rows = await this.#conn.query(query,{id_venda,entidade_negocio: this.#entidade_negocio});
 
@@ -105,8 +105,7 @@ export default class ItensVendas {
 
         if (this.#found) {
 
-            query = `UPDATE ${this.#tb_name} 
-                     SET qt_produto = :qt_produto,
+            query = `UPDATE ${this.#tb_name} SET qt_produto = :qt_produto,
                      id_produto = :id_produto,
                      vl_unit = :vl_unit, 
                      forma_pagamnto = :forma_pagamnto 

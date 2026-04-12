@@ -1860,9 +1860,7 @@ export class ControllerVendas {
                 /***************************************************************************/
                 void await itensVendas.FindById(vendas.id,id_item)
 
-                const itemJaExistia = itensVendas.found;
-
-                if (itemJaExistia) qt_produto_antes = itensVendas.qt_produto;
+                if (itensVendas.found) qt_produto_antes = itensVendas.qt_produto;
 
                 qt_produto_atual = qt_produto_item - qt_produto_antes;
 
@@ -1889,7 +1887,7 @@ export class ControllerVendas {
                     throw error;
                 }
 
-                estoque.qt_reservada = Number(estoque.qt_reservada) - qt_produto_atual;
+                estoque.qt_reservada = estoque.qt_reservada - qt_produto_atual;
 
                 void await estoque.Save();
 
@@ -2004,8 +2002,6 @@ export class ControllerVendas {
 
                 vendas.val_tot_venda -= itensVendas.vl_tot_item;
 
-                console.log(vendas.val_tot_venda,itensVendas.vl_tot_item)
-
                 void await vendas.Save();
 
                 /***************************************
@@ -2028,7 +2024,7 @@ export class ControllerVendas {
                  **************************/
                 void await estoque.FindById(itensVendas.id_produto);
 
-                estoque.qt_disponivel = parseFloat(estoque.qt_disponivel) + Number(itensVendas.qt_produto);
+                estoque.qt_disponivel = estoque.qt_disponivel + itensVendas.qt_produto;
 
                 void await estoque.Save();
 
