@@ -19,7 +19,8 @@ export default class Clientes {
         lat_cliente: '',
         lon_cliente: '',
         dat_cadastro: '',
-        com_restricao_credito: 0
+        com_restricao_credito: 0,
+        entidade_negocio: 999
     }
 
     constructor(connection) {
@@ -73,8 +74,8 @@ export default class Clientes {
     set lon_cliente(lon_cliente) {this.#field.lon_cliente = lon_cliente}
     get lon_cliente() {return this.#field.lon_cliente}
 
-    set com_restricao_credito(com_restricao_credito) {this.#field.com_restricao_credito = com_restricao_credito}
-    get com_restricao_credito() {return this.#field.com_restricao_credito}
+    set com_restricao_credito(com_restricao_credito) {this.#field.com_restricao_credito = Boolean(com_restricao_credito)}
+    get com_restricao_credito() {return Boolean(this.#field.com_restricao_credito)}
 
     async ExecuteQuery(query, params = {}) {
         
@@ -105,7 +106,7 @@ export default class Clientes {
             this.lat_cliente = rows.lat_cliente;
             this.lon_cliente = rows.lon_cliente;
             this.dat_cadastro = rows.dat_cadastro;
-            this.com_restricao_credito = rows.com_restricao_credito;
+            this.com_restricao_credito = Boolean(rows.com_restricao_credito);
 
             this.#found = true;
         } else {
@@ -158,7 +159,8 @@ export default class Clientes {
                      nom_usual = :nom_usual, cel_cliente = :cel_cliente, end_cliente = :end_cliente, 
                      num_cliente = :num_cliente, bai_cliente = :bai_cliente, cid_cliente = :cid_cliente, 
                      uf_cliente = :uf_cliente, cep_cliente = :cep_cliente, lat_cliente = :lat_cliente, 
-                     lon_cliente = :lon_cliente, dat_cadastro = :dat_cadastro, com_restricao_credito = :com_restricao_credito 
+                     lon_cliente = :lon_cliente, com_restricao_credito = :com_restricao_credito,
+                     dat_cadastro = :dat_cadastro, entidade_negocio = :entidade_negocio 
                      WHERE id = :id`;
                      
         } else {
@@ -169,7 +171,8 @@ export default class Clientes {
                      nom_usual = :nom_usual, cel_cliente = :cel_cliente, end_cliente = :end_cliente, 
                      num_cliente = :num_cliente, bai_cliente = :bai_cliente, cid_cliente = :cid_cliente, 
                      uf_cliente = :uf_cliente, cep_cliente = :cep_cliente,com_restricao_credito = :com_restricao_credito,
-                     lat_cliente = :lat_cliente, lon_cliente = :lon_cliente, id = :id, dat_cadastro = :dat_cadastro`;
+                     lat_cliente = :lat_cliente, lon_cliente = :lon_cliente, id = :id, 
+                     dat_cadastro = :dat_cadastro, entidade_negocio = :entidade_negocio`;
 
         }
 

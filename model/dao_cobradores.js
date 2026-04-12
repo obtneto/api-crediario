@@ -86,20 +86,18 @@ export default class Cobradores {
 
         if (this.#found) {
 
-            query = `UPDATE ${this.#tb_name} 
-                     SET nom_cobrador = :nom_cobrador, 
-                     comissao = :comissao, 
-                     cel_contato = :cel_contato, 
-                     entidade_negocio = :entidade_negocio, 
-                     ativo = :ativo
+            query = `UPDATE ${this.#tb_name} SET nom_cobrador = :nom_cobrador, 
+                        comissao = :comissao, 
+                        cel_contato = :cel_contato, 
+                        entidade_negocio = :entidade_negocio, 
+                        ativo = :ativo
                      WHERE entidade_negocio = :entidade_negocio AND id = :id`;
         } 
         else {
             
             this.id = await this.#newId();
 
-            query = `INSERT INTO ${this.#tb_name} 
-                     SET nom_cobrador = :nom_cobrador, 
+            query = `INSERT INTO ${this.#tb_name} SET nom_cobrador = :nom_cobrador, 
                      comissao = :comissao, 
                      cel_contato = :cel_contato, 
                      entidade_negocio = :entidade_negocio, 
