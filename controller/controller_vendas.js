@@ -1881,26 +1881,26 @@ export class ControllerVendas {
                     throw error
                 }
                 
-                if (qt_produto_atual > 0 && Number(estoque.qt_reservada) < qt_produto_atual) {
+                if (qt_produto_atual > 0 && estoque.qt_reservada < qt_produto_atual) {
                     const error = new Error('Não exite estoque suficiente para esse produto.');
                     error.statusCode = 403;
                     throw error;
                 }
 
-                estoque.qt_reservada = estoque.qt_reservada - qt_produto_atual;
+                estoque.qt_reservada -= qt_produto_atual;
 
                 void await estoque.Save();
 
                 /***************************************************************************/
                 void await itensDistrib.FindById(id_vendedor,id_produto_item);
 
-                if (qt_produto_atual > 0 && Number(itensDistrib.qt_distrib) < qt_produto_atual) {
+                if (qt_produto_atual > 0 && itensDistrib.qt_distrib < qt_produto_atual) {
                     const error = new Error('Não existe saldo suficiente dispensado para esse produto.');
                     error.statusCode = 403;
                     throw error;
                 }
 
-                itensDistrib.qt_distrib = Number(itensDistrib.qt_distrib) - qt_produto_atual
+                itensDistrib.qt_distrib = itensDistrib.qt_distrib - qt_produto_atual
 
                 void await itensDistrib.Save();
 
@@ -2012,7 +2012,7 @@ export class ControllerVendas {
                 estoque_mov.dt_mov = new Date();
                 estoque_mov.id_produto = itensVendas.id_produto;
                 estoque_mov.qt_mov = itensVendas.qt_produto;
-                estoque_mov.tp_mov = 'DEVOL';
+                estoque_mov.tp_mov = 'DEVOLUÇÃO';
                 estoque_mov.nr_documento = String(id_venda);
                 estoque_mov.descricao = `Devolução de produto referente a exclusão de item da venda ID ${id_venda}`;
                 
@@ -2024,7 +2024,7 @@ export class ControllerVendas {
                  **************************/
                 void await estoque.FindById(itensVendas.id_produto);
 
-                estoque.qt_disponivel = estoque.qt_disponivel + itensVendas.qt_produto;
+                estoque.qt_disponivel += itensVendas.qt_produto;
 
                 void await estoque.Save();
 
