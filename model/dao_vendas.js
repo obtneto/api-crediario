@@ -66,8 +66,8 @@ export default class Vendas {
     set marca_venda(marca_venda) {this.#field.marca_venda = marca_venda}
     get marca_venda() {return this.#field.marca_venda}
 
-    set num_recibo(num_recibo) {this.#field.num_recibo = Number(num_recibo)}
-    get num_recibo() {return Number(this.#field.num_recibo)}
+    set num_recibo(num_recibo) {this.#field.num_recibo = num_recibo}
+    get num_recibo() {return this.#field.num_recibo}
 
     set referencia(referencia) {this.#field.referencia = referencia}
     get referencia() {return this.#field.referencia}
@@ -78,8 +78,8 @@ export default class Vendas {
     set val_desconto(val_desconto) {this.#field.val_desconto = parseFloat(val_desconto)}
     get val_desconto() {return parseFloat(this.#field.val_desconto)}
 
-    set situacao(situacao) {this.#field.situacao = situacao}
-    get situacao() {return this.#field.situacao}
+    set situacao(situacao) {this.#field.situacao = Number(situacao)}
+    get situacao() {return Number(this.#field.situacao)}
 
     set dia_pagam(dia_pagam) {this.#field.dia_pagam = dia_pagam}
     get dia_pagam() {return this.#field.dia_pagam}
@@ -206,16 +206,18 @@ export default class Vendas {
         
         const [rows] = await this.#conn.query(query_new_id,{entidade_negocio: this.#field.entidade_negocio});
 
+        const newid = rows?.newId === 0 ?? 1;
+
         const query_check_ano = "SELECT ano_corrente FROM tb_check_ano WHERE id = 1";
 
         const [rows_check] = await this.#conn.query(query_check_ano);
 
-        const ano_corrente = rows_check.ano_corrente;
+        const ano_corrente = rows_check?.ano_corrente ?? new Date().getFullYear();
         const ano = new Date(this.#field.dt_venda).getFullYear();
         const entidade = String(this.#field.entidade_negocio).padStart(3, '0');
 
         const id = ano > ano_corrente ? String(ano) + entidade + '1'.padStart(5, '0') : 
-        String(ano) + entidade + String(Number(String(rows.newid).substring(8,12)) + 1).padStart(5, '0');
+        String(ano) + entidade + String(Number(String(newid).substring(8,12)) + 1).padStart(5, '0');
 
         return (String(id));
 
