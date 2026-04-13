@@ -869,7 +869,7 @@ export class ControllerDistribuicao{
                 itens.id_distrib = distrib.id;
                 itens.id_produto = item_distrib.id_produto;
                 itens.id_vendedor = distrib.id_vendedor;
-                itens.qt_distrib = Number(itens.qt_distrib) + (Number(item_distrib.qt_distrib) - Number(qt_distrib_corrente));
+                itens.qt_distrib += (Number(item_distrib.qt_distrib) - qt_distrib_corrente);
 
                 void await itens.Save();
 
@@ -895,8 +895,8 @@ export class ControllerDistribuicao{
                     throw error;
                 }
 
-                estoque.qt_disponivel = parseFloat(estoque.qt_disponivel) - (parseFloat(item_distrib.qt_distrib - qt_distrib_corrente ) * -1 );
-                estoque.qt_reservada = parseFloat(estoque.qt_reservada) + (parseFloat(item_distrib.qt_distrib - qt_distrib_corrente) * -1 );
+                estoque.qt_disponivel -= (Number(item_distrib.qt_distrib) - qt_distrib_corrente ) * -1;
+                estoque.qt_reservada += (Number(item_distrib.qt_distrib) - qt_distrib_corrente) * -1;
 
                 void await estoque.Save();
 
@@ -996,8 +996,8 @@ export class ControllerDistribuicao{
                 /*****************************************************************/
                 void await estoque.FindById(item.id_produto);
 
-                estoque.qt_reservada = Number(estoque.qt_reservada) - Number(item.qt_distrib);
-                estoque.qt_disponivel = Number(estoque.qt_disponivel) + Number(item.qt_distrib);
+                estoque.qt_reservada -= Number(item.qt_distrib);
+                estoque.qt_disponivel += Number(item.qt_distrib);
 
                 void await estoque.Save();
 

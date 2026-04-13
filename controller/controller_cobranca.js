@@ -552,19 +552,21 @@ export class ControllerCobranca {
             const clientes = new Clientes(db.connection, entidade_negocio);
             
             const query = `SELECT val_tot_venda,
-            (COALESCE(val_tot_venda, 0) - COALESCE(val_desconto, 0)) - SUM(COALESCE(vl_pagamento, 0)) AS saldo_pagar
-            FROM tb_vendas
-            LEFT JOIN tb_pagamentos ON tb_pagamentos.entidade_negocio = tb_vendas.entidade_negocio
-            AND tb_pagamentos.id_venda = tb_vendas.id
-            WHERE tb_vendas.entidade_negocio = :entidade_negocio AND tb_vendas.id = :id_venda
-            GROUP BY val_tot_venda, val_desconto`
+                            (COALESCE(val_tot_venda, 0) - COALESCE(val_desconto, 0)) - SUM(COALESCE(vl_pagamento, 0)) AS saldo_pagar
+                            FROM tb_vendas
+                            LEFT JOIN tb_pagamentos ON tb_pagamentos.entidade_negocio = tb_vendas.entidade_negocio
+                            AND tb_pagamentos.id_venda = tb_vendas.id
+                            WHERE tb_vendas.entidade_negocio = :entidade_negocio AND tb_vendas.id = :id_venda
+                            GROUP BY val_tot_venda, val_desconto`
 
             const [rows] = await pagamentos.ExecuteQuery(query, {entidade_negocio, id_venda});
 
             void await entidades.FindById(entidade_negocio);
             void await pagamentos.FindById(id_venda, 0);
 
-            const valor_max_desconto = Number(((parseFloat(entidades.percent_desconto_cobranca) / (parseFloat(rows.saldo_pagar) - parseFloat(vl_desconto)) ) * 100).toFixed(2))
+            const valor_max_desconto = (entidades.percent_desconto_cobranca / (rows.saldo_pagar - vl_desconto) * 100)
+
+            console.log(valor_max_desconto)
 
             if (vl_desconto > valor_max_desconto) {
                 const error = new Error("Desconto maior que o permitido.");
@@ -572,7 +574,7 @@ export class ControllerCobranca {
                 throw error
             }
 
-            if ((vl_pagamento + vl_desconto) > parseFloat(rows.saldo_pagar)) {
+            if ((vl_pagamento + vl_desconto) > rows.saldo_pagar) {
                 const error = new Error('Valor do pagamento nao pode ser maior que o saldo a pagar.');
                 error.statusCode = 403;
                 throw error;
@@ -601,11 +603,11 @@ export class ControllerCobranca {
 
                 vendas.marca_venda = 'X';
                 vendas.dia_pagam = prox_dia_pagamento;
-                vendas.val_desconto += parseFloat(vl_desconto);
+                vendas.val_desconto += vl_desconto;
                 vendas.ult_dat_pagamto = dt_pagamento;
                 vendas.situacao = 0;
 
-                if ( ( parseFloat(rows.saldo_pagar) - parseFloat(vl_desconto) ) - parseFloat(vl_pagamento) == 0) {
+                if ( ( rows.saldo_pagar - vl_desconto ) - vl_pagamento == 0) {
                     vendas.situacao = 9;
                 }
                 
