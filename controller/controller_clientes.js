@@ -162,8 +162,8 @@ export class ControllerClientes {
             const cidade = String(req.body.cid_cliente).trim().toUpperCase();
             const uf = String(req.body.uf_cliente).trim().toUpperCase();
             const cep = String(req.body.cep_cliente).replace(/\D/g, '');
-            const latitude = String(req.body.latitude || null);
-            const longitude = String(req.body.longitude || null)
+            const latitude = String(req.body.latitude);
+            const longitude = String(req.body.longitude);
 
             if (cpf.length !== 11 || !CheckCPF(cpf)) {
                 const error = new Error('CPF invalido.');
@@ -199,8 +199,8 @@ export class ControllerClientes {
             clientes.cid_cliente = cidade;
             clientes.uf_cliente = uf;
             clientes.cep_cliente = cep;
-            clientes.lat_cliente = latitude && latitude;
-            clientes.lon_cliente = longitude && longitude;
+            clientes.lat_cliente = latitude ?? latitude;
+            clientes.lon_cliente = longitude ?? longitude;
 
             void await clientes.Save();
 
@@ -320,8 +320,8 @@ export class ControllerClientes {
             clientes.cid_cliente = cidade;
             clientes.uf_cliente = uf;
             clientes.cep_cliente = cep;
-            clientes.lat_cliente = latitude;
-            clientes.lon_cliente = longitude;
+            clientes.lat_cliente = latitude && latitude;
+            clientes.lon_cliente = longitude && longitude;
 
             void await clientes.Save();
 
