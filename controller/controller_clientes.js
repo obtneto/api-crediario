@@ -199,8 +199,8 @@ export class ControllerClientes {
             clientes.cid_cliente = cidade;
             clientes.uf_cliente = uf;
             clientes.cep_cliente = cep;
-            clientes.lat_cliente = latitude ?? latitude;
-            clientes.lon_cliente = longitude ?? longitude;
+            //clientes.lat_cliente = latitude ? latitude : clientes.lat_cliente;
+            //clientes.lon_cliente = longitude ? longitude : clientes.lon_cliente;
 
             void await clientes.Save();
 
@@ -258,28 +258,6 @@ export class ControllerClientes {
                 throw error;
             }
 
-            if (!nome) {
-                const error = new Error('Nome do cliente e obrigatorio.');
-                error.statusCode = 400;
-                throw error;
-            }
-
-            void await db.Connect();
-
-            void await db.Begin();
-
-            const clientes = new Clientes(db.connection);
-
-            void await clientes.FindByCpf(cpf);
-
-            if (!clientes.found) {
-                clientes.dat_cadastro = new Date().toLocaleString('sv-SE',{timeZone:'-03:00'});
-            } else {
-                const error = new Error("CPF já Cadatastrao.");
-                error.statusCode = 400;
-                throw error;
-            }
-
             if (!nome || nome === ''){
                 const error = new Error('Forneça o nome do clientes');
                 error.statusCode = 400;
@@ -310,6 +288,19 @@ export class ControllerClientes {
                 throw error
             }
 
+            void await db.Connect();
+
+            void await db.Begin();
+
+            const clientes = new Clientes(db.connection);
+
+            void await clientes.FindByCpf(cpf);
+
+            if (!clientes.found) {
+                clientes.dat_cadastro = new Date().toLocaleString('sv-SE',{timeZone:'-03:00'});
+            }
+
+            
             clientes.cpf_cliente = cpf;
             clientes.nom_cliente = nome
             clientes.nom_usual = usual;
