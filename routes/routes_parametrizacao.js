@@ -41,6 +41,7 @@ router.get('/listar_perfis/:pesq',ControllerPerfis.Listar);
 router.get('/editar_perfil/:id',ControllerPerfis.Editar);
 router.get('/excluir_perfil/:id',ControllerPerfis.Excluir);
 router.post('/salvar_perfil',ControllerPerfis.Salvar);
+router.get('/listar_tipos_perfis',ControllerPerfis.ListarTiposPerfis);
 
 /**** Tipos de Pagamentos ****/
 router.get('/listar_tipos_pagamentos/:pesq',ControllerTiposPagamentos.Listar);

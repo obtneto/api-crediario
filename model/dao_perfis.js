@@ -8,6 +8,7 @@ export default class Perfis {
     #field = {
         id: 0,
         nom_perfil: '',
+        cod_perfil: '',
         selecionar: 1,
         insert: 0,
         atualizar: 0,
@@ -37,6 +38,9 @@ export default class Perfis {
 
     set nom_perfil(nom_perfil) {this.#field.nom_perfil = nom_perfil}
     get nom_perfil() {return this.#field.nom_perfil}
+
+    set cod_perfil(cod_perfil) {this.#field.cod_perfil = cod_perfil}
+    get cod_perfil() {return this.#field.cod_perfil}
 
     set selecionar(selecionar) {this.#field.selecionar = Number(selecionar)}
     get selecionar() {return Number(this.#field.selecionar)}
@@ -69,6 +73,7 @@ export default class Perfis {
         if (rows) {
             this.id = rows.id;
             this.nom_perfil = rows.nom_perfil;
+            this.cod_perfil = rows.cod_perfil;
             this.selecionar = rows.selecionar;
             this.inserir = rows.inserir;
             this.atualizar = rows.atualizar;
@@ -90,6 +95,7 @@ export default class Perfis {
         if (this.#found) {
             query = `UPDATE ${this.#tb_name} 
                      SET nom_perfil = :nom_perfil, 
+                     cod_perfil = :cod_perfil,
                      selecionar = :selecionar, 
                      inserir = :inserir, 
                      atualizar = :atualizar,
@@ -103,6 +109,7 @@ export default class Perfis {
 
             query = `INSERT INTO ${this.#tb_name} 
                      SET nom_perfil = :nom_perfil, 
+                     cod_perfil = :cod_perfil,
                      selecionar = :selecionar, 
                      inserir = :inserir, 
                      atualizar = :atualizar,

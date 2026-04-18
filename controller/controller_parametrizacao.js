@@ -1241,12 +1241,24 @@ export class ControllerPerfis{
 
         try {
 
-            const {id,nom_perfil,selecionar,insert,atualizar,excluir} = req.body;
+            const {id,nom_perfil,cod_perfil,selecionar,insert,atualizar,excluir} = req.body;
             const entidade = obterEntidadeNegocio(req);
 
             if (!id) {
                 const error = new Error("ID do perfil invalido.");
                 error.statusCode = 404;
+                throw error;
+            }
+
+            if (!cod_perfil || cod_perfil.trim() === '') {
+                const error = new Error("Código do perfil é obrigatório.");
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (!nom_perfil || nom_perfil.trim() === '') {
+                const error = new Error("Nome do perfil é obrigatório.");
+                error.statusCode = 400;
                 throw error;
             }
             
@@ -1260,6 +1272,7 @@ export class ControllerPerfis{
 
             perfils.id = id;
             perfils.nom_perfil = nom_perfil;
+            perfils.cod_perfil = cod_perfil;
             perfils.selecionar = selecionar ? 1 : 0;
             perfils.insert = insert ? 1 : 0;
             perfils.atualizar = atualizar ? 1 : 0;
@@ -1328,6 +1341,43 @@ export class ControllerPerfis{
             resdata.status = error.statusCode || 500;
 
             if(resdata.err == 500) GravarLog('ControllerPerfis.Excluir', error.stack);
+
+        }
+
+        void await db.Close();
+
+        res.status(resdata.status).json(resdata);
+
+    }
+
+    static async ListarTiposPerfis (req,res){
+
+        const db = new Database('dbcred');
+
+        const resdata = {
+            err: 0,
+            msg: '',
+            status: 200,
+            data: []
+        }
+
+        try {
+            
+            void await db.Connect();
+
+            const query = `SELECT cod_tipo_perfil,nom_tipo_perfil FROM tb_tipos_perfis`;
+
+            const tipos = await db.connection.query(query);
+
+            resdata.data = tipos;
+
+        } catch (error) {
+            
+            resdata.err = error.statusCode || 500;
+            resdata.msg = error.message;
+            resdata.status = error.statusCode || 500;
+
+            if(resdata.err == 500) GravarLog('ControllerPerfis.ListarTiposPerfis', error.stack);
 
         }
 
