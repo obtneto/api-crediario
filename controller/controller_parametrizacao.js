@@ -24,6 +24,12 @@ function getPrimeiroNome(nomeCompleto = '') {
     return nome ? nome.split(' ')[0] : '';
 }
 
+function normalizarClientPlatform(value = '') {
+    return String(value || '').trim().toLowerCase() === 'mobile'
+        ? 'mobile'
+        : 'desktop';
+}
+
 function normalizarPerfilAcesso(usuario = {}) {
     const typePerfil = Number(usuario?.perfil_id || 0);
     const isAdmin = typePerfil === 0 || typePerfil === 1;
@@ -50,9 +56,11 @@ function montarRespostaAutenticacao(usuario = {}, entidade = {}) {
         firstname: getPrimeiroNome(fullname),
         fullname,
         type_perfil,
+        cod_perfil: String(usuario?.cod_perfil || '').trim().toUpperCase(),
         entidade: Number(entidade?.id || entidade?.entidade_negocio || 0),
         entidade_negocio: Number(entidade?.id || entidade?.entidade_negocio || 0),
         name_entidade: String(entidade?.nom_entidade || entidade?.name_entidade || ''),
+        modo_acesso: String(usuario?.modo_acesso || '').trim().toUpperCase(),
         com_rota_cobranca: Number(entidade?.com_rota_cobranca || 0),
         perfil,
         reset_password: Number(usuario?.reset_password || 0)
@@ -73,30 +81,36 @@ function garantirEntidadeAtiva(entidade = {}, mensagem = 'A entidade vinculada a
     throw error;
 }
 
-async function buscarUsuariosAutenticacao(connection, user) {
+async function buscarUsuariosAutenticacao(connection, user, options = {}) {
+    const allowMobileMode = Boolean(options?.allowMobileMode);
+    const filtroModoAcesso = allowMobileMode
+        ? ''
+        : " AND COALESCE(u.modo_acesso, 'DT') <> 'MB'";
 
     const query = `SELECT u.id, u.usuario, u.nom_completo, u.senha, u.reset_password, u.num_verificacao, u.iniciais,
         u.entidade_negocio,
         COALESCE(p.id, 0) AS perfil_id,
+        COALESCE(p.cod_perfil, '') AS cod_perfil,
         COALESCE(p.selecionar, 0) AS selecionar,
         COALESCE(p.inserir, 0) AS inserir,
         COALESCE(p.atualizar, 0) AS atualizar,
         COALESCE(p.excluir, 0) AS excluir,
+        COALESCE(u.modo_acesso, '') AS modo_acesso,
         COALESCE(e.nom_entidade, '') AS nom_entidade,
         COALESCE(e.com_rota_cobranca, 0) AS com_rota_cobranca,
         COALESCE(e.ativo, 0) AS entidade_ativa
         FROM tb_usuarios u
         LEFT JOIN tb_perfis p ON p.id = u.id_perfil AND p.entidade_negocio = u.entidade_negocio
         LEFT JOIN tb_entidades e ON e.id = u.entidade_negocio
-        WHERE u.usuario = :user AND u.modo_acesso <> 'MB'
+        WHERE u.usuario = :user${filtroModoAcesso}
         ORDER BY u.entidade_negocio`;
 
     const usuarios = await connection.execute(query, { user });
     return Array.isArray(usuarios) ? usuarios : [];
 }
 
-async function buscarUsuarioAutenticacao(connection, entidade_negocio, user) {
-    const usuarios = await buscarUsuariosAutenticacao(connection, user);
+async function buscarUsuarioAutenticacao(connection, entidade_negocio, user, options = {}) {
+    const usuarios = await buscarUsuariosAutenticacao(connection, user, options);
 
     return usuarios.find((item) => Number(item?.entidade_negocio || 0) === Number(entidade_negocio || 0)) || null;
 }
@@ -150,6 +164,7 @@ export class ControllerAuth {
             const entidade_negocio_informada = Number(req.body?.entidade_negocio || 0);
             const user = String(req.body?.user || '').trim();
             const password = desencriptar(String(req.body?.password || '').trim());
+            const clientPlatform = normalizarClientPlatform(req.headers?.['x-client-platform']);
 
             validate(authSessionSchema, {
                 entidade_negocio: entidade_negocio_informada > 0 ? entidade_negocio_informada : undefined,
@@ -172,7 +187,9 @@ export class ControllerAuth {
             void await db.Connect();
 
             const entidades = new Entidades(db.connection);
-            const usuariosEncontrados = await buscarUsuariosAutenticacao(db.connection, user);
+            const usuariosEncontrados = await buscarUsuariosAutenticacao(db.connection, user, {
+                allowMobileMode: clientPlatform === 'mobile'
+            });
 
             const usuariosFiltrados = entidade_negocio_informada > 0
                 ? usuariosEncontrados.filter((item) => Number(item?.entidade_negocio || 0) === entidade_negocio_informada)
@@ -341,9 +358,11 @@ export class ControllerAuth {
                 firstname: String(payload.firstname || ''),
                 fullname: String(payload.fullname || payload.user || ''),
                 type_perfil: Number(payload.type_perfil || 0),
+                cod_perfil: String(payload.cod_perfil || ''),
                 entidade: Number(payload.entidade_negocio || 0),
                 entidade_negocio: Number(payload.entidade_negocio || 0),
                 name_entidade: String(payload.name_entidade || ''),
+                modo_acesso: String(payload.modo_acesso || ''),
                 com_rota_cobranca: Number(payload.com_rota_cobranca || 0),
                 perfil: {
                     selecionar: Number(payload?.perfil?.selecionar || 0),
@@ -440,7 +459,9 @@ export class ControllerAuth {
             garantirEntidadeAtiva(entidade, 'A entidade vinculada ao usuario esta bloqueada. Procure o administrador.');
 
             const usuarios = new Usuarios(db.connection, entidade_negocio);
-            const usuario = await buscarUsuarioAutenticacao(db.connection, entidade_negocio, user);
+            const usuario = await buscarUsuarioAutenticacao(db.connection, entidade_negocio, user, {
+                allowMobileMode: true
+            });
 
             if (!usuario) {
                 const error = new Error('Usuario nao encontrado.');
@@ -541,7 +562,9 @@ export class ControllerAuth {
             garantirEntidadeAtiva(entidade, 'A entidade vinculada ao usuario esta bloqueada. Procure o administrador.');
 
             const usuarios = new Usuarios(db.connection, entidade_negocio);
-            const usuario = await buscarUsuarioAutenticacao(db.connection, entidade_negocio, user);
+            const usuario = await buscarUsuarioAutenticacao(db.connection, entidade_negocio, user, {
+                allowMobileMode: true
+            });
 
             if (!usuario) {
                 const error = new Error('Usuario nao encontrado.');
@@ -626,10 +649,11 @@ export class ControllerUsuarios{
             const usuario = new Usuarios(db.connection, entidade);
 
             const params = { entidade_negocio: entidade };
-            let query = `SELECT u.id, u.usuario, u.nom_completo, u.email, u.entidade_negocio, u.id_perfil, u.modo_acesso, u.reset_password, u.iniciais, p.nom_perfil
-            FROM tb_usuarios u
-            LEFT JOIN tb_perfis p ON p.id = u.id_perfil AND p.entidade_negocio = u.entidade_negocio
-            WHERE u.entidade_negocio = :entidade_negocio AND u.modo_acesso IN ('DT','DM','MB')`;
+            let query = `SELECT u.id, u.usuario, u.nom_completo, u.email, u.entidade_negocio,p.cod_perfil,
+                         u.id_perfil, u.modo_acesso, u.reset_password, u.iniciais, p.nom_perfil
+                         FROM tb_usuarios u
+                         LEFT JOIN tb_perfis p ON p.id = u.id_perfil AND p.entidade_negocio = u.entidade_negocio
+                         WHERE u.entidade_negocio = :entidade_negocio AND u.modo_acesso IN ('DT','DM','MB')`;
 
             if (pesq != "*") {
                 query += ` AND u.nom_completo LIKE :pesq`;
@@ -765,9 +789,11 @@ export class ControllerUsuarios{
 
                 const numero = Math.floor(100000 + Math.random() * 900000);
 
-                await enviarEmailResend({
-                    from: "Crediario <onboarding@resend.dev>",
-                    to: usuarios.email,
+                console.log(email)
+
+                /*await enviarEmailResend({
+                    from: "Crediario <noreply@fshp.se.gov.br>",
+                    to: email, // Temporário para testes
                     subject: 'Reset de Senha',
                     html: `
                         <div style="margin:0;padding:24px 0;background:#f4f6f8;font-family:Arial,Helvetica,sans-serif;color:#1f2937;">
@@ -823,10 +849,10 @@ export class ControllerUsuarios{
                             </table>
                         </div>
                     `
-                });
+                });*/
 
                 usuarios.num_verificacao = numero;
-                usuarios.senha = process.env.SENHA_RESET_PADRAO;
+                usuarios.senha = SENHA_RESET_PADRAO;
 
             } else if (passwordNormalizado) {
                 usuarios.senha = await criptografarSenha(passwordNormalizado);

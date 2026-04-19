@@ -12,7 +12,9 @@ export class ControllerRotas extends BaseController {
             const entidades = new Entidades(conn, entidade_negocio);
 
             const pesq = req.params.pesq;
+
             let query = `SELECT * FROM tb_rotas WHERE entidade_negocio = :entidade_negocio`;
+
             const params = { entidade_negocio };
 
             if (pesq != "*") {
@@ -21,17 +23,21 @@ export class ControllerRotas extends BaseController {
             }
 
             return {
+
                 rotas: await rotas.ExecuteQuery(query, params),
                 entidades: await entidades.ExecuteQuery(
                     `SELECT id, nom_entidade FROM tb_entidades WHERE id = :id`, 
                     { id: entidade_negocio }
                 )
             };
+
         }, req, res);
     }
 
     static async ListarAtivas(req, res) {
+
         await this.executeWithDatabase(async (conn, entidade_negocio, req) => {
+            
             const rotas = new DaoRotas(conn, entidade_negocio);
             const entidades = new Entidades(conn, entidade_negocio);
 
@@ -51,19 +57,27 @@ export class ControllerRotas extends BaseController {
                     { id: entidade_negocio }
                 )
             };
+
         }, req, res);
     }
 
     static async Editar(req, res) {
+
         await this.executeWithDatabase(async (conn, entidade_negocio, req) => {
+            
             const rotas = new DaoRotas(conn, entidade_negocio);
             const id = req.params.id;
+            
             return await rotas.FindById(id);
+
         }, req, res);
+
     }
 
     static async Salvar(req, res) {
+
         await this.executeWithTransaction(async (conn, entidade_negocio, req) => {
+           
             const { id, nom_rota, ativo } = req.body;
             const rotas = new DaoRotas(conn, entidade_negocio);
 
@@ -74,15 +88,21 @@ export class ControllerRotas extends BaseController {
 
             void await rotas.Save();
             return { success: true };
+
         }, req, res);
     }
 
     static async Excluir(req, res) {
+
         await this.executeWithTransaction(async (conn, entidade_negocio, req) => {
+            
             const rotas = new DaoRotas(conn, entidade_negocio);
             const id = req.params.id;
+
             void await rotas.Excluir(id);
             return { success: true };
+
         }, req, res);
+        
     }
 }

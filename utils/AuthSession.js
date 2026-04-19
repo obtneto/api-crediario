@@ -100,8 +100,10 @@ function buildPayload(sessionData = {}) {
         firstname: String(sessionData?.firstname || ''),
         fullname: String(sessionData?.fullname || ''),
         type_perfil: Number(sessionData?.type_perfil || 0),
+        cod_perfil: String(sessionData?.cod_perfil || ''),
         entidade_negocio: Number(sessionData?.entidade_negocio || 0),
         name_entidade: String(sessionData?.name_entidade || ''),
+        modo_acesso: String(sessionData?.modo_acesso || ''),
         com_rota_cobranca: Number(sessionData?.com_rota_cobranca || 0),
         perfil: {
             selecionar: Number(perfil?.selecionar || 0),

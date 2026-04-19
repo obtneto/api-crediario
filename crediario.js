@@ -107,7 +107,7 @@ const corsOptions = {
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'x-entidade-negocio'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-entidade-negocio', 'x-client-platform'],
     exposedHeaders: ['x-crediario-token', 'x-crediario-staff-token']
 };
 

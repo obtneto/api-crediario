@@ -16,13 +16,19 @@ export class BaseController {
         }
 
         try {
+
             void await db.Connect();
+
             resdata.data = await operation(db.connection, obterEntidadeNegocio(req), req);
+
         } catch (error) {
+
             resdata.err = 500;
             resdata.msg = error.message;
             resdata.status = 500;
+
             GravarLog(this.name + '.' + operation.name, error.stack);
+            
         }
 
         void await db.Close();
@@ -30,6 +36,7 @@ export class BaseController {
     }
 
     static async executeWithTransaction(operation, req, res) {
+        
         const db = new Database('dbcred');
 
         const resdata = {
@@ -40,10 +47,13 @@ export class BaseController {
         }
 
         try {
+
             void await db.Connect();
             void await db.Begin();
+
             resdata.data = await operation(db.connection, obterEntidadeNegocio(req), req);
             void await db.Commit();
+
         } catch (error) {
             void await db.RollBack();
             resdata.err = 500;
@@ -53,6 +63,7 @@ export class BaseController {
         }
 
         void await db.Close();
+
         res.status(resdata.status).json(resdata);
     }
 
