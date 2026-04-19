@@ -55,6 +55,7 @@ function montarRespostaAutenticacao(usuario = {}, entidade = {}) {
         user: String(usuario?.usuario || ''),
         firstname: getPrimeiroNome(fullname),
         fullname,
+        id_vendedor: Number(usuario?.id_vendedor || 0),
         type_perfil,
         cod_perfil: String(usuario?.cod_perfil || '').trim().toUpperCase(),
         entidade: Number(entidade?.id || entidade?.entidade_negocio || 0),
@@ -88,6 +89,7 @@ async function buscarUsuariosAutenticacao(connection, user, options = {}) {
         : " AND COALESCE(u.modo_acesso, 'DT') <> 'MB'";
 
     const query = `SELECT u.id, u.usuario, u.nom_completo, u.senha, u.reset_password, u.num_verificacao, u.iniciais,
+        COALESCE(u.id_vendedor, 0) AS id_vendedor,
         u.entidade_negocio,
         COALESCE(p.id, 0) AS perfil_id,
         COALESCE(p.cod_perfil, '') AS cod_perfil,
@@ -332,6 +334,12 @@ export class ControllerAuth {
 
             const entidades = new Entidades(db.connection);
             const entidade = await buscarEntidadeAuth(entidades, Number(sessao.entidade_negocio || 0));
+            const usuarioSessao = await buscarUsuarioAutenticacao(
+                db.connection,
+                Number(sessao.entidade_negocio || 0),
+                String(sessao.user || '').trim(),
+                { allowMobileMode: true }
+            );
 
             if (!entidade) {
                 limparSessaoHttpOnly(res);
@@ -346,6 +354,7 @@ export class ControllerAuth {
 
             const sessaoAtualizada = {
                 ...sessao,
+                id_vendedor: Number(usuarioSessao?.id_vendedor || sessao?.id_vendedor || 0),
                 name_entidade: String(entidade.nom_entidade || ''),
                 com_rota_cobranca: Number(entidade.com_rota_cobranca || 0)
             };
@@ -357,6 +366,7 @@ export class ControllerAuth {
                 user: String(payload.user || ''),
                 firstname: String(payload.firstname || ''),
                 fullname: String(payload.fullname || payload.user || ''),
+                id_vendedor: Number(payload.id_vendedor || 0),
                 type_perfil: Number(payload.type_perfil || 0),
                 cod_perfil: String(payload.cod_perfil || ''),
                 entidade: Number(payload.entidade_negocio || 0),
@@ -650,7 +660,7 @@ export class ControllerUsuarios{
 
             const params = { entidade_negocio: entidade };
             let query = `SELECT u.id, u.usuario, u.nom_completo, u.email, u.entidade_negocio,p.cod_perfil,
-                         u.id_perfil, u.modo_acesso, u.reset_password, u.iniciais, p.nom_perfil
+                         u.id_perfil, u.modo_acesso, u.reset_password, u.iniciais, p.nom_perfil,u.id_vendedor, u.id_cobrador
                          FROM tb_usuarios u
                          LEFT JOIN tb_perfis p ON p.id = u.id_perfil AND p.entidade_negocio = u.entidade_negocio
                          WHERE u.entidade_negocio = :entidade_negocio AND u.modo_acesso IN ('DT','DM','MB')`;

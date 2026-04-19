@@ -99,6 +99,7 @@ function buildPayload(sessionData = {}) {
         user: String(sessionData?.user || ''),
         firstname: String(sessionData?.firstname || ''),
         fullname: String(sessionData?.fullname || ''),
+        id_vendedor: Number(sessionData?.id_vendedor || 0),
         type_perfil: Number(sessionData?.type_perfil || 0),
         cod_perfil: String(sessionData?.cod_perfil || ''),
         entidade_negocio: Number(sessionData?.entidade_negocio || 0),
