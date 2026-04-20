@@ -1143,16 +1143,8 @@ export class ControllerVendas {
                 params.push(dt_fim);
             }
 
-            let query = `SELECT vw_vendas.*,
-                                  (
-                                      (COALESCE(vw_vendas.val_tot_venda, 0) - COALESCE(vw_vendas.val_desconto, 0))
-                                      - COALESCE((
-                                          SELECT SUM(COALESCE(pg.vl_pagamento, 0))
-                                          FROM tb_pagamentos pg
-                                          WHERE pg.entidade_negocio = vw_vendas.entidade_negocio
-                                            AND pg.id_venda = vw_vendas.id
-                                      ), 0)
-                                  ) AS saldo_a_pagar FROM vw_vendas
+            let query = `SELECT vw_vendas.*,COALESCE(vw_vendas.val_tot_venda, 0) - (COALESCE(vw_vendas.val_desconto, 0) +
+                         COALESCE(vw_vendas.tot_pagamentos, 0) + COALESCE(vw_vendas.val_entrada, 0)) AS saldo_a_pagar FROM vw_vendas
                          WHERE ${whereClause.join(' AND ')}
                          ORDER BY situacao, dt_venda DESC, id DESC
                          LIMIT ? OFFSET ?`;
@@ -1689,6 +1681,7 @@ export class ControllerVendas {
             const val_tot_venda = parseFloat(body.val_tot_venda || 0);
             const dia_pagam = String(body.dia_pagam).trim();
             const val_desconto = parseFloat(body.val_desconto || 0);
+            const val_entrada = parseFloat(body.val_entrada || 0);
             const itens = body.itens;
 
             if (!dt_venda) {
@@ -1785,6 +1778,7 @@ export class ControllerVendas {
             vendas.situacao = 0;
             vendas.dia_pagam = dia_pagam;
             vendas.val_desconto = val_desconto;
+            vendas.val_entrada = val_entrada;
 
             void await vendas.Save();
 
@@ -1793,7 +1787,7 @@ export class ControllerVendas {
              *****************/
             void await restricao.FindByCpf(cpf_cliente);
 
-            if (clientes.com_restricao_credito == 1) {
+            if (clientes.com_restricao_credito == 1 && !vendas.found) {
 
                 if (!restricao.found || (restricao.found && restricao.com_restricao == 1)){
 

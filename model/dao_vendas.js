@@ -22,6 +22,7 @@ export default class Vendas {
         dia_pagam: null,
         melhor_dia: null,
         ult_dat_pagamto: null,
+        val_entrada: 0,
         entidade_negocio: 0
     }
 
@@ -78,6 +79,9 @@ export default class Vendas {
     set val_desconto(val_desconto) {this.#field.val_desconto = parseFloat(val_desconto)}
     get val_desconto() {return parseFloat(this.#field.val_desconto)}
 
+    set val_entrada(val_entrada) {this.#field.val_entrada = parseFloat(val_entrada)}
+    get val_entrada() {return parseFloat(this.#field.val_entrada)}  
+
     set situacao(situacao) {this.#field.situacao = Number(situacao)}
     get situacao() {return Number(this.#field.situacao)}
 
@@ -121,6 +125,7 @@ export default class Vendas {
             this.situacao = rows.situacao;
             this.dia_pagam = rows.dia_pagam;
             this.melhor_dia = rows.melhor_dia;
+            this.val_entrada = rows.val_entrada;
             this.ult_dat_pagamto = rows.ult_dat_pagamto;
             this.#found = true;
         } else {
@@ -134,7 +139,9 @@ export default class Vendas {
     async FindByCpf(cpf_cliente,id_venda) {
 
         let query = `SELECT * FROM ${this.#tb_name} 
-        WHERE entidade_negocio = :entidade_negocio AND id_venda = :id_venda AND cpf_cliente = :cpf`;
+                     WHERE entidade_negocio = :entidade_negocio 
+                     AND id_venda = :id_venda 
+                     AND cpf_cliente = :cpf`;
 
         const [rows] = await this.#conn.query(query,{entidade_negocio: this.#entidade_negocio,id_venda,cpf_cliente});
 
@@ -154,6 +161,7 @@ export default class Vendas {
             this.situacao = rows.situacao;
             this.dia_pagam = rows.dia_pagam;
             this.melhor_dia = rows.melhor_dia;
+            this.val_entrada = rows.val_entrada;
             this.ult_dat_pagamto = rows.ult_dat_pagamto;
             this.#found = true;
         } else {
@@ -171,7 +179,8 @@ export default class Vendas {
         if (this.#found) {
             query = `UPDATE ${this.#tb_name} SET dt_venda = :dt_venda, id_vendedor = :id_vendedor, 
             id_cobrador = :id_cobrador, id_rota = :id_rota, id_tipo_pag = :id_tipo_pag, cpf_cliente = :cpf_cliente,
-            marca_venda = :marca_venda, num_recibo = :num_recibo, referencia = :referencia, val_tot_venda = :val_tot_venda, val_desconto = :val_desconto,
+            marca_venda = :marca_venda, num_recibo = :num_recibo, referencia = :referencia, val_tot_venda = :val_tot_venda, 
+            val_desconto = :val_desconto, val_entrada = :val_entrada,
             situacao = :situacao, dia_pagam = :dia_pagam, melhor_dia = :melhor_dia, ult_dat_pagamto = :ult_dat_pagamto
             WHERE entidade_negocio = :entidade_negocio AND id = :id`;
         } else {
@@ -181,7 +190,7 @@ export default class Vendas {
             query = `INSERT INTO ${this.#tb_name} SET dt_venda = :dt_venda, id_vendedor = :id_vendedor, ult_dat_pagamto = :ult_dat_pagamto,
             id_cobrador = :id_cobrador, id_rota = :id_rota, id_tipo_pag = :id_tipo_pag, cpf_cliente = :cpf_cliente,
             marca_venda = :marca_venda, num_recibo = :num_recibo, referencia = :referencia, val_tot_venda = :val_tot_venda, val_desconto = :val_desconto,
-            situacao = :situacao, dia_pagam = :dia_pagam, melhor_dia = :melhor_dia, id = :id,entidade_negocio = :entidade_negocio`;
+            val_entrada = :val_entrada, situacao = :situacao, dia_pagam = :dia_pagam, melhor_dia = :melhor_dia, id = :id,entidade_negocio = :entidade_negocio`;
         }
 
         if(this.#field.id_cobrador === 0) this.#field.id_cobrador = null;

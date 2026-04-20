@@ -35,7 +35,7 @@ export class ControllerCobranca {
             
             const entidade_negocio = obterEntidadeNegocio(req);
             const com_rota_cobranca = Number(req.params.com_rota_cobranca || 0);
-            const situacao = String(req.query.situacao || '').trim();
+            const situacao = req.query.situacao || null;
 
             const fieldname = com_rota_cobranca === 1 ? 'id_rota' : 'id_cobrador';
             const id_filter = Number(req.params?.id || 0);
@@ -109,14 +109,20 @@ export class ControllerCobranca {
             }
 
             let query = `SELECT v.id, v.dt_venda, c.cpf_cliente, c.nom_cliente,c.nom_usual, c.end_cliente, c.bai_cliente, 
-            c.cid_cliente, c.uf_cliente, v.val_tot_venda, v.val_desconto, COALESCE(SUM(p.vl_pagamento), 0) AS val_total_pago,
-            GREATEST((v.val_tot_venda - val_desconto )- COALESCE(SUM(p.vl_pagamento), 0), 0) AS saldo_pagar, v.situacao
+            c.cid_cliente, c.uf_cliente, COALESCE(v.val_tot_venda, 0) AS val_tot_venda,
+            COALESCE(v.val_entrada, 0) AS val_entrada, COALESCE(v.val_desconto, 0) AS val_desconto,
+            COALESCE(SUM(COALESCE(p.vl_pagamento, 0)), 0) AS val_total_pago,
+            GREATEST(
+                COALESCE(v.val_tot_venda, 0) - (COALESCE(v.val_desconto, 0) + COALESCE(v.val_entrada, 0))
+                - COALESCE(SUM(COALESCE(p.vl_pagamento, 0)), 0),
+                0
+            ) AS saldo_pagar, v.situacao
             FROM tb_vendas v
             LEFT JOIN tb_clientes c ON c.cpf_cliente = v.cpf_cliente
             LEFT JOIN tb_pagamentos p ON p.entidade_negocio = v.entidade_negocio AND p.id_venda = v.id
-            WHERE ${whereClause.join('\n            AND ')}
-            GROUP BY v.id, v.dt_venda, c.cpf_cliente, c.nom_cliente, c.end_cliente, c.bai_cliente, 
-            c.cid_cliente, c.uf_cliente, v.val_tot_venda, v.situacao
+            WHERE ${whereClause.join('\n AND ')}
+            GROUP BY v.id, v.dt_venda, c.cpf_cliente, c.nom_cliente, c.nom_usual, c.end_cliente, c.bai_cliente, 
+            c.cid_cliente, c.uf_cliente, v.val_tot_venda, v.val_entrada, v.val_desconto, v.situacao
             ORDER BY v.dt_venda DESC, v.id DESC
             LIMIT ? OFFSET ?`;
 
@@ -254,7 +260,7 @@ export class ControllerCobranca {
                                 c.cpf_cliente, c.nom_cliente, c.nom_usual, c.end_cliente, c.bai_cliente, c.cid_cliente, c.uf_cliente,
                                 v.val_tot_venda,
                                 COALESCE(pg_total.total_pago_venda, 0) AS val_total_pago,
-                                GREATEST(v.val_tot_venda - COALESCE(pg_total.total_pago_venda, 0), 0) AS saldo_pagar
+                                GREATEST(v.val_tot_venda - ( v.val_entrada + v.val_desconto) - COALESCE(pg_total.total_pago_venda, 0), 0) AS saldo_pagar
                          FROM tb_pagamentos pg
                          INNER JOIN tb_vendas v ON v.id = pg.id_venda AND v.entidade_negocio = pg.entidade_negocio
                          LEFT JOIN tb_clientes c ON c.cpf_cliente = v.cpf_cliente
@@ -551,22 +557,35 @@ export class ControllerCobranca {
             const restricao = new RestricaoCredito(db.connection,entidade_negocio);
             const clientes = new Clientes(db.connection, entidade_negocio);
             
-            const query = `SELECT val_tot_venda,
-                            (COALESCE(val_tot_venda, 0) - COALESCE(val_desconto, 0)) - SUM(COALESCE(vl_pagamento, 0)) AS saldo_pagar
+            const query = `SELECT COALESCE(tb_vendas.val_tot_venda, 0) AS val_tot_venda,
+                            GREATEST(
+                                COALESCE(tb_vendas.val_tot_venda, 0) - (COALESCE(tb_vendas.val_desconto, 0) + COALESCE(tb_vendas.val_entrada, 0))
+                                - COALESCE(SUM(COALESCE(tb_pagamentos.vl_pagamento, 0)), 0),
+                                0
+                            ) AS saldo_pagar
                             FROM tb_vendas
                             LEFT JOIN tb_pagamentos ON tb_pagamentos.entidade_negocio = tb_vendas.entidade_negocio
                             AND tb_pagamentos.id_venda = tb_vendas.id
                             WHERE tb_vendas.entidade_negocio = :entidade_negocio AND tb_vendas.id = :id_venda
-                            GROUP BY val_tot_venda, val_desconto`
+                            GROUP BY tb_vendas.val_tot_venda, tb_vendas.val_desconto, tb_vendas.val_entrada`
 
             const [rows] = await pagamentos.ExecuteQuery(query, {entidade_negocio, id_venda});
+
+            if (!rows) {
+                const error = new Error('Numero da Venda não encontrada.');
+                error.statusCode = 404;
+                throw error;
+            }
 
             void await entidades.FindById(entidade_negocio);
             void await pagamentos.FindById(id_venda, 0);
 
-            const valor_max_desconto = (entidades.percent_desconto_cobranca / (rows.saldo_pagar - vl_desconto) * 100)
-
-            console.log(valor_max_desconto)
+            const saldoAtual = Number(rows?.saldo_pagar || 0);
+            const saldoBaseDesconto = saldoAtual - vl_desconto;
+            const valor_max_desconto = saldoBaseDesconto > 0
+                ? (Number(entidades.percent_desconto_cobranca || 0) / saldoBaseDesconto * 100)
+                : 0;
+            const saldoAposPagamento = Math.max(saldoAtual - vl_desconto - vl_pagamento, 0);
 
             if (vl_desconto > valor_max_desconto) {
                 const error = new Error("Desconto maior que o permitido.");
@@ -574,7 +593,7 @@ export class ControllerCobranca {
                 throw error
             }
 
-            if ((vl_pagamento + vl_desconto) > rows.saldo_pagar) {
+            if ((vl_pagamento + vl_desconto) > saldoAtual) {
                 const error = new Error('Valor do pagamento nao pode ser maior que o saldo a pagar.');
                 error.statusCode = 403;
                 throw error;
@@ -607,7 +626,7 @@ export class ControllerCobranca {
                 vendas.ult_dat_pagamto = dt_pagamento;
                 vendas.situacao = 0;
 
-                if ( ( rows.saldo_pagar - vl_desconto ) - vl_pagamento == 0) {
+                if (saldoAposPagamento === 0) {
                     vendas.situacao = 9;
                 }
                 
@@ -647,7 +666,7 @@ export class ControllerCobranca {
             resdata.msg = 'Pagamento registrado com sucesso.';
             resdata.data.id_venda = id_venda;
             resdata.data.id_pagamento = pagamentos.id;
-            resdata.data.saldo_pagar = parseFloat(rows.saldo_pagar);
+            resdata.data.saldo_pagar = saldoAposPagamento;
 
         } catch (error) {
 
@@ -693,6 +712,7 @@ export class ControllerCobranca {
             void await db.Begin();
 
             const pagamentos = new Pagamentos(db.connection, entidade_negocio);
+            const vendas = new Vendas(db.connection, entidade_negocio);
 
             void await pagamentos.FindById(id_venda, id_pagamento);
 
@@ -702,7 +722,40 @@ export class ControllerCobranca {
                 throw error;
             }
 
+            const descontoPagamentoExcluido = Number(pagamentos.vl_desconto || 0);
+
             void await pagamentos.Excluir();
+
+            void await vendas.FindById(id_venda);
+
+            if (vendas.found) {
+                const [resumoPagamentos] = await pagamentos.ExecuteQuery(
+                    `SELECT COALESCE(SUM(COALESCE(vl_pagamento, 0)), 0) AS total_pago,
+                            MAX(dt_pagamento) AS ult_dat_pagamto
+                     FROM tb_pagamentos
+                     WHERE entidade_negocio = :entidade_negocio
+                       AND id_venda = :id_venda`,
+                    { entidade_negocio, id_venda }
+                );
+
+                const totalPagoRestante = Number(resumoPagamentos?.total_pago || 0);
+
+                vendas.val_desconto = Math.max(Number(vendas.val_desconto || 0) - descontoPagamentoExcluido, 0);
+                vendas.ult_dat_pagamto = resumoPagamentos?.ult_dat_pagamto || null;
+                vendas.marca_venda = totalPagoRestante > 0 ? 'X' : null;
+
+                const saldoRestante = Math.max(
+                    Number(vendas.val_tot_venda || 0)
+                    - Number(vendas.val_desconto || 0)
+                    - Number(vendas.val_entrada || 0)
+                    - totalPagoRestante,
+                    0
+                );
+
+                vendas.situacao = saldoRestante === 0 ? 9 : 0;
+
+                void await vendas.Save();
+            }
 
             void await db.Commit();
             
