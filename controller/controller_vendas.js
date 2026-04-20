@@ -1588,10 +1588,16 @@ export class ControllerVendas {
 
         try {
 
+            void await db.Connect();
+
             const id = String(req.params.id);
             const entidade_negocio = obterEntidadeNegocio(req);
 
-            void await db.Connect();
+            if (!id) {
+                const error = new Error('ID da venda é obrigatório');
+                error.statusCode = 400;
+                throw error;
+            }
 
             const vendas = new Vendas(db.connection,entidade_negocio);
             const itens = new ItensVendas(db.connection,entidade_negocio);
@@ -1636,11 +1642,13 @@ export class ControllerVendas {
              
             void await db.RollBack();
 
-            resdata.err = 500;
+            resdata.err = error.statusCode || 500;
             resdata.msg = error.message;
-            resdata.status = 500;
+            resdata.status = error.statusCode || 500;
 
-            GravarLog('ControllerVendas.Editar', error.stack);
+            if (error.statusCode === 500) {
+                GravarLog('ControllerVendas.Editar', error.stack);
+            }
         }
 
         void await db.Close();
@@ -1683,6 +1691,8 @@ export class ControllerVendas {
             const val_desconto = parseFloat(body.val_desconto || 0);
             const val_entrada = parseFloat(body.val_entrada || 0);
             const itens = body.itens;
+            const cod_forma_pagamento = String(body.cod_forma).trim();
+            const cod_mod_pagamento = String(body.cod_mod_pagamento).trim();
 
             if (!dt_venda) {
                 const error = new Error('Data da venda e obrigatoria.');
@@ -1779,6 +1789,8 @@ export class ControllerVendas {
             vendas.dia_pagam = dia_pagam;
             vendas.val_desconto = val_desconto;
             vendas.val_entrada = val_entrada;
+            vendas.cod_forma_pagamento = cod_forma_pagamento;
+            vendas.cod_mod_pagamento = cod_mod_pagamento;
 
             void await vendas.Save();
 
