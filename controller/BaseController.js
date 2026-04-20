@@ -17,9 +17,11 @@ export class BaseController {
 
         try {
 
+            const entidade_negocio = obterEntidadeNegocio(req);
+
             void await db.Connect();
 
-            resdata.data = await operation(db.connection, obterEntidadeNegocio(req), req);
+            resdata.data = await operation(db.connection, entidade_negocio);
 
         } catch (error) {
 
@@ -48,17 +50,24 @@ export class BaseController {
 
         try {
 
+            const entidade_negocio = obterEntidadeNegocio(req);
+
             void await db.Connect();
+
             void await db.Begin();
 
-            resdata.data = await operation(db.connection, obterEntidadeNegocio(req), req);
+            resdata.data = await operation(db.connection, entidade_negocio);
+
             void await db.Commit();
 
         } catch (error) {
+
             void await db.RollBack();
+
             resdata.err = 500;
             resdata.msg = error.message;
             resdata.status = 500;
+
             GravarLog(this.name + '.' + operation.name, error.stack);
         }
 

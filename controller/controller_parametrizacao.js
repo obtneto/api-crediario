@@ -759,11 +759,11 @@ export class ControllerUsuarios{
 
         try {
 
-            let {id,usuario,nom_completo,email,id_perfil,modo_acesso,reset_password,password} = req.body;
+            let {id,usuario,nom_completo,email,id_perfil,id_cobrador,id_vendedor,modo_acesso,reset_password,password} = req.body;
             const entidade = obterEntidadeNegocio(req);
 
-            const validated = validate(usuarioSalvarSchema, {id,usuario,nom_completo,email,id_perfil,modo_acesso,reset_password,password});
-            ({ id, usuario, nom_completo, email, id_perfil, modo_acesso, reset_password, password } = validated);
+            const validated = validate(usuarioSalvarSchema, {id,usuario,nom_completo,email,id_perfil,id_cobrador,id_vendedor,modo_acesso,reset_password,password});
+            ({ id, usuario, nom_completo, email, id_perfil, id_vendedor,id_cobrador, modo_acesso, reset_password, password } = validated);
 
             const passwordNormalizado = String(password || '').trim();
             
@@ -782,12 +782,13 @@ export class ControllerUsuarios{
             }
 
             const usuarioExistente = Boolean(usuarios.found);
-
             usuarios.id = id;
             usuarios.usuario = usuario;
             usuarios.nom_completo = nom_completo;
             usuarios.email = email;
             usuarios.id_perfil = id_perfil;
+            usuarios.id_vendedor = id_vendedor || null;
+            usuarios.id_cobrador = id_cobrador || null;
             if (modo_acesso) {
                 usuarios.modo_acesso = modo_acesso;
             } else if (!usuarioExistente) {
@@ -798,8 +799,6 @@ export class ControllerUsuarios{
             if (reset_password) {
 
                 const numero = Math.floor(100000 + Math.random() * 900000);
-
-                console.log(email)
 
                 /*await enviarEmailResend({
                     from: "Crediario <noreply@fshp.se.gov.br>",

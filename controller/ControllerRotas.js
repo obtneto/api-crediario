@@ -36,13 +36,15 @@ export class ControllerRotas extends BaseController {
 
     static async ListarAtivas(req, res) {
 
-        await this.executeWithDatabase(async (conn, entidade_negocio, req) => {
+        await this.executeWithDatabase(async (conn, entidade_negocio) => {
             
             const rotas = new DaoRotas(conn, entidade_negocio);
             const entidades = new Entidades(conn, entidade_negocio);
 
             const pesq = req.params.pesq;
+
             let query = `SELECT * FROM tb_rotas WHERE entidade_negocio = :entidade_negocio AND ativo = 1`;
+
             const params = { entidade_negocio };
 
             if (pesq != "*") {
@@ -63,7 +65,7 @@ export class ControllerRotas extends BaseController {
 
     static async Editar(req, res) {
 
-        await this.executeWithDatabase(async (conn, entidade_negocio, req) => {
+        await this.executeWithDatabase(async (conn, entidade_negocio) => {
             
             const rotas = new DaoRotas(conn, entidade_negocio);
             const id = req.params.id;
@@ -76,17 +78,19 @@ export class ControllerRotas extends BaseController {
 
     static async Salvar(req, res) {
 
-        await this.executeWithTransaction(async (conn, entidade_negocio, req) => {
+        await this.executeWithTransaction(async (conn, entidade_negocio) => {
            
             const { id, nom_rota, ativo } = req.body;
             const rotas = new DaoRotas(conn, entidade_negocio);
 
             void await rotas.FindById(id);
+
             rotas.id = id;
             rotas.nom_rota = nom_rota;
             rotas.ativo = ativo;
 
             void await rotas.Save();
+
             return { success: true };
 
         }, req, res);
@@ -94,12 +98,13 @@ export class ControllerRotas extends BaseController {
 
     static async Excluir(req, res) {
 
-        await this.executeWithTransaction(async (conn, entidade_negocio, req) => {
+        await this.executeWithTransaction(async (conn, entidade_negocio) => {
             
             const rotas = new DaoRotas(conn, entidade_negocio);
             const id = req.params.id;
 
             void await rotas.Excluir(id);
+
             return { success: true };
 
         }, req, res);

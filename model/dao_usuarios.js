@@ -16,6 +16,8 @@ export default class Usuarios {
         modo_acesso: '',
         reset_password: 0,
         num_verificacao: null,
+        id_vendedor: null,
+        id_cobrador: null,
         iniciais: '',
     }
 
@@ -62,6 +64,12 @@ export default class Usuarios {
 
     set iniciais(iniciais) {this.#field.iniciais = iniciais}
     get iniciais() {return this.#field.iniciais}
+    
+    set id_vendedor(id_vendedor) {this.#field.id_vendedor = id_vendedor}
+    get id_vendedor() {return this.#field.id_vendedor}
+    
+    set id_cobrador(id_cobrador) {this.#field.id_cobrador = id_cobrador}
+    get id_cobrador() {return this.#field.id_cobrador}
 
     set num_verificacao(num_verificacao) {this.#field.num_verificacao = num_verificacao}
     get num_verificacao() {return this.#field.num_verificacao}
@@ -93,6 +101,8 @@ export default class Usuarios {
             this.id_perfil = rows.id_perfil;
             this.modo_acesso = rows.modo_acesso;
             this.num_verificacao = rows.num_verificacao;
+            this.id_vendedor = rows.id_vendedor;
+            this.id_cobrador = rows.id_cobrador;
             this.#found = true;
         } else {
             this.#found = false;
@@ -121,6 +131,8 @@ export default class Usuarios {
             this.id_perfil = rows.id_perfil;
             this.modo_acesso = rows.modo_acesso;
             this.num_verificacao = rows.num_verificacao;
+            this.id_vendedor = rows.id_vendedor;
+            this.id_cobrador = rows.id_cobrador;
             this.#found = true;
         } else {
             this.#found = false;
@@ -146,7 +158,9 @@ export default class Usuarios {
                      modo_acesso = :modo_acesso, 
                      reset_password = :reset_password, 
                      iniciais = :iniciais, 
-                     num_verificacao = :num_verificacao
+                     num_verificacao = :num_verificacao,
+                     id_vendedor = :id_vendedor,
+                     id_cobrador = :id_cobrador
                      WHERE entidade_negocio = :entidade_negocio AND id = :id`;
 
         } else {
@@ -164,6 +178,9 @@ export default class Usuarios {
                     modo_acesso = :modo_acesso, 
                     reset_password = :reset_password, 
                     iniciais = :iniciais, 
+                    num_verificacao = :num_verificacao,
+                    id_vendedor = :id_vendedor,
+                    id_cobrador = :id_cobrador,
                     id = :id`
         }
 
