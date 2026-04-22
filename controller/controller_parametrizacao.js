@@ -8,6 +8,8 @@ import Produtos from '../model/dao_produtos.js';
 import Rotas from '../model/dao_rotas.js';
 import TiposPagamentos from '../model/dao_tipos_pagamentos.js';
 import Estoque from '../model/dao_estoque.js';
+import FormaPagamento from '../model/dao_forma_pagamento.js';
+import ModoPagamento from '../model/dao_modo_pagamento.js';
 import GravarLog from '../utils/GravarLog.js';
 import {obterEntidadeNegocio} from '../utils/CheckEntidades.js';
 import {definirSessaoHttpOnly, limparSessaoHttpOnly, obterSessaoHttpOnly, renovarSessaoHttpOnly, getCurrentToken} from '../utils/AuthSession.js';
@@ -2644,4 +2646,262 @@ export class ControllerTiposPagamentos{
         res.status(resdata.status).json(resdata);
 
     }
+}
+
+export class ControllerFormaPagamento {
+
+    static async Listar(req, res) {
+
+        const db = new Database('dbcred');
+
+        const resdata = {
+            err: 0,
+            msg: '',
+            status: 200,
+            data: []
+        }
+
+        try {
+
+            const entidade_negocio = obterEntidadeNegocio(req);
+            
+            void await db.Connect();
+
+            const formaPagamento = new FormaPagamento(db.connection, entidade_negocio);
+
+            const query = `SELECT * FROM tb_forma_pagamento WHERE entidade_negocio = :entidade_negocio`;
+
+            const data = await formaPagamento.ExecuteQuery(query, {entidade_negocio});
+
+            resdata.data = data;
+
+        } catch (error) {
+            
+            resdata.err = 500;
+            resdata.msg = error.message;
+            resdata.status = 500;
+
+            GravarLog('ControllerFormaPagamento.Listar', error.stack);
+
+        }
+
+        void await db.Close();
+
+        res.status(resdata.status).json(resdata);
+        
+    }
+
+    static async BuscarPorId(req,res) {
+
+        const db = new Database('dbcred');
+
+        const resdata = {
+            err: 0,
+            msg: '',
+            status: 200,
+            data: []
+        }
+
+        try {
+
+            const entidade_negocio = obterEntidadeNegocio(req);
+            const id = Number(req.params.id || 0);
+            
+            void await db.Connect();
+    
+            if (id === undefined) {
+                const error = new Error('ID não informado');
+                error.status = 400;
+                throw error;
+            }
+
+            const formaPagamento = new FormaPagamento(db.connection, entidade_negocio);
+
+            const data =  await formaPagamento.FindById(id)
+
+            if (!formaPagamento.found) {
+                const error = new Error('Forma de pagamento não encontrada');
+                error.status = 404;
+                throw error;
+            }
+
+            resdata.data = data;
+
+        } catch (error) {
+            
+            resdata.err = error.status || 500;
+            resdata.msg = resdata.err === 500 ? 'Erro interno do servidor' : error.message;
+            resdata.status = error.status || 500;
+
+            if(resdata.err === 500) GravarLog('ControllerFormaPagamento.Buscar', error.stack);
+
+        }
+
+        void await db.Close();
+
+        res.status(resdata.status).json(resdata);
+        
+    }
+
+    static async BuscarPorCodigo(req,res) {
+
+        const db = new Database('dbcred');
+
+        const resdata = {
+            err: 0,
+            msg: '',
+            status: 200,
+            data: []
+        }
+
+        try {
+
+            const entidade_negocio = obterEntidadeNegocio(req);
+            const codigo = req.params.cod_modo || '';
+            
+            void await db.Connect();
+    
+            if (!codigo) {
+                const error = new Error('Código não informado');
+                error.status = 400;
+                throw error;
+            }
+
+            const formaPagamento = new FormaPagamento(db.connection, entidade_negocio);
+
+            const data = await formaPagamento.FindByCodForma(codigo);
+
+            if (!formaPagamento.found) {
+                const error = new Error('Forma de pagamento não encontrada');
+                error.status = 404;
+                throw error;
+            }
+
+            resdata.data = data;
+
+        } catch (error) {
+            
+            resdata.err = error.status || 500;
+            resdata.msg = resdata.err === 500 ? 'Erro interno do servidor' : error.message;
+            resdata.status = error.status || 500;
+
+            if(resdata.err === 500) GravarLog('ControllerFormaPagamento.BuscarPorCodigo', error.stack);
+
+        }
+
+        void await db.Close();
+
+        res.status(resdata.status).json(resdata);
+        
+    }
+
+    static async Salvar(req,res) {
+
+        const db = new Database('dbcred');
+
+        const resdata = {
+            err: 0,
+            msg: '',
+            status: 200,
+            data: []
+        }
+
+        try {
+
+            void await db.Connect();
+
+            void await db.Begin();
+
+            const entidade_negocio = obterEntidadeNegocio(req);
+            const id = Number(req.body.id || 0);
+            const cod_forma = req.body.cod_forma || '';
+            const nom_forma = req.body.nom_forma || '';
+
+            if(id === undefined) {
+                const error = new Error('ID não informado');
+                error.status = 400;
+                throw error;
+            }
+
+            if (!cod_forma || !nom_forma) {
+                const error = new Error('Código e nome da forma de pagamento são obrigatórios');
+                error.status = 400;
+                throw error;
+            }
+
+            const formaPagamento = new FormaPagamento(db.connection, entidade_negocio);
+
+            void await formaPagamento.FindById(id);
+
+            formaPagamento.cod_forma = cod_forma;
+            formaPagamento.nom_forma = nom_forma;
+
+            void await formaPagamento.Save();
+
+            void await db.Commit();
+
+            resdata.msg = "Forma de pagamento salva com sucesso";
+            
+        } catch (error) {
+
+            void await db.RollBack();
+            
+            resdata.err = error.status || 500;
+            resdata.msg = resdata.err === 500 ? 'Erro interno do servidor' : error.message;
+            resdata.status = error.status || 500;
+
+            if(resdata.err === 500) GravarLog('ControllerFormaPagamento.Salvar', error.stack);
+
+        }
+
+        void await db.Close();
+
+        res.status(resdata.status).json(resdata);
+        
+    }
+
+    static async Excluir(req,res) {
+
+        const db = new Database('dbcred');
+
+        const resdata = {
+            err: 0,
+            msg: '',
+            status: 200,
+            data: []
+        }
+
+        try {
+
+            void await db.Connect();
+
+            void await db.Begin();
+
+            const req = obterEntidadeNegocio(req);
+            const cod_forma = req.body.cod_forma;
+
+            if(!cod_forma) {
+                const error = new Error('Código da forma de pagamento não informado');
+                error.status = 400;
+                throw error;
+            }
+
+            const formaPagamento = new FormaPagamento(db.connection, entidade_negocio);
+
+            void await formaPagamento.FindByCodForma(cod_forma);
+
+            if (!formaPagamento.found) {
+                const error = new Error('Forma de pagamento não encontrada');
+                error.status = 404;
+                throw error;
+            }
+
+            void await formaPagamento.Excluir();
+            
+        } catch (error) {
+            
+        }
+
+    }
+    
 }

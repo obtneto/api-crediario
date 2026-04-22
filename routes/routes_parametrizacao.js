@@ -78,6 +78,7 @@ router.get('/editar_rota/:id',ControllerRotas.Editar);
 router.get('/excluir_rota/:id',ControllerRotas.Excluir);
 router.post('/salvar_rota',ControllerRotas.Salvar);
 
+
 /**** Geo ****/
 router.get('/reverse_geocode/:lat/:lon',GeoLocalizacao.Reverse);
 
