@@ -9,7 +9,6 @@ import {ControllerEntidades,
     ControllerRotas,
     ControllerTiposPagamentos,
     ControllerModoAcessos
-    
 } from '../controller/controller_parametrizacao.js'
 
 import GeoLocalizacao from '../utils/classGeoLocaliza.js';
@@ -77,6 +76,7 @@ router.get('/listar_rotas_ativas/:pesq',ControllerRotas.ListarAtivas);
 router.get('/editar_rota/:id',ControllerRotas.Editar);
 router.get('/excluir_rota/:id',ControllerRotas.Excluir);
 router.post('/salvar_rota',ControllerRotas.Salvar);
+
 
 
 /**** Geo ****/

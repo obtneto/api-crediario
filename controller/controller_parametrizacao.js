@@ -9,7 +9,7 @@ import Rotas from '../model/dao_rotas.js';
 import TiposPagamentos from '../model/dao_tipos_pagamentos.js';
 import Estoque from '../model/dao_estoque.js';
 import FormaPagamento from '../model/dao_forma_pagamento.js';
-import ModoPagamento from '../model/dao_modo_pagamento.js';
+import ModoPagamento from '../model/dao_modo_pagamentos.js';
 import GravarLog from '../utils/GravarLog.js';
 import {obterEntidadeNegocio} from '../utils/CheckEntidades.js';
 import {definirSessaoHttpOnly, limparSessaoHttpOnly, obterSessaoHttpOnly, renovarSessaoHttpOnly, getCurrentToken} from '../utils/AuthSession.js';
@@ -2662,16 +2662,14 @@ export class ControllerFormaPagamento {
         }
 
         try {
-
-            const entidade_negocio = obterEntidadeNegocio(req);
             
             void await db.Connect();
 
-            const formaPagamento = new FormaPagamento(db.connection, entidade_negocio);
+            const formaPagamento = new FormaPagamento(db.connection);
 
-            const query = `SELECT * FROM tb_forma_pagamento WHERE entidade_negocio = :entidade_negocio`;
+            const query = `SELECT * FROM tb_forma_pagamento`;
 
-            const data = await formaPagamento.ExecuteQuery(query, {entidade_negocio});
+            const data = await formaPagamento.ExecuteQuery(query);
 
             resdata.data = data;
 
@@ -2704,7 +2702,6 @@ export class ControllerFormaPagamento {
 
         try {
 
-            const entidade_negocio = obterEntidadeNegocio(req);
             const id = Number(req.params.id || 0);
             
             void await db.Connect();
@@ -2715,7 +2712,7 @@ export class ControllerFormaPagamento {
                 throw error;
             }
 
-            const formaPagamento = new FormaPagamento(db.connection, entidade_negocio);
+            const formaPagamento = new FormaPagamento(db.connection);
 
             const data =  await formaPagamento.FindById(id)
 
@@ -2756,8 +2753,7 @@ export class ControllerFormaPagamento {
 
         try {
 
-            const entidade_negocio = obterEntidadeNegocio(req);
-            const codigo = req.params.cod_modo || '';
+            const codigo = String(req.params.cod_forma || '').trim();
             
             void await db.Connect();
     
@@ -2767,9 +2763,9 @@ export class ControllerFormaPagamento {
                 throw error;
             }
 
-            const formaPagamento = new FormaPagamento(db.connection, entidade_negocio);
+            const formaPagamento = new FormaPagamento(db.connection);
 
-            const data = await formaPagamento.FindByCodForma(codigo);
+            void await formaPagamento.FindByCodForma(codigo);
 
             if (!formaPagamento.found) {
                 const error = new Error('Forma de pagamento não encontrada');
@@ -2777,7 +2773,12 @@ export class ControllerFormaPagamento {
                 throw error;
             }
 
-            resdata.data = data;
+            resdata.data = {
+                id: formaPagamento.id,
+                cod_forma: formaPagamento.cod_forma,
+                nom_forma: formaPagamento.nom_forma,
+                ativo: formaPagamento.ativo
+            };
 
         } catch (error) {
             
@@ -2812,7 +2813,6 @@ export class ControllerFormaPagamento {
 
             void await db.Begin();
 
-            const entidade_negocio = obterEntidadeNegocio(req);
             const id = Number(req.body.id || 0);
             const cod_forma = req.body.cod_forma || '';
             const nom_forma = req.body.nom_forma || '';
@@ -2829,7 +2829,7 @@ export class ControllerFormaPagamento {
                 throw error;
             }
 
-            const formaPagamento = new FormaPagamento(db.connection, entidade_negocio);
+            const formaPagamento = new FormaPagamento(db.connection);
 
             void await formaPagamento.FindById(id);
 
@@ -2877,8 +2877,7 @@ export class ControllerFormaPagamento {
 
             void await db.Begin();
 
-            const req = obterEntidadeNegocio(req);
-            const cod_forma = req.body.cod_forma;
+            const cod_forma = String(req.params.cod_forma || req.body.cod_forma || '').trim();
 
             if(!cod_forma) {
                 const error = new Error('Código da forma de pagamento não informado');
@@ -2886,7 +2885,7 @@ export class ControllerFormaPagamento {
                 throw error;
             }
 
-            const formaPagamento = new FormaPagamento(db.connection, entidade_negocio);
+            const formaPagamento = new FormaPagamento(db.connection);
 
             void await formaPagamento.FindByCodForma(cod_forma);
 
@@ -2897,11 +2896,310 @@ export class ControllerFormaPagamento {
             }
 
             void await formaPagamento.Excluir();
+
+            void await db.Commit();
+
+            resdata.msg = "Forma de pagamento excluída com sucesso";
             
         } catch (error) {
-            
+
+            void await db.RollBack();
+
+            resdata.err = error.status || 500;
+            resdata.msg = resdata.err === 500 ? 'Erro interno do servidor' : error.message;
+            resdata.status = error.status || 500;
+
+            if(resdata.err === 500) GravarLog('ControllerFormaPagamento.Excluir', error.stack);
+
         }
+
+        void await db.Close();
+
+        res.status(resdata.status).json(resdata);
 
     }
     
+}
+
+export class ControllerModalidadePagamento {
+
+    static async Listar(req,res) {
+
+        const db =  new Database('dbcred');
+
+        const resdata = {
+            err: 0,
+            msg: '',
+            status: 200,
+            data: []
+        }
+
+        try {
+
+            void await db.Connect();
+
+            const modoPagamento = new ModoPagamento(db.connection);
+
+            const query = "SELECT * FROM tb_modalidade_pagamento";
+
+            const rows = await modoPagamento.ExecuteQuery(query);
+
+            resdata.data = rows;
+            
+        } catch (error) {
+
+            resdata.err = 500;
+            resdata.msg = error.message;
+            resdata.status = error.status || 500;
+
+            if(resdata.err === 500) GravarLog('ControllerModalidadePagamento.Listar', error.stack);
+        }
+
+        void await db.Close();
+
+        res.status(resdata.status).json(resdata);
+
+    }
+
+    static async BuscarPorId(req,res) {
+
+        const db =  new Database('dbcred');
+
+        const resdata = {
+            err: 0,
+            msg: '',
+            status: 200,
+            data: []
+        }
+
+        try {
+
+            void await db.Connect();
+
+            const modoPagamento = new ModoPagamento(db.connection);
+
+            const id = Number(req.params.id || 0);
+
+            if (id <= 0) {
+                const error = new Error('ID não informado');
+                error.status = 400;
+                throw error;
+            }
+
+            void await modoPagamento.FindById(id);
+
+            if (!modoPagamento.found) {
+                const error = new Error('Modalidade de pagamento não encontrada');
+                error.status = 404;
+                throw error;
+            }
+
+            resdata.data = {
+                id: modoPagamento.id,
+                cod_mod_pagamento: modoPagamento.cod_mod_pagamento,
+                nom_mod_pagamento: modoPagamento.nom_mod_pagamento,
+                cod_forma_pagamento: modoPagamento.cod_forma_pagamento
+            };
+            
+        } catch (error) {
+
+            resdata.err = error.status || 500;
+            resdata.msg = resdata.err === 500 ? 'Erro interno do servidor' : error.message;
+            resdata.status = error.status || 500;
+
+            if(resdata.err === 500) GravarLog('ControllerModalidadePagamento.BuscarPorId', error.stack);
+        }
+
+        void await db.Close();
+
+        res.status(resdata.status).json(resdata);
+
+    }
+
+    static async BuscarPorCodigo(req,res) {
+
+        const db =  new Database('dbcred');
+
+        const resdata = {
+            err: 0,
+            msg: '',
+            status: 200,
+            data: []
+        }
+
+        try {
+
+            void await db.Connect();
+
+            const modoPagamento = new ModoPagamento(db.connection);
+
+            const codigo = String(req.params.cod_mod || '').trim().toUpperCase();
+
+            if (!codigo) {
+                const error = new Error('Código da modalidade de pagamento não informado');
+                error.status = 400;
+                throw error;
+            }
+
+            void await modoPagamento.FindByCodModalidade(codigo);
+
+            if (!modoPagamento.found) {
+                const error = new Error('Modalidade de pagamento não encontrada');
+                error.status = 404;
+                throw error;
+            }
+
+            resdata.data = {
+                id: modoPagamento.id,
+                cod_mod_pagamento: modoPagamento.cod_mod_pagamento,
+                nom_mod_pagamento: modoPagamento.nom_mod_pagamento,
+                cod_forma_pagamento: modoPagamento.cod_forma_pagamento
+            };
+            
+        } catch (error) {
+
+            resdata.err = error.status || 500;
+            resdata.msg = resdata.err === 500 ? 'Erro interno do servidor' : error.message;
+            resdata.status = error.status || 500;
+
+            if(resdata.err === 500) GravarLog('ControllerModalidadePagamento.BuscarPorCodigo', error.stack);
+        }
+
+        void await db.Close();
+
+        res.status(resdata.status).json(resdata);
+
+    }
+
+    static async Salvar(req,res) {
+
+        const db =  new Database('dbcred');
+
+        const resdata = {
+            err: 0,
+            msg: '',
+            status: 200,
+            data: []
+        }
+
+        try {
+
+            void await db.Connect();
+
+            void await db.Begin()
+
+            const modoPagamento = new ModoPagamento(db.connection);
+
+            const id = Number(req.body.id || 0);
+            const codigo = String(req.body.cod_mod || '').trim().toUpperCase();
+            const nom_mod = String(req.body.nom_mod || '').trim().toUpperCase();
+            const cod_forma = String(req.body.cod_forma || '').trim().toUpperCase();
+
+            if (!codigo) {
+                const error = new Error('Código da modalidade de pagamento não informado');
+                error.status = 400;
+                throw error;
+            }
+
+            if (!nom_mod) {
+                const error = new Error('Codigo e/ou Nome da modalidade de pagamento não informados');
+                error.status = 400;
+                throw error;
+            }
+
+            if (!cod_forma) {
+                const error = new Error('Codigo da forma de pagamento não informado');
+                error.status = 400;
+                throw error;
+            }
+
+            void await modoPagamento.FindById(id);
+
+            modoPagamento.cod_mod_pagamento = codigo;
+            modoPagamento.nom_mod_pagamento = nom_mod;
+            modoPagamento.cod_forma_pagamento = cod_forma;
+
+            void await modoPagamento.Save();
+
+            void await db.Commit();
+
+            resdata.msg = "Modalidade de pagamento salva com sucesso";
+           
+            
+        } catch (error) {
+
+            void await db.RollBack();
+
+            resdata.err = error.status || 500;
+            resdata.msg = resdata.err === 500 ? 'Erro interno do servidor' : error.message;
+            resdata.status = error.status || 500;
+
+            if(resdata.err === 500) GravarLog('ControllerModalidadePagamento.Salvar', error.stack);
+        }
+
+        void await db.Close();
+
+        res.status(resdata.status).json(resdata);
+
+    }
+
+    static async Excluir(req, res) {
+
+        const db =  new Database('dbcred');
+
+        const resdata = {
+            err: 0,
+            msg: '',
+            status: 200,
+            data: []
+        }
+
+        try {
+
+            void await db.Connect();
+
+            void await db.Begin()
+
+            const modoPagamento = new ModoPagamento(db.connection);
+
+            const cod_mod = String(req.params.cod_mod || '').trim().toUpperCase();
+
+            if (!cod_mod) {
+                const error = new Error('Código da modalidade de pagamento não informado');
+                error.status = 400;
+                throw error;
+            }
+
+            void await modoPagamento.FindByCodModalidade(cod_mod);
+
+            if (!modoPagamento.found) {
+                const error = new Error('Modalidade de pagamento não encontrada');
+                error.status = 404;
+                throw error;
+            }
+
+            void await modoPagamento.Excluir();
+
+            void await db.Commit();
+
+            resdata.msg = "Modalidade de pagamento excluída com sucesso";
+           
+            
+        } catch (error) {
+
+            void await db.RollBack();
+
+            resdata.err = error.status || 500;
+            resdata.msg = resdata.err === 500 ? 'Erro interno do servidor' : error.message;
+            resdata.status = error.status || 500;
+
+            if(resdata.err === 500) GravarLog('ControllerModalidadePagamento.Excluir', error.stack);
+        }
+
+        void await db.Close();
+
+        res.status(resdata.status).json(resdata);
+
+    }
+
 }

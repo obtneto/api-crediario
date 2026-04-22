@@ -57,11 +57,11 @@ export default class ModoPagamentos {
 
     }
 
-    async FindByCodModPagamento(cod_mod_pagamento) {
+    async FindByCodModalidade(cod_modalidade) {
         
-        const query = `SELECT * FROM ${this.#tb_name} WHERE cod_mod_pagamento = :cod_mod_pagamento`;
+        const query = `SELECT * FROM ${this.#tb_name} WHERE cod_mod_pagamento = :cod_modalidade`;
        
-        const rows = await this.ExecuteQuery(query, {cod_mod_pagamento});
+        const rows = await this.ExecuteQuery(query, {cod_modalidade});
         
         if(rows.length > 0) {
             this.#field = rows[0];
