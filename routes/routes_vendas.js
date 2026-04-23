@@ -24,7 +24,6 @@ router.get('/destinar_venda/:com_rota_cobranca',ControllerVendas.ListarVendasDes
 router.get('/editar_venda/:id',ControllerVendas.Editar)
 router.post('/salvar_venda',ControllerVendas.Salvar)
 router.post('/excluir_itens_venda/:id_venda/:id_item',ControllerVendas.ExcluirItemVenda)
-router.post('/destinar_venda',ControllerVendas.DestinarVendas);
 router.get('/consultar_vendas_clientes/:cpf',ControllerVendas.ConsultaVendasPorCliente)
 
 export default router;

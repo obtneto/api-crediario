@@ -13,5 +13,7 @@ router.get('/listar_pagamentos/:id_venda',ControllerCobranca.ListarPagamentos);
 router.post('/salvar_pagamento',ControllerCobranca.SalvarPagamento);
 router.get('/excluir_pagamento/:id_pagamento/:id_venda',ControllerCobranca.ExcluirPagamento);
 router.get('/desmarcar_vendas/:com_rota_cobranca/:id',ControllerCobranca.DesmarcarVendaPaga);
+router.post('/destinar_venda',ControllerCobranca.DestinarVendas);
+router.post('/redestinar_vendas',ControllerCobranca.RedestinarVendas);
 
 export default router;
