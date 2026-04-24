@@ -2667,7 +2667,7 @@ export class ControllerFormaPagamento {
 
             const formaPagamento = new FormaPagamento(db.connection);
 
-            const query = `SELECT * FROM tb_forma_pagamento`;
+            const query = `SELECT cod_forma,nom_forma FROM tb_forma_pagamento`;
 
             const data = await formaPagamento.ExecuteQuery(query);
 
@@ -2938,11 +2938,19 @@ export class ControllerModalidadePagamento {
 
             void await db.Connect();
 
+            const cod_forma = String(req.params.cod_forma).trim();
+
+            if (cod_forma === undefined || cod_forma === null || cod_forma === '') {
+                const error = new Error('Código da forma de pagamento não informado');
+                error.status = 400;
+                throw error;
+            }
+
             const modoPagamento = new ModoPagamento(db.connection);
 
-            const query = "SELECT * FROM tb_modalidade_pagamento";
+            const query = "SELECT cod_mod_pagamento,nom_mod_pagamento FROM tb_modalidade_pagamento WHERE cod_forma_pagamento = :cod_forma";
 
-            const rows = await modoPagamento.ExecuteQuery(query);
+            const rows = await modoPagamento.ExecuteQuery(query, { cod_forma });
 
             resdata.data = rows;
             
