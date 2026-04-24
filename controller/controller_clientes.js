@@ -106,12 +106,13 @@ export class ControllerClientes {
         
         try {
 
+            const entidade_negocio = obterEntidadeNegocio(req);
             const cpf =  String(req.params.cpf).replace(/\D/g, '');
 
             void await db.Connect();
 
             const clientes = new Clientes(db.connection);
-      
+
             const rows = await clientes.FindByCpf(cpf);
 
             if (!clientes.found) {

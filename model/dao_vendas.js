@@ -229,7 +229,7 @@ export default class Vendas {
         
         const [rows] = await this.#conn.query(query_new_id,{entidade_negocio: this.#field.entidade_negocio});
 
-        const newid = rows?.newId === 0 ?? 1;
+        const newid = rows.newid === 0 ? 1 : rows.newid;
 
         const query_check_ano = "SELECT ano_corrente FROM tb_check_ano WHERE id = 1";
 
@@ -238,13 +238,12 @@ export default class Vendas {
         const ano_corrente = rows_check?.ano_corrente ?? new Date().getFullYear();
         const ano = new Date(this.#field.dt_venda).getFullYear();
         const entidade = String(this.#field.entidade_negocio).padStart(3, '0');
-
+        
         const id = ano > ano_corrente ? String(ano) + entidade + '1'.padStart(5, '0') : 
         String(ano) + entidade + String(Number(String(newid).substring(8,12)) + 1).padStart(5, '0');
 
         return (String(id));
 
     }
-
 
 }

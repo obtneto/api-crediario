@@ -1839,6 +1839,9 @@ export class ControllerVendas {
                 const vl_unit_item = parseItemDecimal(item.vl_unit ?? item.vlr_unitario);
                 const forma_pagamnto_item = String(item.forma_pagamnto ?? item.forma_pagamento ?? '').trim().toLowerCase();
 
+
+                console.log('qt_produto_item', qt_produto_item)
+
                 if (!Number.isFinite(id_produto_item) || id_produto_item <= 0) {
                     const error = new Error('Item com produto invalido.');
                     error.statusCode = 400;
