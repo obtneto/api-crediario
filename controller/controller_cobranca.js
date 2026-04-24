@@ -8,6 +8,8 @@ import Vendas from '../model/dao_vendas.js';
 import Pagamentos from '../model/dao_pagamentos.js';
 import {buildTableDocument, formatCurrencyBR, formatDateBR, sendPdfResponse} from '../utils/PdfReport.js';
 import Clientes from '../model/dao_clientes.js';
+import Rotas from '../model/dao_rotas.js';
+import Cobradores from '../model/dao_cobradores.js';
 
 export class ControllerCobranca {
 
@@ -906,6 +908,8 @@ export class ControllerCobranca {
                 error.statusCode = 400;
                 throw error;
             }
+
+            console.log(entidade_negocio)
 
             const destino = com_rota_cobranca === 1
                 ? new Rotas(db.connection, entidade_negocio)
