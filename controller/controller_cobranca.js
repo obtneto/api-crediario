@@ -1057,4 +1057,218 @@ export class ControllerCobranca {
 
     }
 
+    static async ClienteComRota(req, res) {
+
+        const resdadta = {
+            err: 0,
+            msg: '',
+            status: 200,
+            data: []
+        }
+
+        const db = new Database('dbcred');
+
+        try {
+
+            void await db.Connect();
+
+            const entidade_negocio = obterEntidadeNegocio(req);
+
+            const query = `SELECT id, nom_entidade, com_rota_cobranca FROM tb_entidades WHERE id = :id`;
+
+            const [result] = await db.connection.query(query, { id: entidade_negocio });
+
+            if (!result || result.length === 0) {
+                const error = new Error('Entidade nao encontrada.');
+                error.statusCode = 404;
+                throw error;
+            }
+
+            resdadta.data = Number(result.com_rota_cobranca || 0);
+
+        } catch (error) {
+
+            resdadta.err = error.statusCode || 500;
+            resdadta.msg = resdadta.err === 500 ? 'Erro interno do servidor' : error.message;
+            resdadta.status = Number(error.statusCode || 500);
+            
+            if(resdadta.err !== 500) {
+                GravarLog('ControllerCobranca.ClienteComRota', error.stack);
+            }
+            
+        }
+
+        void await db.Close();
+        
+        res.status(resdadta.status).json(resdadta);
+        
+    }
+
+    static async ListaCobrancaPorRota(req, res) {
+        
+        const resdadta = {
+            err: 0,
+            msg: '',
+            status: 200,
+            data: []
+        }
+
+        const db = new Database('dbcred');
+
+        try {
+            
+            void await db.Connect();
+
+            const entidade_negocio = obterEntidadeNegocio(req);
+            const data_pag_ini = req.query.data_pag_ini;
+            const data_pag_fim = req.query.data_pag_fim;
+            const id_rota = Number(req.params.id_rota);
+
+             if (!data_pag_ini || !data_pag_fim) {
+                const error = new Error('Informe data inicial e data final.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(data_pag_ini)) {
+                const error = new Error('Data inicial invalida.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(data_pag_fim)) {
+                const error = new Error('Data final invalida.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (data_pag_ini > data_pag_fim) {
+                const error = new Error('Data inicial nao pode ser maior que data final.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (id_rota === undefined || id_rota === 0) {
+                const error = new Error('Informe o ID da rota.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            const query = `SELECT id as nr_venda, dia_pagam as dt_pagamento,melher_dia,
+            tb_vendas.cpf_cliente as cpf,nom_cliente as nome, nom_usual as nome_usual,end_cliente as endereco,
+            bai_cliente as bairro,cid_cliente as cidade, uf_cliente as uf,lat_cliente as latitude,lon_cliente as longitude
+            FROM tb_vendas
+            LEFT JOIN tb_clientes ON tb_vendas.cpf_cliente = tb_clientes.cpf_cliente
+            WHERE id_rota = :id_rota AND (dia_pagam >= :data_pag_ini AND dia_pagam <= :data_pag_fim)`;
+
+            const dados = await db.connection.query(query, {
+                id_rota,
+                data_pag_ini,
+                data_pag_fim
+            });
+
+            resdadta.data = dados;
+            
+        } catch (error) {
+
+            resdadta.err = error.statusCode || 500;
+            resdadta.msg = resdadta.err === 500 ? 'Erro interno do servidor' : error.message;
+            resdadta.status = Number(error.statusCode || 500);
+            
+            if(resdadta.err !== 500) {
+                GravarLog('ControllerCobranca.ListaCobrancaPorRota', error.stack);
+            }
+            
+        }
+
+        void await db.Close();
+
+        res.status(resdadta.status).json(resdadta);
+
+    }
+
+        static async ListaCobrancaPorCobrador(req, res) {
+        
+        const resdadta = {
+            err: 0,
+            msg: '',
+            status: 200,
+            data: []
+        }
+
+        try {
+
+            const db = new Database('dbcred');
+            
+            void await db.Connect();
+
+            const entidade_negocio = obterEntidadeNegocio(req);
+            const data_pag_ini = req.query.data_pag_ini;
+            const data_pag_fim = req.query.data_pag_fim;
+            const id_cobrador = Number(req.params.id_cobrador);
+
+             if (!data_pag_ini || !data_pag_fim) {
+                const error = new Error('Informe data inicial e data final.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(data_pag_ini)) {
+                const error = new Error('Data inicial invalida.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(data_pag_fim)) {
+                const error = new Error('Data final invalida.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (data_pag_ini > data_pag_fim) {
+                const error = new Error('Data inicial nao pode ser maior que data final.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (id_cobrador === undefined || id_cobrador === 0) {
+                const error = new Error('Informe o ID do cobrador.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            const query = `SELECT id as nr_venda, dia_pagam as dt_pagamento,melher_dia,
+            tb_vendas.cpf_cliente as cpf,nom_cliente as nome, nom_usual as nome_usual,end_cliente as endereco,
+            bai_cliente as bairro,cid_cliente as cidade, uf_cliente as uf,lat_cliente as latitude,lon_cliente as longitude
+            FROM tb_vendas
+            LEFT JOIN tb_clientes ON tb_vendas.cpf_cliente = tb_clientes.cpf_cliente
+            WHERE id_cobrador = :id_cobrador AND (dia_pagam >= :data_pag_ini AND dia_pagam <= :data_pag_fim)`;
+
+            const dados = await db.connection.query(query, {
+                id_cobrador,
+                data_pag_ini,
+                data_pag_fim
+            });
+
+            resdadta.data = dados;
+            
+        } catch (error) {
+
+            resdadta.err = error.statusCode || 500;
+            resdadta.msg = resdadta.err === 500 ? 'Erro interno do servidor' : error.message;
+            resdadta.status = Number(error.statusCode || 500);
+            
+            if(resdadta.err !== 500) {
+                GravarLog('ControllerCobranca.ListaCobrancaPorRota', error.stack);
+            }
+            
+        }
+
+        void await db.Close();
+
+        res.status(resdadta.status).json(resdadta);
+
+    }
+
+
 }

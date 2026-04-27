@@ -90,5 +90,7 @@ router.get('/modalidades_pagamento/buscar_por_codigo/:cod_mod',ControllerModalid
 
 /**** Geo ****/
 router.get('/reverse_geocode/:lat/:lon',GeoLocalizacao.Reverse);
+router.get('/geocode',GeoLocalizacao.Geocode);
+router.get('/route',GeoLocalizacao.Route);
 
 export default router;
