@@ -1124,6 +1124,8 @@ export class ControllerCobranca {
             const data_pag_fim = req.query.data_pag_fim;
             const id_rota = Number(req.params.id_rota);
 
+            console.log(id_rota,data_pag_ini,data_pag_fim)
+
              if (!data_pag_ini || !data_pag_fim) {
                 const error = new Error('Informe data inicial e data final.');
                 error.statusCode = 400;
@@ -1154,17 +1156,18 @@ export class ControllerCobranca {
                 throw error;
             }
 
-            const query = `SELECT id as nr_venda, dia_pagam as dt_pagamento,melher_dia,
+            const query = `SELECT tb_vendas.id as nr_venda, dia_pagam as dt_pagamento,melhor_dia,
             tb_vendas.cpf_cliente as cpf,nom_cliente as nome, nom_usual as nome_usual,end_cliente as endereco,
             bai_cliente as bairro,cid_cliente as cidade, uf_cliente as uf,lat_cliente as latitude,lon_cliente as longitude
             FROM tb_vendas
             LEFT JOIN tb_clientes ON tb_vendas.cpf_cliente = tb_clientes.cpf_cliente
-            WHERE id_rota = :id_rota AND (dia_pagam >= :data_pag_ini AND dia_pagam <= :data_pag_fim)`;
+            WHERE id_rota = :id_rota AND (dia_pagam >= :data_pag_ini AND dia_pagam <= :data_pag_fim) AND tb_vendas.entidade_negocio = :entidade_negocio`;
 
             const dados = await db.connection.query(query, {
                 id_rota,
                 data_pag_ini,
-                data_pag_fim
+                data_pag_fim,
+                entidade_negocio
             });
 
             resdadta.data = dados;
@@ -1175,7 +1178,7 @@ export class ControllerCobranca {
             resdadta.msg = resdadta.err === 500 ? 'Erro interno do servidor' : error.message;
             resdadta.status = Number(error.statusCode || 500);
             
-            if(resdadta.err !== 500) {
+            if(resdadta.err === 500) {
                 GravarLog('ControllerCobranca.ListaCobrancaPorRota', error.stack);
             }
             
