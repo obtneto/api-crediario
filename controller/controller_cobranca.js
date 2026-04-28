@@ -1092,7 +1092,7 @@ export class ControllerCobranca {
             resdadta.msg = resdadta.err === 500 ? 'Erro interno do servidor' : error.message;
             resdadta.status = Number(error.statusCode || 500);
             
-            if(resdadta.err !== 500) {
+            if(resdadta.err === 500) {
                 GravarLog('ControllerCobranca.ClienteComRota', error.stack);
             }
             
