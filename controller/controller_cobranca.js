@@ -715,6 +715,7 @@ export class ControllerCobranca {
 
             const pagamentos = new Pagamentos(db.connection, entidade_negocio);
             const vendas = new Vendas(db.connection, entidade_negocio);
+            const tiposPagamentos = new TiposPagamentos(db.connection, entidade_negocio);
 
             void await pagamentos.FindById(id_venda, id_pagamento);
 
@@ -755,6 +756,14 @@ export class ControllerCobranca {
                 );
 
                 vendas.situacao = saldoRestante === 0 ? 9 : 0;
+
+                void await tiposPagamentos.FindById(vendas.id_tipo_pag);
+
+                console.log(tiposPagamentos.dias_apos_pagamnto)
+
+                const dia_pagam = new Date(vendas.dia_pagam);
+
+                vendas.dia_pagam = new Date(dia_pagam.setDate(dia_pagam.getDate() - 7));
 
                 void await vendas.Save();
             }
@@ -1161,7 +1170,10 @@ export class ControllerCobranca {
             bai_cliente as bairro,cid_cliente as cidade, uf_cliente as uf,lat_cliente as latitude,lon_cliente as longitude
             FROM tb_vendas
             LEFT JOIN tb_clientes ON tb_vendas.cpf_cliente = tb_clientes.cpf_cliente
-            WHERE id_rota = :id_rota AND (dia_pagam >= :data_pag_ini AND dia_pagam <= :data_pag_fim) AND tb_vendas.entidade_negocio = :entidade_negocio`;
+            WHERE id_rota = :id_rota AND 
+            (dia_pagam >= :data_pag_ini AND dia_pagam <= :data_pag_fim) AND 
+            tb_vendas.entidade_negocio = :entidade_negocio
+            ORDER BY situacao DESC, dia_pagam`;
 
             const dados = await db.connection.query(query, {
                 id_rota,

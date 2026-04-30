@@ -1839,9 +1839,6 @@ export class ControllerVendas {
                 const vl_unit_item = parseItemDecimal(item.vl_unit ?? item.vlr_unitario);
                 const forma_pagamnto_item = String(item.forma_pagamnto ?? item.forma_pagamento ?? '').trim().toLowerCase();
 
-
-                console.log('qt_produto_item', qt_produto_item)
-
                 if (!Number.isFinite(id_produto_item) || id_produto_item <= 0) {
                     const error = new Error('Item com produto invalido.');
                     error.statusCode = 400;
@@ -1925,9 +1922,7 @@ export class ControllerVendas {
                 estoque_mov.nr_documento = String(vendas.id);
                 estoque_mov.descricao = `Movimentação de estoque referente a venda ID ${vendas.id}`;
 
-                if (qt_produto_atual !== 0) {
-                    void await estoque_mov.Save();
-                }
+                void await estoque_mov.Save();
 
                 itens_salvos++;
             }
@@ -2213,9 +2208,9 @@ export class ControllerVendas {
 
             const vendas = new Vendas(db.connection,entidade_negocio);
 
-            const query = `SELECT vd.id, vd.dt_venda, vd.cpf_cliente, cl.nom_cliente, vd.situacao, vd.val_tot_venda, vd.val_desconto,
+            const query = `SELECT vd.id, vd.dt_venda, vd.cpf_cliente, cl.nom_cliente, vd.situacao, vd.val_tot_venda,vd.val_entrada, vd.val_desconto,
             GREATEST(COALESCE(SUM(pg.vl_pagamento), 0),0) as tot_pagamentos,
-            GREATEST((COALESCE(vd.val_tot_venda, 0) - COALESCE(vd.val_desconto, 0)) - COALESCE(SUM(pg.vl_pagamento), 0), 0) AS saldo_a_pagar
+            GREATEST( (COALESCE(vd.val_tot_venda, 0) - (COALESCE(vd.val_entrada, 0) + COALESCE(vd.val_desconto, 0) + COALESCE(SUM(pg.vl_pagamento), 0))), 0) AS saldo_a_pagar
             FROM tb_vendas vd
             LEFT JOIN tb_clientes cl ON cl.cpf_cliente = vd.cpf_cliente
             LEFT JOIN tb_pagamentos pg ON pg.id_venda = vd.id AND pg.entidade_negocio = vd.entidade_negocio
