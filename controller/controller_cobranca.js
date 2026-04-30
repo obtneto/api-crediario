@@ -732,6 +732,7 @@ export class ControllerCobranca {
             void await vendas.FindById(id_venda);
 
             if (vendas.found) {
+                
                 const [resumoPagamentos] = await pagamentos.ExecuteQuery(
                     `SELECT COALESCE(SUM(COALESCE(vl_pagamento, 0)), 0) AS total_pago,
                             MAX(dt_pagamento) AS ult_dat_pagamto
@@ -747,6 +748,10 @@ export class ControllerCobranca {
                 vendas.ult_dat_pagamto = resumoPagamentos?.ult_dat_pagamto || null;
                 vendas.marca_venda = totalPagoRestante > 0 ? 'X' : null;
 
+                /******************************************************
+                * Atualiza saldo restante da venda a situacao da venda,
+                * recalcula a data para pagamento e salva a venda
+                *************************************************/
                 const saldoRestante = Math.max(
                     Number(vendas.val_tot_venda || 0)
                     - Number(vendas.val_desconto || 0)
@@ -759,11 +764,9 @@ export class ControllerCobranca {
 
                 void await tiposPagamentos.FindById(vendas.id_tipo_pag);
 
-                console.log(tiposPagamentos.dias_apos_pagamnto)
-
                 const dia_pagam = new Date(vendas.dia_pagam);
 
-                vendas.dia_pagam = new Date(dia_pagam.setDate(dia_pagam.getDate() - 7));
+                vendas.dia_pagam = new Date(dia_pagam.setDate(dia_pagam.getDate() - (tiposPagamentos.dias_apos_pagamnto - 2)));
 
                 void await vendas.Save();
             }
