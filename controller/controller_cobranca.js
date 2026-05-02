@@ -1176,7 +1176,7 @@ export class ControllerCobranca {
             WHERE id_rota = :id_rota AND 
             (dia_pagam >= :data_pag_ini AND dia_pagam <= :data_pag_fim) AND 
             tb_vendas.entidade_negocio = :entidade_negocio
-            ORDER BY situacao DESC, dia_pagam`;
+            ORDER BY situacao DESC, GREATEST(COALESCE(dia_pagam, 0), COALESCE(melhor_dia, 0))`;
 
             const dados = await db.connection.query(query, {
                 id_rota,
@@ -1255,12 +1255,13 @@ export class ControllerCobranca {
                 throw error;
             }
 
-            const query = `SELECT id as nr_venda, dia_pagam as dt_pagamento,melher_dia,
+            const query = `SELECT id as nr_venda, dia_pagam as dt_pagamento,melhor_dia,
             tb_vendas.cpf_cliente as cpf,nom_cliente as nome, nom_usual as nome_usual,end_cliente as endereco,
             bai_cliente as bairro,cid_cliente as cidade, uf_cliente as uf,lat_cliente as latitude,lon_cliente as longitude
             FROM tb_vendas
             LEFT JOIN tb_clientes ON tb_vendas.cpf_cliente = tb_clientes.cpf_cliente
-            WHERE id_cobrador = :id_cobrador AND (dia_pagam >= :data_pag_ini AND dia_pagam <= :data_pag_fim)`;
+            WHERE id_cobrador = :id_cobrador AND (dia_pagam >= :data_pag_ini AND dia_pagam <= :data_pag_fim)
+            ORDER BY situacao DESC, GREATEST(COALESCE(dia_pagam, 0), COALESCE(melhor_dia, 0))`;
 
             const dados = await db.connection.query(query, {
                 id_cobrador,
