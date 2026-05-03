@@ -1335,7 +1335,7 @@ export class ControllerVendas {
                                              AND pg.id_venda = v.id
                                        ), 0) AS val_pagamentos,
                                        GREATEST(
-                                           (COALESCE(v.val_tot_venda, 0) - COALESCE(v.val_desconto, 0))
+                                           (COALESCE(v.val_tot_venda, 0) - COALESCE(v.val_entrada, 0) - COALESCE(v.val_desconto, 0))
                                            - COALESCE((
                                                SELECT SUM(COALESCE(pg.vl_pagamento, 0))
                                                FROM tb_pagamentos pg
@@ -1791,6 +1791,7 @@ export class ControllerVendas {
             vendas.val_entrada = val_entrada;
             vendas.cod_forma_pagamento = cod_forma_pagamento;
             vendas.cod_mod_pagamento = cod_mod_pagamento;
+            vendas.melhor_dia = vendas.melhor_dia ?? dia_pagam;
 
             void await vendas.Save();
 

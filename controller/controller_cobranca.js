@@ -626,6 +626,7 @@ export class ControllerCobranca {
                 vendas.dia_pagam = prox_dia_pagamento;
                 vendas.val_desconto += vl_desconto;
                 vendas.ult_dat_pagamto = dt_pagamento;
+                vendas.melhor_dia = prox_dia_pagamento;
                 vendas.situacao = 0;
 
                 if (saldoAposPagamento === 0) {
