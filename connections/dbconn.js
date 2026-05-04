@@ -28,6 +28,7 @@ export default class Database {
             namedPlaceholders: true,
             decimalAsNumber: true,
             dateStrings: true,
+            multipleStatements: true,
             initSql: "SET time_zone = '-03:00'" 
         });
 

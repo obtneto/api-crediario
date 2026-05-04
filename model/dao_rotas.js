@@ -90,8 +90,8 @@ export default class Rotas {
                      id = :id`;
         }
 
-        return await this.#conn.query(query,this.#field);
-        
+        void await this.#conn.query(query,this.#field);
+
     }
 
     async Excluir(id) {
@@ -104,12 +104,11 @@ export default class Rotas {
     }
 
     async #newId() {
-    
+
         const query =  `SELECT IFNULL(MAX(id),0) + 1 as newid 
-                        FROM ${this.#tb_name} 
-                        WHERE entidade_negocio = :entidade_negocio`;
+                        FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio FOR UPDATE`;
                         
-        const [rows] = await this.#conn.query(query,{entidade_negocio: this.#field.entidade_negocio});
+        const [rows] = await this.#conn.execute(query,{entidade_negocio: this.#field.entidade_negocio});
 
         return Number(rows.newid);
 
