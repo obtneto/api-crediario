@@ -1206,7 +1206,7 @@ export class ControllerCobranca {
 
     }
 
-        static async ListaCobrancaPorCobrador(req, res) {
+    static async ListaCobrancaPorCobrador(req, res) {
         
         const resdadta = {
             err: 0,
@@ -1280,6 +1280,70 @@ export class ControllerCobranca {
             
             if(resdadta.err === 500) {
                 GravarLog('ControllerCobranca.ListaCobrancaPorRota', error.stack);
+            }
+            
+        }
+
+        void await db.Close();
+
+        res.status(resdadta.status).json(resdadta);
+
+    }
+
+    static async SalvarMelhorDia(req, res) {
+        
+        const resdadta = {
+            err: 0,
+            msg: '',
+            data: null,
+            status: 200
+        };
+
+        const db = new Database('dbcred');
+
+        try {
+
+            void await db.Connect();
+
+            void await db.Begin();
+
+            const entidade_negocio = obterEntidadeNegocio(req);
+            const { id_venda, melhor_dia } = req.params;
+
+            if (!id_venda) {
+                const error = new Error('ID da venda nao informado.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (!melhor_dia) {
+                const error = new Error('Melhor dia nao informado.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            const query = `UPDATE tb_vendas SET melhor_dia = :melhor_dia WHERE entidade_negocio = :entidade_negocio AND id = :id_venda`;
+
+            await db.connection.query(query, {
+                melhor_dia,
+                id_venda,
+                entidade_negocio
+            });
+
+            await db.Commit();
+
+            resdadta.msg = 'Melhor dia salvo com sucesso.';
+            
+        } catch (error) {
+
+            await db.RollBack();
+
+            resdadta.err = error.statusCode || 500;
+            resdadta.msg = resdadta.err === 500 ? 'Erro interno do servidor' : error.message;
+            resdadta.status = Number(error.statusCode || 500);
+            
+            if(resdadta.err === 500) {
+                GravarLog('ControllerCobranca.SalvarMelhorDia', error.stack);
             }
             
         }
