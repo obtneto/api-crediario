@@ -1,201 +1,93 @@
-export default class Clientes {
+import BaseModel from './BaseModel.js';
 
-    #conn = null;
-    #found = null;
+export default class Clientes extends BaseModel {
+
     #tb_name = 'tb_clientes';
-
-    #field = {
-        id: 0,
-        cpf_cliente: '',
-        nom_cliente: '',
-        nom_usual: '',
-        cel_cliente: '',
-        end_cliente: '',
-        num_cliente: '',
-        bai_cliente: '',
-        cid_cliente: '',
-        uf_cliente: '',
-        cep_cliente: '',
-        lat_cliente: '',
-        lon_cliente: '',
-        dat_cadastro: '',
-        com_restricao_credito: 0,
-        entidade_negocio: 999
-    }
 
     constructor(connection) {
         
-        if (!connection) throw new Error('Conexao Invalida.');
+        const field = {
+            id: 0,
+            cpf_cliente: '',
+            nom_cliente: '',
+            nom_usual: '',
+            cel_cliente: '',
+            end_cliente: '',
+            num_cliente: '',
+            bai_cliente: '',
+            cid_cliente: '',
+            uf_cliente: '',
+            cep_cliente: '',
+            lat_cliente: '',
+            lon_cliente: '',
+            dat_cadastro: '',
+            com_restricao_credito: 0,
+            entidade_negocio: 999
+        };
 
-        this.#conn = connection;
+        super(connection,'tb_clientes',field,999);
     }
 
-    get found() {return this.#found}
+    set id(id) {this.field.id = Number(id)}
+    get id() {return Number(this.field.id)}
 
-    set id(id) {this.#field.id = Number(id)}
-    get id() {return Number(this.#field.id)}
+    set cpf_cliente(cpf_cliente) {this.field.cpf_cliente = cpf_cliente}
+    get cpf_cliente() {return this.field.cpf_cliente}
 
-    set cpf_cliente(cpf_cliente) {this.#field.cpf_cliente = cpf_cliente}
-    get cpf_cliente() {return this.#field.cpf_cliente}
+    set nom_cliente(nom_cliente) {this.field.nom_cliente = nom_cliente}
+    get nom_cliente() {return this.field.nom_cliente}
 
-    set nom_cliente(nom_cliente) {this.#field.nom_cliente = nom_cliente}
-    get nom_cliente() {return this.#field.nom_cliente}
+    set nom_usual(nom_usual) {this.field.nom_usual = nom_usual}
+    get nom_usual() {return this.field.nom_usual}
 
-    set nom_usual(nom_usual) {this.#field.nom_usual = nom_usual}
-    get nom_usual() {return this.#field.nom_usual}
+    set cel_cliente(cel_cliente) {this.field.cel_cliente = cel_cliente}
+    get cel_cliente() {return this.field.cel_cliente}
 
-    set cel_cliente(cel_cliente) {this.#field.cel_cliente = cel_cliente}
-    get cel_cliente() {return this.#field.cel_cliente}
+    set end_cliente(end_cliente) {this.field.end_cliente = end_cliente}
+    get end_cliente() {return this.field.end_cliente}
 
-    set end_cliente(end_cliente) {this.#field.end_cliente = end_cliente}
-    get end_cliente() {return this.#field.end_cliente}
+    set num_cliente(num_cliente) {this.field.num_cliente = num_cliente}
+    get num_cliente() {return this.field.num_cliente}
 
-    set num_cliente(num_cliente) {this.#field.num_cliente = num_cliente}
-    get num_cliente() {return this.#field.num_cliente}
+    set bai_cliente(bai_cliente) {this.field.bai_cliente = bai_cliente}
+    get bai_cliente() {return this.field.bai_cliente}
 
-    set bai_cliente(bai_cliente) {this.#field.bai_cliente = bai_cliente}
-    get bai_cliente() {return this.#field.bai_cliente}
+    set cid_cliente(cid_cliente) {this.field.cid_cliente = cid_cliente}
+    get cid_cliente() {return this.field.cid_cliente}
 
-    set cid_cliente(cid_cliente) {this.#field.cid_cliente = cid_cliente}
-    get cid_cliente() {return this.#field.cid_cliente}
+    set uf_cliente(uf_cliente) {this.field.uf_cliente = uf_cliente}
+    get uf_cliente() {return this.field.uf_cliente}
 
-    set uf_cliente(uf_cliente) {this.#field.uf_cliente = uf_cliente}
-    get uf_cliente() {return this.#field.uf_cliente}
+    set cep_cliente(cep_cliente) {this.field.cep_cliente = cep_cliente}
+    get cep_cliente() {return this.field.cep_cliente}
 
-    set cep_cliente(cep_cliente) {this.#field.cep_cliente = cep_cliente}
-    get cep_cliente() {return this.#field.cep_cliente}
+    set lat_cliente(lat_cliente) {this.field.lat_cliente = lat_cliente}
+    get lat_cliente() {return this.field.lat_cliente}
 
-    set lat_cliente(lat_cliente) {this.#field.lat_cliente = lat_cliente}
-    get lat_cliente() {return this.#field.lat_cliente}
+    set dat_cadastro(dat_cadastro) {this.field.dat_cadastro = dat_cadastro}
+    get dat_cadastro() {return this.field.dat_cadastro}
 
-    set dat_cadastro(dat_cadastro) {this.#field.dat_cadastro = dat_cadastro}
-    get dat_cadastro() {return this.#field.dat_cadastro}
+    set lon_cliente(lon_cliente) {this.field.lon_cliente = lon_cliente}
+    get lon_cliente() {return this.field.lon_cliente}
 
-    set lon_cliente(lon_cliente) {this.#field.lon_cliente = lon_cliente}
-    get lon_cliente() {return this.#field.lon_cliente}
-
-    set com_restricao_credito(com_restricao_credito) {this.#field.com_restricao_credito = Boolean(com_restricao_credito)}
-    get com_restricao_credito() {return Boolean(this.#field.com_restricao_credito)}
-
-    async ExecuteQuery(query, params = {}) {
-        
-        const rows = await this.#conn.query(query, params);
-
-        return rows;
-
-    }
-
-    async FindById(id) {
-
-        let query = `SELECT * FROM ${this.#tb_name} WHERE id = :id`;
-
-        const [rows] = await this.#conn.query(query,{id});
-
-        if (rows) {
-            this.id = rows.id;
-            this.cpf_cliente = rows.cpf_cliente;
-            this.nom_cliente = rows.nom_cliente;
-            this.nom_usual = rows.nom_usual;
-            this.cel_cliente = rows.cel_cliente;
-            this.end_cliente = rows.end_cliente;
-            this.num_cliente = rows.num_cliente;
-            this.bai_cliente = rows.bai_cliente;
-            this.cid_cliente = rows.cid_cliente;
-            this.uf_cliente = rows.uf_cliente;
-            this.cep_cliente = rows.cep_cliente;
-            this.lat_cliente = rows.lat_cliente;
-            this.lon_cliente = rows.lon_cliente;
-            this.dat_cadastro = rows.dat_cadastro;
-            this.com_restricao_credito = Boolean(rows.com_restricao_credito);
-
-            this.#found = true;
-        } else {
-            this.#found = false;
-        }
-
-        return this.#found ? rows : this.#found;
-
-    }
+    set com_restricao_credito(com_restricao_credito) {this.field.com_restricao_credito = Boolean(com_restricao_credito)}
+    get com_restricao_credito() {return Boolean(this.field.com_restricao_credito)}
 
     async FindByCpf(cpf) {
 
         let query = `SELECT * FROM ${this.#tb_name} WHERE cpf_cliente = :cpf`;
 
-        const [rows] = await this.#conn.query(query,{cpf});
+        const [rows] = await this.ExecuteQuery(query,{cpf});
 
         if (rows) {
-            this.id = rows.id;
-            this.cpf_cliente = rows.cpf_cliente;
-            this.nom_cliente = rows.nom_cliente;
-            this.nom_usual = rows.nom_usual;
-            this.cel_cliente = rows.cel_cliente;
-            this.end_cliente = rows.end_cliente;
-            this.num_cliente = rows.num_cliente;
-            this.bai_cliente = rows.bai_cliente;
-            this.cid_cliente = rows.cid_cliente;
-            this.uf_cliente = rows.uf_cliente;
-            this.cep_cliente = rows.cep_cliente;
-            this.lat_cliente = rows.lat_cliente;
-            this.lon_cliente = rows.lon_cliente;
-            this.dat_cadastro = rows.dat_cadastro;
-            this.com_restricao_credito = rows.com_restricao_credito;
-
-            this.#found = true;
+            this.field = rows;
+            this.found = true;
         } else {
-            this.#found = false;
+            this.found = false;
         }
 
-        return this.#found ? rows : this.#found;
+        return this.found ? rows : this.found;
 
-    }
-
-    async Save() {
-
-        let query;
-
-        if (this.#found) {
-
-            query = `UPDATE ${this.#tb_name} SET cpf_cliente = :cpf_cliente, nom_cliente = :nom_cliente,
-                     nom_usual = :nom_usual, cel_cliente = :cel_cliente, end_cliente = :end_cliente, 
-                     num_cliente = :num_cliente, bai_cliente = :bai_cliente, cid_cliente = :cid_cliente, 
-                     uf_cliente = :uf_cliente, cep_cliente = :cep_cliente, lat_cliente = :lat_cliente, 
-                     lon_cliente = :lon_cliente, com_restricao_credito = :com_restricao_credito,
-                     dat_cadastro = :dat_cadastro, entidade_negocio = :entidade_negocio 
-                     WHERE id = :id`;
-                     
-        } else {
-
-            this.id = await this.#newId();
-
-            query = `INSERT INTO ${this.#tb_name} SET cpf_cliente = :cpf_cliente, nom_cliente = :nom_cliente,
-                     nom_usual = :nom_usual, cel_cliente = :cel_cliente, end_cliente = :end_cliente, 
-                     num_cliente = :num_cliente, bai_cliente = :bai_cliente, cid_cliente = :cid_cliente, 
-                     uf_cliente = :uf_cliente, cep_cliente = :cep_cliente,com_restricao_credito = :com_restricao_credito,
-                     lat_cliente = :lat_cliente, lon_cliente = :lon_cliente, id = :id, 
-                     dat_cadastro = :dat_cadastro, entidade_negocio = :entidade_negocio`;
-
-        }
-
-        return await this.#conn.query(query,this.#field);
-            
-    }
-
-    async Excluir(id) {
-
-        const query = `DELETE FROM ${this.#tb_name} WHERE id = :id`;
-
-        void await this.#conn.query(query,{id});
-            
-    }
-
-    async #newId() {
-        
-        const query =  `SELECT IFNULL(MAX(id),0) + 1 as newid FROM ${this.#tb_name}`;
-        
-        const [rows] = await this.#conn.query(query);
-
-        return rows.newid;
-            
     }
 
 }

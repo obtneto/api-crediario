@@ -61,11 +61,11 @@ export default class BaseModel {
         return await this.#conn.query(query, fieldToSave);
     }
 
-    async Excluir(id) {
+    async Excluir() {
         const query = `DELETE FROM ${this.#tb_name} 
                        WHERE entidade_negocio = :entidade_negocio AND id = :id`;
 
-        void await this.#conn.query(query, { id, entidade_negocio: this.field.entidade_negocio });
+        void await this.#conn.query(query, { id: this.field.id, entidade_negocio: this.field.entidade_negocio });
     }
 
     async #newId() {
@@ -100,8 +100,12 @@ export default class BaseModel {
             .map(f => `${f} = :${f}`)
             .join(', ');
 
-        return `UPDATE ${this.#tb_name} 
-                SET ${fields}, entidade_negocio = :entidade_negocio
-                WHERE entidade_negocio = :entidade_negocio AND id = :id`;
+        const query = `UPDATE ${this.#tb_name} 
+                       SET ${fields}
+                       WHERE entidade_negocio = :entidade_negocio AND id = :id`;
+
+        console.log(query);
+
+        return query;
     }
 }

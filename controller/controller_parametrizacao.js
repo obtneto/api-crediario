@@ -2021,8 +2021,14 @@ export class ControllerProdutos {
 
         try {
             
-            const id = req.params.id
+            const id = req.params.id || null
             const entidade_negocio = obterEntidadeNegocio(req);
+
+            if (!id) {
+                const error = new Error('ID não fornecido');
+                error.status = 400;
+                throw error;
+            }
 
             void await db.Connect();
 
@@ -2034,7 +2040,7 @@ export class ControllerProdutos {
         } catch (error) {
             resdata.err = 500;
             resdata.msg = error.message;
-            resdata.status = 500;
+            resdata.status = error.status || 500;
             console.log(error.stack)
         }
 

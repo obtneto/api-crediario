@@ -1,146 +1,46 @@
-export default class Perfis {
+import BaseModel from './BaseModel.js';
 
-    #conn = null;
-    #found = null;
+export default class Perfis extends BaseModel {
+
     #tb_name = 'tb_perfis';
-    #entidade_negocio = 0;
-
-    #field = {
-        id: 0,
-        nom_perfil: '',
-        cod_perfil: '',
-        selecionar: 1,
-        insert: 0,
-        atualizar: 0,
-        excluir: 0,
-        entidade_negocio: 0
-    }
-
+    
     constructor(connection, entidade_negocio = 0) {
         
-        if (!connection) throw new Error('Conexao Invalida.');
-
-        if (Number(entidade_negocio) > 0) {
-            this.#entidade_negocio = Number(entidade_negocio);
-        } else {
-            throw new Error('Entidade de Negocio não fornecida.');
+        const field = {
+            id: 0,
+            nom_perfil: '',
+            cod_perfil: '',
+            selecionar: 1,
+            inserir: 0,
+            atualizar: 0,
+            excluir: 0,
+            entidade_negocio: 0
         }
 
-        this.#field.entidade_negocio = this.#entidade_negocio;
-
-        this.#conn = connection;
-    }
-
-    get found() {return this.#found}
-
-    set id(id) {this.#field.id = Number(id)}
-    get id() {return Number(this.#field.id)}
-
-    set nom_perfil(nom_perfil) {this.#field.nom_perfil = nom_perfil}
-    get nom_perfil() {return this.#field.nom_perfil}
-
-    set cod_perfil(cod_perfil) {this.#field.cod_perfil = cod_perfil}
-    get cod_perfil() {return this.#field.cod_perfil}
-
-    set selecionar(selecionar) {this.#field.selecionar = Number(selecionar)}
-    get selecionar() {return Number(this.#field.selecionar)}
-
-    set inserir(inserir) {this.#field.inserir = Number(inserir)}
-    get inserir() {return Number(this.#field.inserir)}
-
-    set atualizar(atualizar) {this.#field.atualizar = Number(atualizar)}
-    get atualizar() {return Number(this.#field.atualizar)}
-
-    set excluir(excluir) {this.#field.excluir = Number(excluir)}
-    get excluir() {return Number(this.#field.excluir)}
-
-    get entidade_negocio() {return Number(this.#field.entidade_negocio)}
-
-    async ExecuteQuery(query, params = {}) {
-        
-        const rows = await this.#conn.query(query, params);
-        return rows;
-        
-    }
-
-    async FindById(id) {
-        
-        const query = `SELECT * FROM ${this.#tb_name} 
-                       WHERE entidade_negocio = :entidade_negocio AND id = :id`;
-
-        const [rows] = await this.#conn.query(query,{id,entidade_negocio: this.#entidade_negocio});
-
-        if (rows) {
-            this.id = rows.id;
-            this.nom_perfil = rows.nom_perfil;
-            this.cod_perfil = rows.cod_perfil;
-            this.selecionar = rows.selecionar;
-            this.inserir = rows.inserir;
-            this.atualizar = rows.atualizar;
-            this.excluir = rows.excluir;
-
-            this.#found = true;
-        } else {
-            this.#found = false;
-        }
-
-        return this.#found ? this.#field : this.#found;
-        
-    }
-
-    async Save() {
-
-        let query;
-
-        if (this.#found) {
-            query = `UPDATE ${this.#tb_name} 
-                     SET nom_perfil = :nom_perfil, 
-                     cod_perfil = :cod_perfil,
-                     selecionar = :selecionar, 
-                     inserir = :inserir, 
-                     atualizar = :atualizar,
-                     excluir = :excluir 
-                     WHERE entidade_negocio = :entidade_negocio AND 
-                     id = :id`;
-        } 
-        else {
-
-            this.id = await this.#newId();
-
-            query = `INSERT INTO ${this.#tb_name} 
-                     SET nom_perfil = :nom_perfil, 
-                     cod_perfil = :cod_perfil,
-                     selecionar = :selecionar, 
-                     inserir = :inserir, 
-                     atualizar = :atualizar,
-                     excluir = :excluir, 
-                     id = :id, 
-                     entidade_negocio = :entidade_negocio`
-        }
-
-        return await this.#conn.query(query,this.#field);
-            
-    }
-
-    async Excluir(id) {
-
-        const query = `DELETE FROM ${this.#tb_name} 
-                       WHERE entidade_negocio= :entidade_negocio AND id = :id`;
-
-        void await this.#conn.query(query,{id,entidade_negocio: this.#field.entidade_negocio});
+        super(connection,'tb_perfis',field,entidade_negocio)
 
     }
 
-    async #newId() {
+    set id(id) {this.field.id = Number(id)}
+    get id() {return Number(this.field.id)}
 
-        const query =  `SELECT IFNULL(MAX(id),0) + 1 as newid 
-                        FROM ${this.#tb_name} 
-                        WHERE entidade_negocio = :entidade_negocio`;
+    set nom_perfil(nom_perfil) {this.field.nom_perfil = nom_perfil}
+    get nom_perfil() {return this.field.nom_perfil}
 
-        const [rows] = await this.#conn.query(query,{entidade_negocio: this.#field.entidade_negocio});
+    set cod_perfil(cod_perfil) {this.field.cod_perfil = cod_perfil}
+    get cod_perfil() {return this.field.cod_perfil}
 
-        return Number(rows.newid);
+    set selecionar(selecionar) {this.field.selecionar = Number(selecionar)}
+    get selecionar() {return Number(this.field.selecionar)}
 
-    }
+    set inserir(inserir) {this.field.inserir = Number(inserir)}
+    get inserir() {return Number(this.field.inserir)}
+
+    set atualizar(atualizar) {this.field.atualizar = Number(atualizar)}
+    get atualizar() {return Number(this.field.atualizar)}
+
+    set excluir(excluir) {this.field.excluir = Number(excluir)}
+    get excluir() {return Number(this.field.excluir)}
+
 
 }

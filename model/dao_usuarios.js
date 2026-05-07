@@ -60,8 +60,6 @@ export default class Usuarios extends BaseModel {
     set num_verificacao(num_verificacao) {this.field.num_verificacao = num_verificacao}
     get num_verificacao() {return this.field.num_verificacao}
 
-    get entidade_negocio() {return Number(this.field.entidade_negocio)}
-
     async FindByUser(usuario) {
 
         let query = `SELECT * FROM tb_usuarios WHERE usuario = :usuario`;
@@ -69,18 +67,7 @@ export default class Usuarios extends BaseModel {
         const [rows] = await this.ExecuteQuery(query,{usuario});
 
         if (rows) {
-            this.id = rows.id;
-            this.usuario = rows.usuario;
-            this.nom_completo = rows.nom_completo;
-            this.email = rows.email;
-            this.senha = rows.senha;
-            this.reset_password = rows.reset_password;
-            this.iniciais = rows.iniciais;
-            this.id_perfil = rows.id_perfil;
-            this.modo_acesso = rows.modo_acesso;
-            this.num_verificacao = rows.num_verificacao;
-            this.id_vendedor = rows.id_vendedor;
-            this.id_cobrador = rows.id_cobrador;
+            this.field = rows;
             this.found = true;
         } else {
             this.found = false;
