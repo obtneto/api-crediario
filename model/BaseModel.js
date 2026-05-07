@@ -1,6 +1,6 @@
 export default class BaseModel {
 
-    conn = null;
+    #conn = null;
     #found = null;
     #tb_name = '';
     #entidade_negocio = 0;
@@ -19,13 +19,14 @@ export default class BaseModel {
         this.#tb_name = tb_name;
         this.field = { ...field_structure };
         this.field.entidade_negocio = this.#entidade_negocio;
-        this.conn = connection;
+        this.#conn = connection;
     }
 
     get found() { return this.#found }
+    set found(value) { this.#found = value }
 
     async ExecuteQuery(query, params = {}) {
-        const rows = await this.conn.query(query, params);
+        const rows = await this.#conn.query(query, params);
         return rows;
     }
 
@@ -33,7 +34,7 @@ export default class BaseModel {
         let query = `SELECT * FROM ${this.#tb_name} 
                      WHERE entidade_negocio = :entidade_negocio AND id = :id`;
         
-        const [rows] = await this.conn.query(query, { id, entidade_negocio: this.#entidade_negocio });
+        const [rows] = await this.#conn.query(query, { id, entidade_negocio: this.#entidade_negocio });
 
         if (rows) {
             this.#populateFromRow(rows);
@@ -57,14 +58,14 @@ export default class BaseModel {
             query = this.#buildInsertQuery();
         }
 
-        return await this.conn.query(query, fieldToSave);
+        return await this.#conn.query(query, fieldToSave);
     }
 
     async Excluir(id) {
         const query = `DELETE FROM ${this.#tb_name} 
                        WHERE entidade_negocio = :entidade_negocio AND id = :id`;
 
-        void await this.conn.query(query, { id, entidade_negocio: this.field.entidade_negocio });
+        void await this.#conn.query(query, { id, entidade_negocio: this.field.entidade_negocio });
     }
 
     async #newId() {
@@ -72,7 +73,7 @@ export default class BaseModel {
                        FROM ${this.#tb_name} 
                        WHERE entidade_negocio = :entidade_negocio FOR UPDATE`;
                         
-        const [rows] = await this.conn.query(query, { entidade_negocio: this.field.entidade_negocio });
+        const [rows] = await this.#conn.query(query, { entidade_negocio: this.field.entidade_negocio });
 
         return Number(rows.newid);
     }
@@ -87,11 +88,10 @@ export default class BaseModel {
 
     #buildInsertQuery() {
         const fields = Object.keys(this.field).filter(f => f !== 'entidade_negocio' || this.field[f] !== 0);
-        const placeholders = fields.map(f => `:${f}`).join(', ');
-        const fieldNames = fields.join(', ');
+        const assignments = fields.map(f => `${f} = :${f}`).join(', ');
         
         return `INSERT INTO ${this.#tb_name} 
-                SET ${fieldNames} = ${placeholders}`;
+                SET ${assignments}`;
     }
 
     #buildUpdateQuery() {

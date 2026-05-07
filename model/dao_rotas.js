@@ -25,10 +25,4 @@ export default class Rotas extends BaseModel {
     set ativo(ativo) {this.field.ativo = Number(ativo)}
     get ativo() {return Number(this.field.ativo)}
 
-    async findAll() {
-
-        const query = `SELECT * FROM tb_rotas WHERE entidade_negocio = :entidade_negocio`;
-        const [rows] = await this.conn.query(query, { entidade_negocio: this.field.entidade_negocio });
-        return rows;
-    }
 }

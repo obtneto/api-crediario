@@ -1327,6 +1327,7 @@ export class ControllerVendas {
 
             const queryVenda = `SELECT v.id, v.dt_venda, v.cpf_cliente, COALESCE(c.nom_cliente, '') AS nom_cliente,
                                        COALESCE(c.nom_usual, '') AS nom_usual, COALESCE(v.val_tot_venda, 0) AS val_tot_venda,
+                                       COALESCE(v.val_entrada, 0) AS val_entrada,
                                        COALESCE(v.val_desconto, 0) AS val_desconto,
                                        COALESCE((
                                            SELECT SUM(COALESCE(pg.vl_pagamento, 0))
@@ -1517,19 +1518,23 @@ export class ControllerVendas {
                     {
                         columns: [
                             {
-                                width: '25%',
+                                width: '20%',
                                 ...createInfoCard('Valor Total', formatCurrencyBR(venda?.val_tot_venda))
                             },
                             {
-                                width: '25%',
+                                width: '20%',
+                                ...createInfoCard('Entrada', formatCurrencyBR(venda?.val_entrada))
+                            },
+                            {
+                                width: '20%',
                                 ...createInfoCard('Desconto', formatCurrencyBR(venda?.val_desconto))
                             },
                             {
-                                width: '25%',
+                                width: '20%',
                                 ...createInfoCard('Pagamentos', formatCurrencyBR(venda?.val_pagamentos))
                             },
                             {
-                                width: '25%',
+                                width: '20%',
                                 ...createInfoCard('Saldo a Pagar', formatCurrencyBR(venda?.saldo_a_pagar))
                             }
                         ],
