@@ -709,4 +709,49 @@ export class ControllerClientes {
         res.status(resdata.status).json(resdata);
 
     }
+
+    static async ListarRestricoesMobile(req,res) {
+
+        const db = new Database('dbcred');
+
+        const resdata = {
+            err: 0,
+            msg: '',
+            status: 200,
+            data: []
+        }
+
+        try {
+
+            void await db.Connect();
+
+            const entidade_negocio = obterEntidadeNegocio(req);
+
+            const restricao = new RestricaoCredito(db.connection,entidade_negocio);
+
+            const query = `SELECT r.id,r.dt_restricao, r.id_venda, r.com_restricao, c.cpf_cliente, c.nom_cliente, c.nom_usual, c.cel_cliente, 
+                           c.end_cliente, c.num_cliente,c.bai_cliente, c.cid_cliente, c.uf_cliente, c.cep_cliente
+                           FROM tb_restricao_credito r
+                           LEFT JOIN tb_clientes c ON c.cpf_cliente = r.cpf_cliente
+                           WHERE r.entidade_negocio = :entidade_negocio`;
+
+            const result = await restricao.ExecuteQuery(query, { entidade_negocio });
+
+            resdata.data = result;
+
+            
+        } catch (error) {
+
+            resdata.err = Number(error.statusCode || 500);
+            resdata.msg = resdata.err === 500 ? 'Erro interno do servidor (500). Contate o administrador do sistema.' : error.message;
+            resdata.status = Number(error.statusCode || 500);
+
+            if (resdata.err == 500) GravarLog(`Erro ao listar restrições: ${error.stack}`);
+        }
+
+        void await db.Close();
+
+        res.status(resdata.status).json(resdata);
+
+    }
 }

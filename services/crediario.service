@@ -1,0 +1,12 @@
+[Unit]
+Description=Atualiza status de Vendas e Cobranças 
+Wants=exemplo.timer
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/ovidio-neto/Crediario/backend
+ExecStart=/home/ovidio-neto/Crediario/backend/update_status.sh
+
+[Install]
+WantedBy=multi-user.target
+
