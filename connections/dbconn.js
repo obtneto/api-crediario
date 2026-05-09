@@ -81,13 +81,13 @@ export default class Database {
                 SELECT NovoIdRestricao(v.entidade_negocio) ,v.cpf_cliente,CURRENT_DATE(), 1 ,v.entidade_negocio,v.id,
 				TIMESTAMPDIFF(DAY, v.dia_pagam, CURDATE())
                 FROM tb_vendas v
-                INNER JOIN tb_clientes c ON c.cpf_cliente = v.cpf_cliente
-                WHERE TIMESTAMPDIFF(DAY, v.dia_pagam, CURDATE()) > 5 AND c.com_restricao_credito = 0 AND v.situacao < 9;
+                LEFT JOIN tb_clientes c ON c.cpf_cliente = v.cpf_cliente
+                WHERE TIMESTAMPDIFF(DAY, v.dia_pagam, CURDATE()) >= 4 AND v.situacao < 9 AND v.id NOT IN (SELECT id_venda FROM tb_restricao_credito);
 
                 UPDATE tb_clientes c
-                INNER JOIN tb_vendas v ON v.cpf_cliente = c.cpf_cliente
+                LEFT JOIN tb_vendas v ON v.cpf_cliente = c.cpf_cliente
                 SET c.com_restricao_credito = 1
-                WHERE TIMESTAMPDIFF(DAY, v.dia_pagam, CURDATE()) > 5 AND c.com_restricao_credito = 0 AND v.situacao < 9;
+                WHERE TIMESTAMPDIFF(DAY, v.dia_pagam, CURDATE()) >= 4 AND v.situacao < 9 AND v.id NOT IN (SELECT id_venda FROM tb_restricao_credito);
                 
                 COMMIT;`
 
