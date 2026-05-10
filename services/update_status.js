@@ -7,31 +7,17 @@ import GravaLog from "../utils/GravarLog.js";
     
     try {
 
-        await db.Connect();
+        await db.Connect('dbcred');
 
         if (!db.connection) {
             throw new Error('Falha ao conectar ao banco de dados');
         }
 
-        const query_restricao = `
-            START TRANSACTION;
+        /************************************************************** */
+        await db.connection.query('CALL sp_gerar_restricoes_credito()');
+        
 
-                INSERT INTO tb_restricao_credito (id,cpf_cliente, dt_restricao, com_restricao,entidade_negocio,id_venda,dias_atrasado)
-                SELECT NovoIdRestricao(v.entidade_negocio) ,v.cpf_cliente,CURRENT_DATE(), 1 ,v.entidade_negocio,v.id,
-				TIMESTAMPDIFF(DAY, v.dia_pagam, CURDATE())
-                FROM tb_vendas v
-                LEFT JOIN tb_clientes c ON c.cpf_cliente = v.cpf_cliente
-                WHERE TIMESTAMPDIFF(DAY, v.dia_pagam, CURDATE()) >= 4 AND v.situacao < 9 AND v.id NOT IN (SELECT id_venda FROM tb_restricao_credito);
-
-                UPDATE tb_clientes c
-                LEFT JOIN tb_vendas v ON v.cpf_cliente = c.cpf_cliente
-                SET c.com_restricao_credito = 1
-                WHERE TIMESTAMPDIFF(DAY, v.dia_pagam, CURDATE()) >= 4 AND v.situacao < 9 AND v.id NOT IN (SELECT id_venda FROM tb_restricao_credito);
-            
-            COMMIT; `;
-
-        await db.connection.query(query_restricao);
-
+        /************************************************************** */
         const query_situacao_vendas = `
                 UPDATE tb_vendas vd
                 LEFT JOIN tb_tipos_pagamentos tp ON tp.entidade_negocio = vd.entidade_negocio AND tp.id = vd.id_tipo_pag
@@ -42,7 +28,8 @@ import GravaLog from "../utils/GravarLog.js";
                 WHERE vd.situacao = 0;`;
 
         await db.connection.query(query_situacao_vendas);
-
+        
+        /************************************************************** */
         const query_status_distribuicao = `
             UPDATE tb_distribuicao d
             LEFT JOIN tb_itens_distrib i

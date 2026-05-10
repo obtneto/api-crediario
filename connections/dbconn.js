@@ -1,8 +1,7 @@
 import {createConnection} from 'mariadb';
 import { config } from "dotenv";
 
-config({path: '../../.env'});
-
+config({path: '/home/ovidio-neto/Crediario/.env'});
 
 export default class Database {
     
@@ -95,10 +94,10 @@ export default class Database {
 
         // SELECT @@global.event_scheduler;
         //await this.#conn.query("SET GLOBAL event_scheduler = ON");
-        void await this.#conn.query(scriptSituacaoVendas);
-        void await this.#conn.query(scriptStatusDistribuicao);
-        void await this.#conn.query(scriptRestricaoCredito);
-        void await this.#conn.query(scriptAtualizaAnoBase);
+        //void await this.#conn.query(scriptSituacaoVendas);
+        //void await this.#conn.query(scriptStatusDistribuicao);
+        //void await this.#conn.query(scriptRestricaoCredito);
+        //void await this.#conn.query(scriptAtualizaAnoBase);
 
     }
 
