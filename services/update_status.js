@@ -7,6 +7,10 @@ import GravaLog from "../utils/GravarLog.js";
     
     try {
 
+        const startTime = new Date().toISOString();
+
+        console.log(`${startTime} - Iniciando atualização de status...\n`);
+
         await db.Connect('dbcred');
 
         if (!db.connection) {
@@ -43,9 +47,12 @@ import GravaLog from "../utils/GravarLog.js";
         
     } catch (error) {
         GravaLog("update_status", error.stack);
+        console.log(`${new Date().toISOString()} - Erro ao atualizar status: ${error.stack}\n`);
     }
     finally {
         await db.Close();
+        const endTime = new Date().toISOString();
+        console.log(`${endTime} - Atualização de status concluída\n`);
     }
 
 })();

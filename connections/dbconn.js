@@ -1,7 +1,7 @@
 import {createConnection} from 'mariadb';
 import { config } from "dotenv";
 
-config({path: '/home/ovidio-neto/Crediario/.env'});
+config({path: '/home/ovidio-neto/Crediario/.env',quiet: true});
 
 export default class Database {
     

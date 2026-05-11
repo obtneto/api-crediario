@@ -1,11 +1,13 @@
 [Unit]
 Description=Atualiza status de Vendas e Cobranças 
-Wants=exemplo.timer
+Wants=crediario.timer
 
 [Service]
 Type=oneshot
-WorkingDirectory=/home/ovidio-neto/Crediario/backend/services/
-ExecStart=/home/ovidio-neto/Crediario/backend/services/update_status.sh
+WorkingDirectory=/home/ovidio-neto/Crediario/backend/services
+ExecStart=/usr/bin/bash /home/ovidio-neto/Crediario/backend/services/update_status.sh
+StandardOutput=append:/home/ovidio-neto/Crediario/backend/services/vendas.log
+StandardError=inherit
 
 [Install]
 WantedBy=multi-user.target
