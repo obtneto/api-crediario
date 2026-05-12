@@ -7,7 +7,7 @@ Unit=crediario.service
 OnCalendar=Mon..Sat *-*-* 07..17:00:00
 AccuracySec=1s
 Persistent=true
-RandomizedDelaySec=5m
+RandomizedDelaySec=30s
 
 [Install]
 WantedBy=timers.target

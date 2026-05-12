@@ -2170,7 +2170,7 @@ export class ControllerProdutos {
     }
 }
 
-export class ControllerRotas{
+export class ControllerRotas {
 
     static async Listar(req,res) {
 
@@ -2193,8 +2193,8 @@ export class ControllerRotas{
             
             void await db.Connect();
 
-            const rotas = new Rotas(db.connection, obterEntidadeNegocio(req));
-            const entidades = new Entidades(db.connection, obterEntidadeNegocio(req));
+            const rotas = new Rotas(db.connection, entidade_negocio);
+            const entidades = new Entidades(db.connection, entidade_negocio);
 
             let query = null;
 
@@ -2245,8 +2245,8 @@ export class ControllerRotas{
             
             void await db.Connect();
 
-            const rotas = new Rotas(db.connection, obterEntidadeNegocio(req));
-            const entidades = new Entidades(db.connection, obterEntidadeNegocio(req));
+            const rotas = new Rotas(db.connection, entidade_negocio);
+            const entidades = new Entidades(db.connection, entidade_negocio);
 
             let query = null;
 
@@ -2337,7 +2337,6 @@ export class ControllerRotas{
             const rotas = new Rotas(db.connection, entidade_negocio);
 
             void await rotas.FindById(id);
-
 
             rotas.id = id;
             rotas.nom_rota = nom_rota;
