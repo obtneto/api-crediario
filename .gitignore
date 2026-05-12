@@ -1,5 +1,4 @@
 node_modules
-*.sql
 *.cjs
 *.env
 *.txt
@@ -7,7 +6,6 @@ dist
 temp
 tmp
 backup
-.sql
 logs.*
 Logs/*.txt
 coverage

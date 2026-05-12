@@ -106,12 +106,13 @@ export class ControllerClientes {
         
         try {
 
+            const entidade_negocio = obterEntidadeNegocio(req);
             const cpf =  String(req.params.cpf).replace(/\D/g, '');
 
             void await db.Connect();
 
             const clientes = new Clientes(db.connection);
-      
+
             const rows = await clientes.FindByCpf(cpf);
 
             if (!clientes.found) {
@@ -157,7 +158,7 @@ export class ControllerClientes {
             const usual = String(req.body.nom_usual).trim().toUpperCase();
             const celular = String(req.body.cel_cliente).replace(/\D/g, '');
             const ender = String(req.body.end_cliente).trim().toUpperCase();
-            const numero = String(req.body.num_cliente).trim().toUpperCase();
+            const numero = String(req.body.num_cliente).trim();
             const bairro = String(req.body.bai_cliente).trim().toUpperCase();
             const cidade = String(req.body.cid_cliente).trim().toUpperCase();
             const uf = String(req.body.uf_cliente).trim().toUpperCase();
@@ -197,6 +198,118 @@ export class ControllerClientes {
             clientes.cid_cliente = cidade;
             clientes.uf_cliente = uf;
             clientes.cep_cliente = cep;
+
+            void await clientes.Save();
+
+            void await db.Commit();
+
+            resdata.msg = "Cliente Salvo com sucesso.";    
+
+            
+        } catch (error) {
+
+            void await db.RollBack();
+
+            resdata.err = Number(error.statusCode || 500);
+            resdata.msg = resdata.err === 500 ? 'Erro interno do servidor (500). Contate o administrador do sistema.' : error.message;
+            resdata.status = Number(error.statusCode || 500);
+
+            if (resdata.err == 500) GravarLog(`Erro ao salvar cliente: ${error.stack}`);
+        }
+
+        void await db.Close();
+
+        res.status(resdata.status).json(resdata);
+
+    }
+
+    static async Salvar_Mobile(req,res) {
+
+        const db = new Database('dbcred');
+
+        const resdata = {
+            err: 0,
+            msg: '',
+            status: 200,
+            data: []
+        }
+        
+        try {
+
+            const cpf = String(req.body.cpf_cliente).replace(/\D/g, '');
+            const nome = String(req.body.nom_cliente).trim().toUpperCase();
+            const usual = String(req.body.nom_usual).trim().toUpperCase();
+            const celular = String(req.body.cel_cliente).replace(/\D/g, '');
+            const ender = String(req.body.end_cliente).trim().toUpperCase();
+            const numero = String(req.body.num_cliente).trim();
+            const bairro = String(req.body.bai_cliente).trim().toUpperCase();
+            const cidade = String(req.body.cid_cliente).trim().toUpperCase();
+            const uf = String(req.body.uf_cliente).trim().toUpperCase();
+            const cep = String(req.body.cep_cliente).replace(/\D/g, '');
+            const latitude = String(req.body.latitude);
+            const longitude = String(req.body.longitude)
+
+            if (cpf.length !== 11 || !CheckCPF(cpf)) {
+                const error = new Error('CPF invalido.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (!nome || nome === ''){
+                const error = new Error('Forneça o nome do clientes');
+                error.statusCode = 400;
+                throw error
+            }
+
+            if (!ender || ender === ''){
+                const error = new Error('Forneça o endereço do clientes');
+                error.statusCode = 400;
+                throw error
+            }
+
+            if (!bairro || bairro === ''){
+                const error = new Error('Forneça o bairro do clientes');
+                error.statusCode = 400;
+                throw error
+            }
+
+            if (!cidade || cidade === ''){
+                const error = new Error('Forneça a cidade do clientes');
+                error.statusCode = 400;
+                throw error
+            }
+
+            if (!numero || numero === ''){
+                const error = new Error('Forneça o numero do endereço do clientes');
+                error.statusCode = 400;
+                throw error
+            }
+
+            void await db.Connect();
+
+            void await db.Begin();
+
+            const clientes = new Clientes(db.connection);
+
+            void await clientes.FindByCpf(cpf);
+
+            if (!clientes.found) {
+                clientes.dat_cadastro = new Date().toLocaleString('sv-SE',{timeZone:'-03:00'});
+            }
+
+            
+            clientes.cpf_cliente = cpf;
+            clientes.nom_cliente = nome
+            clientes.nom_usual = usual;
+            clientes.cel_cliente = celular;
+            clientes.end_cliente = ender;
+            clientes.num_cliente = numero;
+            clientes.bai_cliente = bairro;
+            clientes.cid_cliente = cidade;
+            clientes.uf_cliente = uf;
+            clientes.cep_cliente = cep;
+            clientes.lat_cliente = latitude && latitude;
+            clientes.lon_cliente = longitude && longitude;
 
             void await clientes.Save();
 
@@ -589,6 +702,51 @@ export class ControllerClientes {
             resdata.status = Number(error.statusCode || 500);
 
             if (resdata.err == 500) GravarLog(`Erro ao editar cliente: ${error.stack}`);
+        }
+
+        void await db.Close();
+
+        res.status(resdata.status).json(resdata);
+
+    }
+
+    static async ListarRestricoesMobile(req,res) {
+
+        const db = new Database('dbcred');
+
+        const resdata = {
+            err: 0,
+            msg: '',
+            status: 200,
+            data: []
+        }
+
+        try {
+
+            void await db.Connect();
+
+            const entidade_negocio = obterEntidadeNegocio(req);
+
+            const restricao = new RestricaoCredito(db.connection,entidade_negocio);
+
+            const query = `SELECT r.id,r.dt_restricao, r.id_venda, r.com_restricao, c.cpf_cliente, c.nom_cliente, c.nom_usual, c.cel_cliente, 
+                           c.end_cliente, c.num_cliente,c.bai_cliente, c.cid_cliente, c.uf_cliente, c.cep_cliente
+                           FROM tb_restricao_credito r
+                           LEFT JOIN tb_clientes c ON c.cpf_cliente = r.cpf_cliente
+                           WHERE r.entidade_negocio = :entidade_negocio`;
+
+            const result = await restricao.ExecuteQuery(query, { entidade_negocio });
+
+            resdata.data = result;
+
+            
+        } catch (error) {
+
+            resdata.err = Number(error.statusCode || 500);
+            resdata.msg = resdata.err === 500 ? 'Erro interno do servidor (500). Contate o administrador do sistema.' : error.message;
+            resdata.status = Number(error.statusCode || 500);
+
+            if (resdata.err == 500) GravarLog(`Erro ao listar restrições: ${error.stack}`);
         }
 
         void await db.Close();

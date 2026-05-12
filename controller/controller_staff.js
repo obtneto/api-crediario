@@ -358,6 +358,8 @@ export class ControllerStaffEntidades {
         
         const db = new Database('dbcred');
 
+        const database_path = '../database/dbcred.sql';
+
         const resdata = {
             err: 0,
             msg: '',
@@ -426,6 +428,14 @@ export class ControllerStaffEntidades {
             VALUES (1, 'admin-00${entidades.id}', 'ADMINISTRADOR', NULL, 'abcd@1234', ${entidades.id}, 1, 'AA', 1, 123456, 'DT')`
 
             void await db.connection.execute(query_usuarios);
+
+            const query_check_ano = `CREATE TABLE IF NOT EXISTS tb_check_ano (
+                                     ano_corrente smallint NOT NULL,
+                                     id smallint NOT NULL,
+                                     PRIMARY KEY (id)
+                                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;`;
+
+            void await db.connection.execute(query_check_ano);
 
             void await db.Commit();
 

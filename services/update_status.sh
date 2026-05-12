@@ -1,0 +1,1 @@
+/home/ovidio-neto/.nvm/versions/node/v24.14.1/bin/node /home/ovidio-neto/Crediario/backend/services/update_status.js

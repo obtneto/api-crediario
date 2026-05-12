@@ -1,4 +1,7 @@
 import {createConnection} from 'mariadb';
+import { config } from "dotenv";
+
+config({path: '/home/ovidio-neto/Crediario/.env',quiet: true});
 
 export default class Database {
     
@@ -28,6 +31,7 @@ export default class Database {
             namedPlaceholders: true,
             decimalAsNumber: true,
             dateStrings: true,
+            multipleStatements: true,
             initSql: "SET time_zone = '-03:00'" 
         });
 
@@ -52,20 +56,16 @@ export default class Database {
     async CreateEvents() {
 
         const scriptSituacaoVendas = `
-            CREATE EVENT IF NOT EXISTS atualiza_situacao_vendas_horario
-                ON SCHEDULE EVERY 1 HOUR
-                STARTS CURRENT_TIMESTAMP
-                DO
                 UPDATE tb_vendas vd
                 JOIN tb_tipos_pagamentos tp ON tp.entidade_negocio = vd.entidade_negocio AND tp.id = vd.id_tipo_pag
                 SET vd.situacao = CASE
-                    WHEN DATEDIFF(CURRENT_DATE(),vd.dia_pagam) > (tp.dias_apos_pagamnto + 1) THEN 3
+                    WHEN DATEDIFF(CURRENT_DATE(),vd.dia_pagam) > 1 THEN 3
                     ELSE 0
                 END
                 WHERE vd.situacao = 0;`;
 
         const scriptStatusDistribuicao = `
-            CREATE EVENT IF NOT EXISTS atualiza_status_distribuicao ON SCHEDULE EVERY 1 MINUTE DO UPDATE tb_distribuicao d
+            UPDATE tb_distribuicao d
             LEFT JOIN tb_itens_distrib i
                 ON i.entidade_negocio = d.entidade_negocio
                 AND i.id_distrib = d.id
@@ -74,43 +74,30 @@ export default class Database {
             WHERE d.situacao <> IF(i.id_distrib IS NULL, 1, 0);`;
 
         const scriptRestricaoCredito = `
-            CREATE EVENT IF NOT EXISTS atualiza_restricao_credito ON SCHEDULE EVERY 1 DAY DO BEGIN
-                
-                -- 1. Declarar o que fazer em caso de erro (SQLEXCEPTION)			
-                DECLARE EXIT HANDLER FOR SQLEXCEPTION 
-                BEGIN
-                    ROLLBACK; -- Cancela tudo se qualquer query falhar
-                END;
-                
 				START TRANSACTION;
 										
-                -- Query 1: INSERT (exemplo de log ou histórico)
                 INSERT INTO tb_restricao_credito (id,cpf_cliente, dt_restricao, com_restricao,entidade_negocio,id_venda,dias_atrasado)
                 SELECT NovoIdRestricao(v.entidade_negocio) ,v.cpf_cliente,CURRENT_DATE(), 1 ,v.entidade_negocio,v.id,
-								TIMESTAMPDIFF(DAY, v.dia_pagam, CURDATE())
+				TIMESTAMPDIFF(DAY, v.dia_pagam, CURDATE())
                 FROM tb_vendas v
-                INNER JOIN tb_clientes c ON c.cpf_cliente = v.cpf_cliente
-                WHERE TIMESTAMPDIFF(DAY, v.dia_pagam, CURDATE()) > 5 AND c.com_restricao_credito = 0;
+                LEFT JOIN tb_clientes c ON c.cpf_cliente = v.cpf_cliente
+                WHERE TIMESTAMPDIFF(DAY, v.dia_pagam, CURDATE()) >= 4 AND v.situacao < 9 AND v.id NOT IN (SELECT id_venda FROM tb_restricao_credito);
 
-                -- Query 2: UPDATE dos clientes com restrição
                 UPDATE tb_clientes c
-                INNER JOIN tb_vendas v ON v.cpf_cliente = c.cpf_cliente
+                LEFT JOIN tb_vendas v ON v.cpf_cliente = c.cpf_cliente
                 SET c.com_restricao_credito = 1
-                WHERE TIMESTAMPDIFF(DAY, v.dia_pagam, CURDATE()) > 5 AND c.com_restricao_credito = 0;
+                WHERE TIMESTAMPDIFF(DAY, v.dia_pagam, CURDATE()) >= 4 AND v.situacao < 9 AND v.id NOT IN (SELECT id_venda FROM tb_restricao_credito);
                 
-                -- 3. Se chegou aqui sem erros, confirma as alterações
-                COMMIT;
-
-            END`
+                COMMIT;`
 
         const scriptAtualizaAnoBase = `UPDATE tb_check_ano SET ano_corrente = YEAR(NOW()), id = 1;`
 
         // SELECT @@global.event_scheduler;
         //await this.#conn.query("SET GLOBAL event_scheduler = ON");
-        void await this.#conn.query(scriptSituacaoVendas);
-        void await this.#conn.query(scriptStatusDistribuicao);
-        void await this.#conn.query(scriptRestricaoCredito);
-        void await this.#conn.query(scriptAtualizaAnoBase);
+        //void await this.#conn.query(scriptSituacaoVendas);
+        //void await this.#conn.query(scriptStatusDistribuicao);
+        //void await this.#conn.query(scriptRestricaoCredito);
+        //void await this.#conn.query(scriptAtualizaAnoBase);
 
     }
 

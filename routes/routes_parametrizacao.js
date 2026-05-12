@@ -8,8 +8,9 @@ import {ControllerEntidades,
     ControllerProdutos,
     ControllerRotas,
     ControllerTiposPagamentos,
-    ControllerModoAcessos
-    
+    ControllerModoAcessos,
+    ControllerFormaPagamento,
+    ControllerModalidadePagamento,
 } from '../controller/controller_parametrizacao.js'
 
 import GeoLocalizacao from '../utils/classGeoLocaliza.js';
@@ -41,6 +42,7 @@ router.get('/listar_perfis/:pesq',ControllerPerfis.Listar);
 router.get('/editar_perfil/:id',ControllerPerfis.Editar);
 router.get('/excluir_perfil/:id',ControllerPerfis.Excluir);
 router.post('/salvar_perfil',ControllerPerfis.Salvar);
+router.get('/listar_tipos_perfis',ControllerPerfis.ListarTiposPerfis);
 
 /**** Tipos de Pagamentos ****/
 router.get('/listar_tipos_pagamentos/:pesq',ControllerTiposPagamentos.Listar);
@@ -77,7 +79,18 @@ router.get('/editar_rota/:id',ControllerRotas.Editar);
 router.get('/excluir_rota/:id',ControllerRotas.Excluir);
 router.post('/salvar_rota',ControllerRotas.Salvar);
 
+/********************** Formas de Pagamento **********************/
+router.get('/forma_pagamentos/listar',ControllerFormaPagamento.Listar);
+router.get('/forma_pagamentos/buscar_por_codigo/:cod_forma',ControllerFormaPagamento.BuscarPorCodigo);
+
+/********************** Modalidades de Pagamento **********************/
+router.get('/modalidades_pagamento/listar/:cod_forma',ControllerModalidadePagamento.Listar);
+router.get('/modalidades_pagamento/buscar_por_codigo/:cod_mod',ControllerModalidadePagamento.BuscarPorCodigo);
+
+
 /**** Geo ****/
 router.get('/reverse_geocode/:lat/:lon',GeoLocalizacao.Reverse);
+router.get('/geocode',GeoLocalizacao.Geocode);
+router.get('/route',GeoLocalizacao.Route);
 
 export default router;

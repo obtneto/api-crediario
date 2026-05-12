@@ -1,0 +1,13 @@
+[Unit]
+Description=Atualiza status de Vendas e Cobranças e distribuições
+Requires=crediario.service
+
+[Timer]
+Unit=crediario.service
+OnCalendar=Mon..Sat *-*-* 07..17:00:00
+AccuracySec=1s
+Persistent=true
+RandomizedDelaySec=5m
+
+[Install]
+WantedBy=timers.target

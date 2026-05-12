@@ -869,7 +869,7 @@ export class ControllerDistribuicao{
                 itens.id_distrib = distrib.id;
                 itens.id_produto = item_distrib.id_produto;
                 itens.id_vendedor = distrib.id_vendedor;
-                itens.qt_distrib = Number(itens.qt_distrib) + (Number(item_distrib.qt_distrib) - Number(qt_distrib_corrente));
+                itens.qt_distrib += (Number(item_distrib.qt_distrib) - qt_distrib_corrente);
 
                 void await itens.Save();
 
@@ -895,8 +895,8 @@ export class ControllerDistribuicao{
                     throw error;
                 }
 
-                estoque.qt_disponivel = parseFloat(estoque.qt_disponivel) - (parseFloat(item_distrib.qt_distrib - qt_distrib_corrente ) * -1 );
-                estoque.qt_reservada = parseFloat(estoque.qt_reservada) + (parseFloat(item_distrib.qt_distrib - qt_distrib_corrente) * -1 );
+                estoque.qt_disponivel -= (Number(item_distrib.qt_distrib) - qt_distrib_corrente ) * -1;
+                estoque.qt_reservada += (Number(item_distrib.qt_distrib) - qt_distrib_corrente) * -1;
 
                 void await estoque.Save();
 
@@ -996,8 +996,8 @@ export class ControllerDistribuicao{
                 /*****************************************************************/
                 void await estoque.FindById(item.id_produto);
 
-                estoque.qt_reservada = Number(estoque.qt_reservada) - Number(item.qt_distrib);
-                estoque.qt_disponivel = Number(estoque.qt_disponivel) + Number(item.qt_distrib);
+                estoque.qt_reservada -= Number(item.qt_distrib);
+                estoque.qt_disponivel += Number(item.qt_distrib);
 
                 void await estoque.Save();
 
@@ -1143,16 +1143,8 @@ export class ControllerVendas {
                 params.push(dt_fim);
             }
 
-            let query = `SELECT vw_vendas.*,
-                                  (
-                                      (COALESCE(vw_vendas.val_tot_venda, 0) - COALESCE(vw_vendas.val_desconto, 0))
-                                      - COALESCE((
-                                          SELECT SUM(COALESCE(pg.vl_pagamento, 0))
-                                          FROM tb_pagamentos pg
-                                          WHERE pg.entidade_negocio = vw_vendas.entidade_negocio
-                                            AND pg.id_venda = vw_vendas.id
-                                      ), 0)
-                                  ) AS saldo_a_pagar FROM vw_vendas
+            let query = `SELECT vw_vendas.*,COALESCE(vw_vendas.val_tot_venda, 0) - (COALESCE(vw_vendas.val_desconto, 0) +
+                         COALESCE(vw_vendas.tot_pagamentos, 0) + COALESCE(vw_vendas.val_entrada, 0)) AS saldo_a_pagar FROM vw_vendas
                          WHERE ${whereClause.join(' AND ')}
                          ORDER BY situacao, dt_venda DESC, id DESC
                          LIMIT ? OFFSET ?`;
@@ -1335,6 +1327,7 @@ export class ControllerVendas {
 
             const queryVenda = `SELECT v.id, v.dt_venda, v.cpf_cliente, COALESCE(c.nom_cliente, '') AS nom_cliente,
                                        COALESCE(c.nom_usual, '') AS nom_usual, COALESCE(v.val_tot_venda, 0) AS val_tot_venda,
+                                       COALESCE(v.val_entrada, 0) AS val_entrada,
                                        COALESCE(v.val_desconto, 0) AS val_desconto,
                                        COALESCE((
                                            SELECT SUM(COALESCE(pg.vl_pagamento, 0))
@@ -1343,7 +1336,7 @@ export class ControllerVendas {
                                              AND pg.id_venda = v.id
                                        ), 0) AS val_pagamentos,
                                        GREATEST(
-                                           (COALESCE(v.val_tot_venda, 0) - COALESCE(v.val_desconto, 0))
+                                           (COALESCE(v.val_tot_venda, 0) - COALESCE(v.val_entrada, 0) - COALESCE(v.val_desconto, 0))
                                            - COALESCE((
                                                SELECT SUM(COALESCE(pg.vl_pagamento, 0))
                                                FROM tb_pagamentos pg
@@ -1525,19 +1518,23 @@ export class ControllerVendas {
                     {
                         columns: [
                             {
-                                width: '25%',
+                                width: '20%',
                                 ...createInfoCard('Valor Total', formatCurrencyBR(venda?.val_tot_venda))
                             },
                             {
-                                width: '25%',
+                                width: '20%',
+                                ...createInfoCard('Entrada', formatCurrencyBR(venda?.val_entrada))
+                            },
+                            {
+                                width: '20%',
                                 ...createInfoCard('Desconto', formatCurrencyBR(venda?.val_desconto))
                             },
                             {
-                                width: '25%',
+                                width: '20%',
                                 ...createInfoCard('Pagamentos', formatCurrencyBR(venda?.val_pagamentos))
                             },
                             {
-                                width: '25%',
+                                width: '20%',
                                 ...createInfoCard('Saldo a Pagar', formatCurrencyBR(venda?.saldo_a_pagar))
                             }
                         ],
@@ -1596,10 +1593,16 @@ export class ControllerVendas {
 
         try {
 
+            void await db.Connect();
+
             const id = String(req.params.id);
             const entidade_negocio = obterEntidadeNegocio(req);
 
-            void await db.Connect();
+            if (!id) {
+                const error = new Error('ID da venda é obrigatório');
+                error.statusCode = 400;
+                throw error;
+            }
 
             const vendas = new Vendas(db.connection,entidade_negocio);
             const itens = new ItensVendas(db.connection,entidade_negocio);
@@ -1644,11 +1647,13 @@ export class ControllerVendas {
              
             void await db.RollBack();
 
-            resdata.err = 500;
+            resdata.err = error.statusCode || 500;
             resdata.msg = error.message;
-            resdata.status = 500;
+            resdata.status = error.statusCode || 500;
 
-            GravarLog('ControllerVendas.Editar', error.stack);
+            if (error.statusCode === 500) {
+                GravarLog('ControllerVendas.Editar', error.stack);
+            }
         }
 
         void await db.Close();
@@ -1689,7 +1694,10 @@ export class ControllerVendas {
             const val_tot_venda = parseFloat(body.val_tot_venda || 0);
             const dia_pagam = String(body.dia_pagam).trim();
             const val_desconto = parseFloat(body.val_desconto || 0);
+            const val_entrada = parseFloat(body.val_entrada || 0);
             const itens = body.itens;
+            const cod_forma_pagamento = String(body.cod_forma).trim();
+            const cod_mod_pagamento = String(body.cod_mod_pagamento).trim();
 
             if (!dt_venda) {
                 const error = new Error('Data da venda e obrigatoria.');
@@ -1785,6 +1793,10 @@ export class ControllerVendas {
             vendas.situacao = 0;
             vendas.dia_pagam = dia_pagam;
             vendas.val_desconto = val_desconto;
+            vendas.val_entrada = val_entrada;
+            vendas.cod_forma_pagamento = cod_forma_pagamento;
+            vendas.cod_mod_pagamento = cod_mod_pagamento;
+            vendas.melhor_dia = vendas.melhor_dia ?? dia_pagam;
 
             void await vendas.Save();
 
@@ -1793,7 +1805,7 @@ export class ControllerVendas {
              *****************/
             void await restricao.FindByCpf(cpf_cliente);
 
-            if (clientes.com_restricao_credito == 1) {
+            if (clientes.com_restricao_credito == 1 && !vendas.found) {
 
                 if (!restricao.found || (restricao.found && restricao.com_restricao == 1)){
 
@@ -1860,9 +1872,7 @@ export class ControllerVendas {
                 /***************************************************************************/
                 void await itensVendas.FindById(vendas.id,id_item)
 
-                const itemJaExistia = itensVendas.found;
-
-                if (itemJaExistia) qt_produto_antes = itensVendas.qt_produto;
+                if (itensVendas.found) qt_produto_antes = itensVendas.qt_produto;
 
                 qt_produto_atual = qt_produto_item - qt_produto_antes;
 
@@ -1883,32 +1893,32 @@ export class ControllerVendas {
                     throw error
                 }
                 
-                if (qt_produto_atual > 0 && Number(estoque.qt_reservada) < qt_produto_atual) {
+                if (qt_produto_atual > 0 && estoque.qt_reservada < qt_produto_atual) {
                     const error = new Error('Não exite estoque suficiente para esse produto.');
                     error.statusCode = 403;
                     throw error;
                 }
 
-                estoque.qt_reservada = Number(estoque.qt_reservada) - qt_produto_atual;
+                estoque.qt_reservada -= qt_produto_atual;
 
                 void await estoque.Save();
 
                 /***************************************************************************/
                 void await itensDistrib.FindById(id_vendedor,id_produto_item);
 
-                if (qt_produto_atual > 0 && Number(itensDistrib.qt_distrib) < qt_produto_atual) {
+                if (qt_produto_atual > 0 && itensDistrib.qt_distrib < qt_produto_atual) {
                     const error = new Error('Não existe saldo suficiente dispensado para esse produto.');
                     error.statusCode = 403;
                     throw error;
                 }
 
-                itensDistrib.qt_distrib = Number(itensDistrib.qt_distrib) - qt_produto_atual
+                itensDistrib.qt_distrib = itensDistrib.qt_distrib - qt_produto_atual
 
                 void await itensDistrib.Save();
 
                 /******************************************************
                 * Registra a movimentação de estoque referente a venda.
-                ********************/
+                *******************************************************/
                 void await estoque_mov.FindById(0, new Date());
 
                 estoque_mov.dt_mov = new Date();
@@ -1918,9 +1928,7 @@ export class ControllerVendas {
                 estoque_mov.nr_documento = String(vendas.id);
                 estoque_mov.descricao = `Movimentação de estoque referente a venda ID ${vendas.id}`;
 
-                if (qt_produto_atual !== 0) {
-                    void await estoque_mov.Save();
-                }
+                void await estoque_mov.Save();
 
                 itens_salvos++;
             }
@@ -2004,8 +2012,6 @@ export class ControllerVendas {
 
                 vendas.val_tot_venda -= itensVendas.vl_tot_item;
 
-                console.log(vendas.val_tot_venda,itensVendas.vl_tot_item)
-
                 void await vendas.Save();
 
                 /***************************************
@@ -2016,7 +2022,7 @@ export class ControllerVendas {
                 estoque_mov.dt_mov = new Date();
                 estoque_mov.id_produto = itensVendas.id_produto;
                 estoque_mov.qt_mov = itensVendas.qt_produto;
-                estoque_mov.tp_mov = 'DEVOL';
+                estoque_mov.tp_mov = 'DEVOLUÇÃO';
                 estoque_mov.nr_documento = String(id_venda);
                 estoque_mov.descricao = `Devolução de produto referente a exclusão de item da venda ID ${id_venda}`;
                 
@@ -2028,7 +2034,7 @@ export class ControllerVendas {
                  **************************/
                 void await estoque.FindById(itensVendas.id_produto);
 
-                estoque.qt_disponivel = parseFloat(estoque.qt_disponivel) + Number(itensVendas.qt_produto);
+                estoque.qt_disponivel += itensVendas.qt_produto;
 
                 void await estoque.Save();
 
@@ -2182,112 +2188,6 @@ export class ControllerVendas {
 
     }
 
-    static async DestinarVendas(req,res) {
-
-        const db = new Database('dbcred');
-
-        const resdata = {
-            err: 0,
-            msg: '',
-            status: 200,
-            data: []
-        }
-
-        try {
-
-            void await db.Connect();
-
-            const entidade_negocio = obterEntidadeNegocio(req);
-            const listaRecebida = Array.isArray(req.body?.lista) ? req.body.lista : [];
-            const lista = Array.from(new Set(
-                listaRecebida
-                    .map((item) => Number(typeof item === 'object' && item !== null ? item.id_venda : item))
-                    .filter((id_venda) => id_venda > 0)
-            ));
-
-            const entidades = new Entidades(db.connection,entidade_negocio);
-
-            void await entidades.FindById(Number(entidade_negocio));
-
-            if (!entidades.found) {
-                const error = new Error('Entidade de negocio nao encontrada.');
-                error.statusCode = 404;
-                throw error;
-            }
-
-            if (lista.length === 0) {
-                const error = new Error('Informe a lista de vendas selecionadas.');
-                error.statusCode = 400;
-                throw error;
-            }
-
-            const com_rota_cobranca = Number(entidades.com_rota_cobranca || 0);
-            const destinoCampo = com_rota_cobranca === 1 ? 'id_rota' : 'id_cobrador';
-            const destinoId = Number(req.body?.[destinoCampo] || req.body?.id_destino || 0);
-
-            if (destinoId <= 0) {
-                const error = new Error(`Informe um ${com_rota_cobranca === 1 ? 'id_rota' : 'id_cobrador'} valido.`);
-                error.statusCode = 400;
-                throw error;
-            }
-
-            const destino = com_rota_cobranca === 1
-                ? new Rotas(db.connection, entidade_negocio)
-                : new Cobradores(db.connection, entidade_negocio);
-
-            void await destino.FindById(destinoId);
-
-            if (!destino.found || Number(destino.ativo || 0) !== 1) {
-                const error = new Error(`${com_rota_cobranca === 1 ? 'Rota' : 'Cobrador'} nao encontrado ou inativo.`);
-                error.statusCode = 404;
-                throw error;
-            }
-
-            void await db.Begin();
-
-            const vendas = new Vendas(db.connection, entidade_negocio);
-
-            for (const id_venda of lista) {
-
-                void await vendas.FindById(id_venda);
-
-                if (!vendas.found) {
-                    const error = new Error(`Venda ${id_venda} nao encontrada.`);
-                    error.statusCode = 404;
-                    throw error;
-                }
-
-                if (com_rota_cobranca === 1) {
-                    vendas.id_rota = destinoId;
-                } else {
-                    vendas.id_cobrador = destinoId;
-                }
-
-                void await vendas.Save();
-            }
-
-            void await db.Commit();
-
-            resdata.msg = `${lista.length} venda(s) destinada(s) com sucesso.`;
-
-        }
-        catch (error) {
-
-            void await db.RollBack();
-
-            resdata.err = Number(error.statusCode || 500);  
-            resdata.msg = error.message;
-            resdata.status = Number(error.statusCode || 500);
-
-            GravarLog('ControllerVendas.DestinarVendas', error.stack);
-        }
-
-        void await db.Close();
-
-        res.status(resdata.status).json(resdata);
-
-    }
-
     static async ConsultaVendasPorCliente(req,res) {
 
         const db = new Database('dbcred');
@@ -2314,9 +2214,9 @@ export class ControllerVendas {
 
             const vendas = new Vendas(db.connection,entidade_negocio);
 
-            const query = `SELECT vd.id, vd.dt_venda, vd.cpf_cliente, cl.nom_cliente, vd.situacao, vd.val_tot_venda, vd.val_desconto,
+            const query = `SELECT vd.id, vd.dt_venda, vd.cpf_cliente, cl.nom_cliente, vd.situacao, vd.val_tot_venda,vd.val_entrada, vd.val_desconto,
             GREATEST(COALESCE(SUM(pg.vl_pagamento), 0),0) as tot_pagamentos,
-            GREATEST((COALESCE(vd.val_tot_venda, 0) - COALESCE(vd.val_desconto, 0)) - COALESCE(SUM(pg.vl_pagamento), 0), 0) AS saldo_a_pagar
+            GREATEST( (COALESCE(vd.val_tot_venda, 0) - (COALESCE(vd.val_entrada, 0) + COALESCE(vd.val_desconto, 0) + COALESCE(SUM(pg.vl_pagamento), 0))), 0) AS saldo_a_pagar
             FROM tb_vendas vd
             LEFT JOIN tb_clientes cl ON cl.cpf_cliente = vd.cpf_cliente
             LEFT JOIN tb_pagamentos pg ON pg.id_venda = vd.id AND pg.entidade_negocio = vd.entidade_negocio

@@ -8,6 +8,8 @@ import Produtos from '../model/dao_produtos.js';
 import Rotas from '../model/dao_rotas.js';
 import TiposPagamentos from '../model/dao_tipos_pagamentos.js';
 import Estoque from '../model/dao_estoque.js';
+import FormaPagamento from '../model/dao_forma_pagamento.js';
+import ModoPagamento from '../model/dao_modo_pagamentos.js';
 import GravarLog from '../utils/GravarLog.js';
 import {obterEntidadeNegocio} from '../utils/CheckEntidades.js';
 import {definirSessaoHttpOnly, limparSessaoHttpOnly, obterSessaoHttpOnly, renovarSessaoHttpOnly, getCurrentToken} from '../utils/AuthSession.js';
@@ -22,6 +24,12 @@ const PASSWORD_REGEX = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=\S{8,}).+$/;
 function getPrimeiroNome(nomeCompleto = '') {
     const nome = String(nomeCompleto || '').trim();
     return nome ? nome.split(' ')[0] : '';
+}
+
+function normalizarClientPlatform(value = '') {
+    return String(value || '').trim().toLowerCase() === 'mobile'
+        ? 'mobile'
+        : 'desktop';
 }
 
 function normalizarPerfilAcesso(usuario = {}) {
@@ -49,10 +57,13 @@ function montarRespostaAutenticacao(usuario = {}, entidade = {}) {
         user: String(usuario?.usuario || ''),
         firstname: getPrimeiroNome(fullname),
         fullname,
+        id_vendedor: Number(usuario?.id_vendedor || 0),
         type_perfil,
+        cod_perfil: String(usuario?.cod_perfil || '').trim().toUpperCase(),
         entidade: Number(entidade?.id || entidade?.entidade_negocio || 0),
         entidade_negocio: Number(entidade?.id || entidade?.entidade_negocio || 0),
         name_entidade: String(entidade?.nom_entidade || entidade?.name_entidade || ''),
+        modo_acesso: String(usuario?.modo_acesso || '').trim().toUpperCase(),
         com_rota_cobranca: Number(entidade?.com_rota_cobranca || 0),
         perfil,
         reset_password: Number(usuario?.reset_password || 0)
@@ -73,30 +84,37 @@ function garantirEntidadeAtiva(entidade = {}, mensagem = 'A entidade vinculada a
     throw error;
 }
 
-async function buscarUsuariosAutenticacao(connection, user) {
+async function buscarUsuariosAutenticacao(connection, user, options = {}) {
+    const allowMobileMode = Boolean(options?.allowMobileMode);
+    const filtroModoAcesso = allowMobileMode
+        ? ''
+        : " AND COALESCE(u.modo_acesso, 'DT') <> 'MB'";
 
     const query = `SELECT u.id, u.usuario, u.nom_completo, u.senha, u.reset_password, u.num_verificacao, u.iniciais,
+        COALESCE(u.id_vendedor, 0) AS id_vendedor,
         u.entidade_negocio,
         COALESCE(p.id, 0) AS perfil_id,
+        COALESCE(p.cod_perfil, '') AS cod_perfil,
         COALESCE(p.selecionar, 0) AS selecionar,
         COALESCE(p.inserir, 0) AS inserir,
         COALESCE(p.atualizar, 0) AS atualizar,
         COALESCE(p.excluir, 0) AS excluir,
+        COALESCE(u.modo_acesso, '') AS modo_acesso,
         COALESCE(e.nom_entidade, '') AS nom_entidade,
         COALESCE(e.com_rota_cobranca, 0) AS com_rota_cobranca,
         COALESCE(e.ativo, 0) AS entidade_ativa
         FROM tb_usuarios u
         LEFT JOIN tb_perfis p ON p.id = u.id_perfil AND p.entidade_negocio = u.entidade_negocio
         LEFT JOIN tb_entidades e ON e.id = u.entidade_negocio
-        WHERE u.usuario = :user AND u.modo_acesso <> 'MB'
+        WHERE u.usuario = :user${filtroModoAcesso}
         ORDER BY u.entidade_negocio`;
 
     const usuarios = await connection.execute(query, { user });
     return Array.isArray(usuarios) ? usuarios : [];
 }
 
-async function buscarUsuarioAutenticacao(connection, entidade_negocio, user) {
-    const usuarios = await buscarUsuariosAutenticacao(connection, user);
+async function buscarUsuarioAutenticacao(connection, entidade_negocio, user, options = {}) {
+    const usuarios = await buscarUsuariosAutenticacao(connection, user, options);
 
     return usuarios.find((item) => Number(item?.entidade_negocio || 0) === Number(entidade_negocio || 0)) || null;
 }
@@ -150,6 +168,7 @@ export class ControllerAuth {
             const entidade_negocio_informada = Number(req.body?.entidade_negocio || 0);
             const user = String(req.body?.user || '').trim();
             const password = desencriptar(String(req.body?.password || '').trim());
+            const clientPlatform = normalizarClientPlatform(req.headers?.['x-client-platform']);
 
             validate(authSessionSchema, {
                 entidade_negocio: entidade_negocio_informada > 0 ? entidade_negocio_informada : undefined,
@@ -172,7 +191,9 @@ export class ControllerAuth {
             void await db.Connect();
 
             const entidades = new Entidades(db.connection);
-            const usuariosEncontrados = await buscarUsuariosAutenticacao(db.connection, user);
+            const usuariosEncontrados = await buscarUsuariosAutenticacao(db.connection, user, {
+                allowMobileMode: clientPlatform === 'mobile'
+            });
 
             const usuariosFiltrados = entidade_negocio_informada > 0
                 ? usuariosEncontrados.filter((item) => Number(item?.entidade_negocio || 0) === entidade_negocio_informada)
@@ -315,6 +336,12 @@ export class ControllerAuth {
 
             const entidades = new Entidades(db.connection);
             const entidade = await buscarEntidadeAuth(entidades, Number(sessao.entidade_negocio || 0));
+            const usuarioSessao = await buscarUsuarioAutenticacao(
+                db.connection,
+                Number(sessao.entidade_negocio || 0),
+                String(sessao.user || '').trim(),
+                { allowMobileMode: true }
+            );
 
             if (!entidade) {
                 limparSessaoHttpOnly(res);
@@ -329,6 +356,7 @@ export class ControllerAuth {
 
             const sessaoAtualizada = {
                 ...sessao,
+                id_vendedor: Number(usuarioSessao?.id_vendedor || sessao?.id_vendedor || 0),
                 name_entidade: String(entidade.nom_entidade || ''),
                 com_rota_cobranca: Number(entidade.com_rota_cobranca || 0)
             };
@@ -340,10 +368,13 @@ export class ControllerAuth {
                 user: String(payload.user || ''),
                 firstname: String(payload.firstname || ''),
                 fullname: String(payload.fullname || payload.user || ''),
+                id_vendedor: Number(payload.id_vendedor || 0),
                 type_perfil: Number(payload.type_perfil || 0),
+                cod_perfil: String(payload.cod_perfil || ''),
                 entidade: Number(payload.entidade_negocio || 0),
                 entidade_negocio: Number(payload.entidade_negocio || 0),
                 name_entidade: String(payload.name_entidade || ''),
+                modo_acesso: String(payload.modo_acesso || ''),
                 com_rota_cobranca: Number(payload.com_rota_cobranca || 0),
                 perfil: {
                     selecionar: Number(payload?.perfil?.selecionar || 0),
@@ -440,7 +471,9 @@ export class ControllerAuth {
             garantirEntidadeAtiva(entidade, 'A entidade vinculada ao usuario esta bloqueada. Procure o administrador.');
 
             const usuarios = new Usuarios(db.connection, entidade_negocio);
-            const usuario = await buscarUsuarioAutenticacao(db.connection, entidade_negocio, user);
+            const usuario = await buscarUsuarioAutenticacao(db.connection, entidade_negocio, user, {
+                allowMobileMode: true
+            });
 
             if (!usuario) {
                 const error = new Error('Usuario nao encontrado.');
@@ -541,7 +574,9 @@ export class ControllerAuth {
             garantirEntidadeAtiva(entidade, 'A entidade vinculada ao usuario esta bloqueada. Procure o administrador.');
 
             const usuarios = new Usuarios(db.connection, entidade_negocio);
-            const usuario = await buscarUsuarioAutenticacao(db.connection, entidade_negocio, user);
+            const usuario = await buscarUsuarioAutenticacao(db.connection, entidade_negocio, user, {
+                allowMobileMode: true
+            });
 
             if (!usuario) {
                 const error = new Error('Usuario nao encontrado.');
@@ -626,10 +661,11 @@ export class ControllerUsuarios{
             const usuario = new Usuarios(db.connection, entidade);
 
             const params = { entidade_negocio: entidade };
-            let query = `SELECT u.id, u.usuario, u.nom_completo, u.email, u.entidade_negocio, u.id_perfil, u.modo_acesso, u.reset_password, u.iniciais, p.nom_perfil
-            FROM tb_usuarios u
-            LEFT JOIN tb_perfis p ON p.id = u.id_perfil AND p.entidade_negocio = u.entidade_negocio
-            WHERE u.entidade_negocio = :entidade_negocio AND u.modo_acesso IN ('DT','DM','MB')`;
+            let query = `SELECT u.id, u.usuario, u.nom_completo, u.email, u.entidade_negocio,p.cod_perfil,
+                         u.id_perfil, u.modo_acesso, u.reset_password, u.iniciais, p.nom_perfil,u.id_vendedor, u.id_cobrador
+                         FROM tb_usuarios u
+                         LEFT JOIN tb_perfis p ON p.id = u.id_perfil AND p.entidade_negocio = u.entidade_negocio
+                         WHERE u.entidade_negocio = :entidade_negocio AND u.modo_acesso IN ('DT','DM','MB')`;
 
             if (pesq != "*") {
                 query += ` AND u.nom_completo LIKE :pesq`;
@@ -725,11 +761,11 @@ export class ControllerUsuarios{
 
         try {
 
-            let {id,usuario,nom_completo,email,id_perfil,modo_acesso,reset_password,password} = req.body;
+            let {id,usuario,nom_completo,email,id_perfil,id_cobrador,id_vendedor,modo_acesso,reset_password,password} = req.body;
             const entidade = obterEntidadeNegocio(req);
 
-            const validated = validate(usuarioSalvarSchema, {id,usuario,nom_completo,email,id_perfil,modo_acesso,reset_password,password});
-            ({ id, usuario, nom_completo, email, id_perfil, modo_acesso, reset_password, password } = validated);
+            const validated = validate(usuarioSalvarSchema, {id,usuario,nom_completo,email,id_perfil,id_cobrador,id_vendedor,modo_acesso,reset_password,password});
+            ({ id, usuario, nom_completo, email, id_perfil, id_vendedor,id_cobrador, modo_acesso, reset_password, password } = validated);
 
             const passwordNormalizado = String(password || '').trim();
             
@@ -748,12 +784,13 @@ export class ControllerUsuarios{
             }
 
             const usuarioExistente = Boolean(usuarios.found);
-
             usuarios.id = id;
             usuarios.usuario = usuario;
             usuarios.nom_completo = nom_completo;
             usuarios.email = email;
             usuarios.id_perfil = id_perfil;
+            usuarios.id_vendedor = id_vendedor || null;
+            usuarios.id_cobrador = id_cobrador || null;
             if (modo_acesso) {
                 usuarios.modo_acesso = modo_acesso;
             } else if (!usuarioExistente) {
@@ -765,9 +802,9 @@ export class ControllerUsuarios{
 
                 const numero = Math.floor(100000 + Math.random() * 900000);
 
-                await enviarEmailResend({
-                    from: "Crediario <onboarding@resend.dev>",
-                    to: usuarios.email,
+                /*await enviarEmailResend({
+                    from: "Crediario <noreply@fshp.se.gov.br>",
+                    to: email, // Temporário para testes
                     subject: 'Reset de Senha',
                     html: `
                         <div style="margin:0;padding:24px 0;background:#f4f6f8;font-family:Arial,Helvetica,sans-serif;color:#1f2937;">
@@ -823,10 +860,10 @@ export class ControllerUsuarios{
                             </table>
                         </div>
                     `
-                });
+                });*/
 
                 usuarios.num_verificacao = numero;
-                usuarios.senha = process.env.SENHA_RESET_PADRAO;
+                usuarios.senha = SENHA_RESET_PADRAO;
 
             } else if (passwordNormalizado) {
                 usuarios.senha = await criptografarSenha(passwordNormalizado);
@@ -1241,12 +1278,24 @@ export class ControllerPerfis{
 
         try {
 
-            const {id,nom_perfil,selecionar,insert,atualizar,excluir} = req.body;
+            const {id,nom_perfil,cod_perfil,selecionar,insert,atualizar,excluir} = req.body;
             const entidade = obterEntidadeNegocio(req);
 
             if (!id) {
                 const error = new Error("ID do perfil invalido.");
                 error.statusCode = 404;
+                throw error;
+            }
+
+            if (!cod_perfil || cod_perfil.trim() === '') {
+                const error = new Error("Código do perfil é obrigatório.");
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (!nom_perfil || nom_perfil.trim() === '') {
+                const error = new Error("Nome do perfil é obrigatório.");
+                error.statusCode = 400;
                 throw error;
             }
             
@@ -1260,6 +1309,7 @@ export class ControllerPerfis{
 
             perfils.id = id;
             perfils.nom_perfil = nom_perfil;
+            perfils.cod_perfil = cod_perfil;
             perfils.selecionar = selecionar ? 1 : 0;
             perfils.insert = insert ? 1 : 0;
             perfils.atualizar = atualizar ? 1 : 0;
@@ -1328,6 +1378,43 @@ export class ControllerPerfis{
             resdata.status = error.statusCode || 500;
 
             if(resdata.err == 500) GravarLog('ControllerPerfis.Excluir', error.stack);
+
+        }
+
+        void await db.Close();
+
+        res.status(resdata.status).json(resdata);
+
+    }
+
+    static async ListarTiposPerfis (req,res){
+
+        const db = new Database('dbcred');
+
+        const resdata = {
+            err: 0,
+            msg: '',
+            status: 200,
+            data: []
+        }
+
+        try {
+            
+            void await db.Connect();
+
+            const query = `SELECT cod_tipo_perfil,nom_tipo_perfil FROM tb_tipos_perfis`;
+
+            const tipos = await db.connection.query(query);
+
+            resdata.data = tipos;
+
+        } catch (error) {
+            
+            resdata.err = error.statusCode || 500;
+            resdata.msg = error.message;
+            resdata.status = error.statusCode || 500;
+
+            if(resdata.err == 500) GravarLog('ControllerPerfis.ListarTiposPerfis', error.stack);
 
         }
 
@@ -1934,8 +2021,14 @@ export class ControllerProdutos {
 
         try {
             
-            const id = req.params.id
+            const id = req.params.id || null
             const entidade_negocio = obterEntidadeNegocio(req);
+
+            if (!id) {
+                const error = new Error('ID não fornecido');
+                error.status = 400;
+                throw error;
+            }
 
             void await db.Connect();
 
@@ -1947,7 +2040,7 @@ export class ControllerProdutos {
         } catch (error) {
             resdata.err = 500;
             resdata.msg = error.message;
-            resdata.status = 500;
+            resdata.status = error.status || 500;
             console.log(error.stack)
         }
 
@@ -2559,4 +2652,566 @@ export class ControllerTiposPagamentos{
         res.status(resdata.status).json(resdata);
 
     }
+}
+
+export class ControllerFormaPagamento {
+
+    static async Listar(req, res) {
+
+        const db = new Database('dbcred');
+
+        const resdata = {
+            err: 0,
+            msg: '',
+            status: 200,
+            data: []
+        }
+
+        try {
+            
+            void await db.Connect();
+
+            const formaPagamento = new FormaPagamento(db.connection);
+
+            const query = `SELECT cod_forma,nom_forma FROM tb_forma_pagamento`;
+
+            const data = await formaPagamento.ExecuteQuery(query);
+
+            resdata.data = data;
+
+        } catch (error) {
+            
+            resdata.err = 500;
+            resdata.msg = error.message;
+            resdata.status = 500;
+
+            GravarLog('ControllerFormaPagamento.Listar', error.stack);
+
+        }
+
+        void await db.Close();
+
+        res.status(resdata.status).json(resdata);
+        
+    }
+
+    static async BuscarPorId(req,res) {
+
+        const db = new Database('dbcred');
+
+        const resdata = {
+            err: 0,
+            msg: '',
+            status: 200,
+            data: []
+        }
+
+        try {
+
+            const id = Number(req.params.id || 0);
+            
+            void await db.Connect();
+    
+            if (id === undefined) {
+                const error = new Error('ID não informado');
+                error.status = 400;
+                throw error;
+            }
+
+            const formaPagamento = new FormaPagamento(db.connection);
+
+            const data =  await formaPagamento.FindById(id)
+
+            if (!formaPagamento.found) {
+                const error = new Error('Forma de pagamento não encontrada');
+                error.status = 404;
+                throw error;
+            }
+
+            resdata.data = data;
+
+        } catch (error) {
+            
+            resdata.err = error.status || 500;
+            resdata.msg = resdata.err === 500 ? 'Erro interno do servidor' : error.message;
+            resdata.status = error.status || 500;
+
+            if(resdata.err === 500) GravarLog('ControllerFormaPagamento.Buscar', error.stack);
+
+        }
+
+        void await db.Close();
+
+        res.status(resdata.status).json(resdata);
+        
+    }
+
+    static async BuscarPorCodigo(req,res) {
+
+        const db = new Database('dbcred');
+
+        const resdata = {
+            err: 0,
+            msg: '',
+            status: 200,
+            data: []
+        }
+
+        try {
+
+            const codigo = String(req.params.cod_forma || '').trim();
+            
+            void await db.Connect();
+    
+            if (!codigo) {
+                const error = new Error('Código não informado');
+                error.status = 400;
+                throw error;
+            }
+
+            const formaPagamento = new FormaPagamento(db.connection);
+
+            void await formaPagamento.FindByCodForma(codigo);
+
+            if (!formaPagamento.found) {
+                const error = new Error('Forma de pagamento não encontrada');
+                error.status = 404;
+                throw error;
+            }
+
+            resdata.data = {
+                id: formaPagamento.id,
+                cod_forma: formaPagamento.cod_forma,
+                nom_forma: formaPagamento.nom_forma,
+                ativo: formaPagamento.ativo
+            };
+
+        } catch (error) {
+            
+            resdata.err = error.status || 500;
+            resdata.msg = resdata.err === 500 ? 'Erro interno do servidor' : error.message;
+            resdata.status = error.status || 500;
+
+            if(resdata.err === 500) GravarLog('ControllerFormaPagamento.BuscarPorCodigo', error.stack);
+
+        }
+
+        void await db.Close();
+
+        res.status(resdata.status).json(resdata);
+        
+    }
+
+    static async Salvar(req,res) {
+
+        const db = new Database('dbcred');
+
+        const resdata = {
+            err: 0,
+            msg: '',
+            status: 200,
+            data: []
+        }
+
+        try {
+
+            void await db.Connect();
+
+            void await db.Begin();
+
+            const id = Number(req.body.id || 0);
+            const cod_forma = req.body.cod_forma || '';
+            const nom_forma = req.body.nom_forma || '';
+
+            if(id === undefined) {
+                const error = new Error('ID não informado');
+                error.status = 400;
+                throw error;
+            }
+
+            if (!cod_forma || !nom_forma) {
+                const error = new Error('Código e nome da forma de pagamento são obrigatórios');
+                error.status = 400;
+                throw error;
+            }
+
+            const formaPagamento = new FormaPagamento(db.connection);
+
+            void await formaPagamento.FindById(id);
+
+            formaPagamento.cod_forma = cod_forma;
+            formaPagamento.nom_forma = nom_forma;
+
+            void await formaPagamento.Save();
+
+            void await db.Commit();
+
+            resdata.msg = "Forma de pagamento salva com sucesso";
+            
+        } catch (error) {
+
+            void await db.RollBack();
+            
+            resdata.err = error.status || 500;
+            resdata.msg = resdata.err === 500 ? 'Erro interno do servidor' : error.message;
+            resdata.status = error.status || 500;
+
+            if(resdata.err === 500) GravarLog('ControllerFormaPagamento.Salvar', error.stack);
+
+        }
+
+        void await db.Close();
+
+        res.status(resdata.status).json(resdata);
+        
+    }
+
+    static async Excluir(req,res) {
+
+        const db = new Database('dbcred');
+
+        const resdata = {
+            err: 0,
+            msg: '',
+            status: 200,
+            data: []
+        }
+
+        try {
+
+            void await db.Connect();
+
+            void await db.Begin();
+
+            const cod_forma = String(req.params.cod_forma || req.body.cod_forma || '').trim();
+
+            if(!cod_forma) {
+                const error = new Error('Código da forma de pagamento não informado');
+                error.status = 400;
+                throw error;
+            }
+
+            const formaPagamento = new FormaPagamento(db.connection);
+
+            void await formaPagamento.FindByCodForma(cod_forma);
+
+            if (!formaPagamento.found) {
+                const error = new Error('Forma de pagamento não encontrada');
+                error.status = 404;
+                throw error;
+            }
+
+            void await formaPagamento.Excluir();
+
+            void await db.Commit();
+
+            resdata.msg = "Forma de pagamento excluída com sucesso";
+            
+        } catch (error) {
+
+            void await db.RollBack();
+
+            resdata.err = error.status || 500;
+            resdata.msg = resdata.err === 500 ? 'Erro interno do servidor' : error.message;
+            resdata.status = error.status || 500;
+
+            if(resdata.err === 500) GravarLog('ControllerFormaPagamento.Excluir', error.stack);
+
+        }
+
+        void await db.Close();
+
+        res.status(resdata.status).json(resdata);
+
+    }
+    
+}
+
+export class ControllerModalidadePagamento {
+
+    static async Listar(req,res) {
+
+        const db =  new Database('dbcred');
+
+        const resdata = {
+            err: 0,
+            msg: '',
+            status: 200,
+            data: []
+        }
+
+        try {
+
+            void await db.Connect();
+
+            const cod_forma = String(req.params.cod_forma).trim() || null;
+
+            const modoPagamento = new ModoPagamento(db.connection);
+
+            let query = "SELECT id, cod_mod_pagamento,nom_mod_pagamento ,cod_forma_pagamento FROM tb_modalidade_pagamento";
+
+            if (cod_forma !== "undefined") {
+               query += " WHERE cod_forma_pagamento = :cod_forma";
+            }
+
+            const rows = await modoPagamento.ExecuteQuery(query, { cod_forma });
+
+            resdata.data = rows;
+            
+        } catch (error) {
+
+            resdata.err = 500;
+            resdata.msg = error.message;
+            resdata.status = error.status || 500;
+
+            if(resdata.err === 500) GravarLog('ControllerModalidadePagamento.Listar', error.stack);
+        }
+
+        void await db.Close();
+
+        res.status(resdata.status).json(resdata);
+
+    }
+
+    static async BuscarPorId(req,res) {
+
+        const db =  new Database('dbcred');
+
+        const resdata = {
+            err: 0,
+            msg: '',
+            status: 200,
+            data: []
+        }
+
+        try {
+
+            void await db.Connect();
+
+            const modoPagamento = new ModoPagamento(db.connection);
+
+            const id = Number(req.params.id || 0);
+
+            if (id <= 0) {
+                const error = new Error('ID não informado');
+                error.status = 400;
+                throw error;
+            }
+
+            void await modoPagamento.FindById(id);
+
+            if (!modoPagamento.found) {
+                const error = new Error('Modalidade de pagamento não encontrada');
+                error.status = 404;
+                throw error;
+            }
+
+            resdata.data = {
+                id: modoPagamento.id,
+                cod_mod_pagamento: modoPagamento.cod_mod_pagamento,
+                nom_mod_pagamento: modoPagamento.nom_mod_pagamento,
+                cod_forma_pagamento: modoPagamento.cod_forma_pagamento
+            };
+            
+        } catch (error) {
+
+            resdata.err = error.status || 500;
+            resdata.msg = resdata.err === 500 ? 'Erro interno do servidor' : error.message;
+            resdata.status = error.status || 500;
+
+            if(resdata.err === 500) GravarLog('ControllerModalidadePagamento.BuscarPorId', error.stack);
+        }
+
+        void await db.Close();
+
+        res.status(resdata.status).json(resdata);
+
+    }
+
+    static async BuscarPorCodigo(req,res) {
+
+        const db =  new Database('dbcred');
+
+        const resdata = {
+            err: 0,
+            msg: '',
+            status: 200,
+            data: []
+        }
+
+        try {
+
+            void await db.Connect();
+
+            const modoPagamento = new ModoPagamento(db.connection);
+
+            const codigo = String(req.params.cod_mod || '').trim().toUpperCase();
+
+            if (!codigo) {
+                const error = new Error('Código da modalidade de pagamento não informado');
+                error.status = 400;
+                throw error;
+            }
+
+            void await modoPagamento.FindByCodModalidade(codigo);
+
+            if (!modoPagamento.found) {
+                const error = new Error('Modalidade de pagamento não encontrada');
+                error.status = 404;
+                throw error;
+            }
+
+            resdata.data = {
+                id: modoPagamento.id,
+                cod_mod_pagamento: modoPagamento.cod_mod_pagamento,
+                nom_mod_pagamento: modoPagamento.nom_mod_pagamento,
+                cod_forma_pagamento: modoPagamento.cod_forma_pagamento
+            };
+            
+        } catch (error) {
+
+            resdata.err = error.status || 500;
+            resdata.msg = resdata.err === 500 ? 'Erro interno do servidor' : error.message;
+            resdata.status = error.status || 500;
+
+            if(resdata.err === 500) GravarLog('ControllerModalidadePagamento.BuscarPorCodigo', error.stack);
+        }
+
+        void await db.Close();
+
+        res.status(resdata.status).json(resdata);
+
+    }
+
+    static async Salvar(req,res) {
+
+        const db =  new Database('dbcred');
+
+        const resdata = {
+            err: 0,
+            msg: '',
+            status: 200,
+            data: []
+        }
+
+        try {
+
+            void await db.Connect();
+
+            void await db.Begin()
+
+            const modoPagamento = new ModoPagamento(db.connection);
+
+            const id = Number(req.body.id || 0);
+            const codigo = String(req.body.cod_mod || '').trim().toUpperCase();
+            const nom_mod = String(req.body.nom_mod || '').trim().toUpperCase();
+            const cod_forma = String(req.body.cod_forma || '').trim().toUpperCase();
+
+            if (!codigo) {
+                const error = new Error('Código da modalidade de pagamento não informado');
+                error.status = 400;
+                throw error;
+            }
+
+            if (!nom_mod) {
+                const error = new Error('Codigo e/ou Nome da modalidade de pagamento não informados');
+                error.status = 400;
+                throw error;
+            }
+
+            if (!cod_forma) {
+                const error = new Error('Codigo da forma de pagamento não informado');
+                error.status = 400;
+                throw error;
+            }
+
+            void await modoPagamento.FindById(id);
+
+            modoPagamento.cod_mod_pagamento = codigo;
+            modoPagamento.nom_mod_pagamento = nom_mod;
+            modoPagamento.cod_forma_pagamento = cod_forma;
+
+            void await modoPagamento.Save();
+
+            void await db.Commit();
+
+            resdata.msg = "Modalidade de pagamento salva com sucesso";
+           
+            
+        } catch (error) {
+
+            void await db.RollBack();
+
+            resdata.err = error.status || 500;
+            resdata.msg = resdata.err === 500 ? 'Erro interno do servidor' : error.message;
+            resdata.status = error.status || 500;
+
+            if(resdata.err === 500) GravarLog('ControllerModalidadePagamento.Salvar', error.stack);
+        }
+
+        void await db.Close();
+
+        res.status(resdata.status).json(resdata);
+
+    }
+
+    static async Excluir(req, res) {
+
+        const db =  new Database('dbcred');
+
+        const resdata = {
+            err: 0,
+            msg: '',
+            status: 200,
+            data: []
+        }
+
+        try {
+
+            void await db.Connect();
+
+            void await db.Begin()
+
+            const modoPagamento = new ModoPagamento(db.connection);
+
+            const cod_mod = String(req.params.cod_mod || '').trim().toUpperCase();
+
+            if (!cod_mod) {
+                const error = new Error('Código da modalidade de pagamento não informado');
+                error.status = 400;
+                throw error;
+            }
+
+            void await modoPagamento.FindByCodModalidade(cod_mod);
+
+            if (!modoPagamento.found) {
+                const error = new Error('Modalidade de pagamento não encontrada');
+                error.status = 404;
+                throw error;
+            }
+
+            void await modoPagamento.Excluir();
+
+            void await db.Commit();
+
+            resdata.msg = "Modalidade de pagamento excluída com sucesso";
+           
+            
+        } catch (error) {
+
+            void await db.RollBack();
+
+            resdata.err = error.status || 500;
+            resdata.msg = resdata.err === 500 ? 'Erro interno do servidor' : error.message;
+            resdata.status = error.status || 500;
+
+            if(resdata.err === 500) GravarLog('ControllerModalidadePagamento.Excluir', error.stack);
+        }
+
+        void await db.Close();
+
+        res.status(resdata.status).json(resdata);
+
+    }
+
 }

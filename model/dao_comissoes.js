@@ -36,8 +36,8 @@ export default class Comissoes {
     set num_recibo(num_recibo) {this.#field.num_recibo = String(num_recibo)}
     get num_recibo() {return String(this.#field.num_recibo)}
 
-    set dt_recibo(dt_recibo) {this.#field.dt_recibo = String(dt_recibo)}
-    get dt_recibo() {return String(this.#field.dt_recibo)}
+    set dt_recibo(dt_recibo) {this.#field.dt_recibo = dt_recibo}
+    get dt_recibo() {return this.#field.dt_recibo}
 
     set tp_recibo(tp_recibo) {this.#field.tp_recibo = String(tp_recibo)}
     get tp_recibo() {return String(this.#field.tp_recibo)}
@@ -132,17 +132,19 @@ export default class Comissoes {
 
         const [rows] = await this.#conn.query(query, { entidade_negocio: this.#entidade_negocio });
 
+        const num_recibo = rows?.num_reciibo ?? '1'
+
         const query_check_ano = "SELECT ano_corrente FROM tb_check_ano WHERE id = 1";
 
         const [rows_check] = await this.#conn.query(query_check_ano);
 
-        const ano_corrente = rows_check.ano_corrente;
+        const ano_corrente = rows_check?.ano_corrente ?? new Date().getFullYear();
         const ano_novo = new Date(this.#field.dt_recibo).getFullYear();
 
         const entidade = String(this.#entidade_negocio).padStart(3, '0');
 
         const id = ano_novo > ano_corrente ? String(ano_novo) + entidade + '1'.padStart(3, '0') : 
-        String(ano_novo) + entidade + String(Number(String(rows.num_recibo).substring(8,10)) + 1).padStart(3, '0');
+        String(ano_novo) + entidade + String(Number(String(num_recibo).substring(8,10)) + 1).padStart(3, '0');
 
         return (String(id));  
 

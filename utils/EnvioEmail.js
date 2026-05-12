@@ -39,7 +39,7 @@ function normalizarEmails(value) {
 }
 
 export async function enviarEmailResend({                
-    from = process.env.RESEND_FROM_EMAIL || process.env.EMAIL_FROM || '',
+    from = process.env.RESEND_FROM_EMAIL || '',
     to,
     cc,
     bcc,

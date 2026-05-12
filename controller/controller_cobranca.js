@@ -8,6 +8,8 @@ import Vendas from '../model/dao_vendas.js';
 import Pagamentos from '../model/dao_pagamentos.js';
 import {buildTableDocument, formatCurrencyBR, formatDateBR, sendPdfResponse} from '../utils/PdfReport.js';
 import Clientes from '../model/dao_clientes.js';
+import Rotas from '../model/dao_rotas.js';
+import Cobradores from '../model/dao_cobradores.js';
 
 export class ControllerCobranca {
 
@@ -35,7 +37,7 @@ export class ControllerCobranca {
             
             const entidade_negocio = obterEntidadeNegocio(req);
             const com_rota_cobranca = Number(req.params.com_rota_cobranca || 0);
-            const situacao = String(req.query.situacao || '').trim();
+            const situacao = req.query.situacao || null;
 
             const fieldname = com_rota_cobranca === 1 ? 'id_rota' : 'id_cobrador';
             const id_filter = Number(req.params?.id || 0);
@@ -109,14 +111,20 @@ export class ControllerCobranca {
             }
 
             let query = `SELECT v.id, v.dt_venda, c.cpf_cliente, c.nom_cliente,c.nom_usual, c.end_cliente, c.bai_cliente, 
-            c.cid_cliente, c.uf_cliente, v.val_tot_venda, v.val_desconto, COALESCE(SUM(p.vl_pagamento), 0) AS val_total_pago,
-            GREATEST((v.val_tot_venda - val_desconto )- COALESCE(SUM(p.vl_pagamento), 0), 0) AS saldo_pagar, v.situacao
+            c.cid_cliente, c.uf_cliente, COALESCE(v.val_tot_venda, 0) AS val_tot_venda,
+            COALESCE(v.val_entrada, 0) AS val_entrada, COALESCE(v.val_desconto, 0) AS val_desconto,
+            COALESCE(SUM(COALESCE(p.vl_pagamento, 0)), 0) AS val_total_pago,
+            GREATEST(
+                COALESCE(v.val_tot_venda, 0) - (COALESCE(v.val_desconto, 0) + COALESCE(v.val_entrada, 0))
+                - COALESCE(SUM(COALESCE(p.vl_pagamento, 0)), 0),
+                0
+            ) AS saldo_pagar, v.situacao
             FROM tb_vendas v
             LEFT JOIN tb_clientes c ON c.cpf_cliente = v.cpf_cliente
             LEFT JOIN tb_pagamentos p ON p.entidade_negocio = v.entidade_negocio AND p.id_venda = v.id
-            WHERE ${whereClause.join('\n            AND ')}
-            GROUP BY v.id, v.dt_venda, c.cpf_cliente, c.nom_cliente, c.end_cliente, c.bai_cliente, 
-            c.cid_cliente, c.uf_cliente, v.val_tot_venda, v.situacao
+            WHERE ${whereClause.join('\n AND ')}
+            GROUP BY v.id, v.dt_venda, c.cpf_cliente, c.nom_cliente, c.nom_usual, c.end_cliente, c.bai_cliente, 
+            c.cid_cliente, c.uf_cliente, v.val_tot_venda, v.val_entrada, v.val_desconto, v.situacao
             ORDER BY v.dt_venda DESC, v.id DESC
             LIMIT ? OFFSET ?`;
 
@@ -254,7 +262,7 @@ export class ControllerCobranca {
                                 c.cpf_cliente, c.nom_cliente, c.nom_usual, c.end_cliente, c.bai_cliente, c.cid_cliente, c.uf_cliente,
                                 v.val_tot_venda,
                                 COALESCE(pg_total.total_pago_venda, 0) AS val_total_pago,
-                                GREATEST(v.val_tot_venda - COALESCE(pg_total.total_pago_venda, 0), 0) AS saldo_pagar
+                                GREATEST(v.val_tot_venda - ( v.val_entrada + v.val_desconto) - COALESCE(pg_total.total_pago_venda, 0), 0) AS saldo_pagar
                          FROM tb_pagamentos pg
                          INNER JOIN tb_vendas v ON v.id = pg.id_venda AND v.entidade_negocio = pg.entidade_negocio
                          LEFT JOIN tb_clientes c ON c.cpf_cliente = v.cpf_cliente
@@ -551,20 +559,35 @@ export class ControllerCobranca {
             const restricao = new RestricaoCredito(db.connection,entidade_negocio);
             const clientes = new Clientes(db.connection, entidade_negocio);
             
-            const query = `SELECT val_tot_venda,
-            (COALESCE(val_tot_venda, 0) - COALESCE(val_desconto, 0)) - SUM(COALESCE(vl_pagamento, 0)) AS saldo_pagar
-            FROM tb_vendas
-            LEFT JOIN tb_pagamentos ON tb_pagamentos.entidade_negocio = tb_vendas.entidade_negocio
-            AND tb_pagamentos.id_venda = tb_vendas.id
-            WHERE tb_vendas.entidade_negocio = :entidade_negocio AND tb_vendas.id = :id_venda
-            GROUP BY val_tot_venda, val_desconto`
+            const query = `SELECT COALESCE(tb_vendas.val_tot_venda, 0) AS val_tot_venda,
+                            GREATEST(
+                                COALESCE(tb_vendas.val_tot_venda, 0) - (COALESCE(tb_vendas.val_desconto, 0) + COALESCE(tb_vendas.val_entrada, 0))
+                                - COALESCE(SUM(COALESCE(tb_pagamentos.vl_pagamento, 0)), 0),
+                                0
+                            ) AS saldo_pagar
+                            FROM tb_vendas
+                            LEFT JOIN tb_pagamentos ON tb_pagamentos.entidade_negocio = tb_vendas.entidade_negocio
+                            AND tb_pagamentos.id_venda = tb_vendas.id
+                            WHERE tb_vendas.entidade_negocio = :entidade_negocio AND tb_vendas.id = :id_venda
+                            GROUP BY tb_vendas.val_tot_venda, tb_vendas.val_desconto, tb_vendas.val_entrada`
 
             const [rows] = await pagamentos.ExecuteQuery(query, {entidade_negocio, id_venda});
+
+            if (!rows) {
+                const error = new Error('Numero da Venda não encontrada.');
+                error.statusCode = 404;
+                throw error;
+            }
 
             void await entidades.FindById(entidade_negocio);
             void await pagamentos.FindById(id_venda, 0);
 
-            const valor_max_desconto = Number(((parseFloat(entidades.percent_desconto_cobranca) / (parseFloat(rows.saldo_pagar) - parseFloat(vl_desconto)) ) * 100).toFixed(2))
+            const saldoAtual = Number(rows?.saldo_pagar || 0);
+            const saldoBaseDesconto = saldoAtual - vl_desconto;
+            const valor_max_desconto = saldoBaseDesconto > 0
+                ? (Number(entidades.percent_desconto_cobranca || 0) / saldoBaseDesconto * 100)
+                : 0;
+            const saldoAposPagamento = Math.max(saldoAtual - vl_desconto - vl_pagamento, 0);
 
             if (vl_desconto > valor_max_desconto) {
                 const error = new Error("Desconto maior que o permitido.");
@@ -572,7 +595,7 @@ export class ControllerCobranca {
                 throw error
             }
 
-            if ((vl_pagamento + vl_desconto) > parseFloat(rows.saldo_pagar)) {
+            if ((vl_pagamento + vl_desconto) > saldoAtual) {
                 const error = new Error('Valor do pagamento nao pode ser maior que o saldo a pagar.');
                 error.statusCode = 403;
                 throw error;
@@ -601,11 +624,12 @@ export class ControllerCobranca {
 
                 vendas.marca_venda = 'X';
                 vendas.dia_pagam = prox_dia_pagamento;
-                vendas.val_desconto += parseFloat(vl_desconto);
+                vendas.val_desconto += vl_desconto;
                 vendas.ult_dat_pagamto = dt_pagamento;
+                vendas.melhor_dia = prox_dia_pagamento;
                 vendas.situacao = 0;
 
-                if ( ( parseFloat(rows.saldo_pagar) - parseFloat(vl_desconto) ) - parseFloat(vl_pagamento) == 0) {
+                if (saldoAposPagamento === 0) {
                     vendas.situacao = 9;
                 }
                 
@@ -645,7 +669,7 @@ export class ControllerCobranca {
             resdata.msg = 'Pagamento registrado com sucesso.';
             resdata.data.id_venda = id_venda;
             resdata.data.id_pagamento = pagamentos.id;
-            resdata.data.saldo_pagar = parseFloat(rows.saldo_pagar);
+            resdata.data.saldo_pagar = saldoAposPagamento;
 
         } catch (error) {
 
@@ -691,6 +715,8 @@ export class ControllerCobranca {
             void await db.Begin();
 
             const pagamentos = new Pagamentos(db.connection, entidade_negocio);
+            const vendas = new Vendas(db.connection, entidade_negocio);
+            const tiposPagamentos = new TiposPagamentos(db.connection, entidade_negocio);
 
             void await pagamentos.FindById(id_venda, id_pagamento);
 
@@ -700,7 +726,51 @@ export class ControllerCobranca {
                 throw error;
             }
 
+            const descontoPagamentoExcluido = Number(pagamentos.vl_desconto || 0);
+
             void await pagamentos.Excluir();
+
+            void await vendas.FindById(id_venda);
+
+            if (vendas.found) {
+                
+                const [resumoPagamentos] = await pagamentos.ExecuteQuery(
+                    `SELECT COALESCE(SUM(COALESCE(vl_pagamento, 0)), 0) AS total_pago,
+                            MAX(dt_pagamento) AS ult_dat_pagamto
+                     FROM tb_pagamentos
+                     WHERE entidade_negocio = :entidade_negocio
+                       AND id_venda = :id_venda`,
+                    { entidade_negocio, id_venda }
+                );
+
+                const totalPagoRestante = Number(resumoPagamentos?.total_pago || 0);
+
+                vendas.val_desconto = Math.max(Number(vendas.val_desconto || 0) - descontoPagamentoExcluido, 0);
+                vendas.ult_dat_pagamto = resumoPagamentos?.ult_dat_pagamto || null;
+                vendas.marca_venda = totalPagoRestante > 0 ? 'X' : null;
+
+                /******************************************************
+                * Atualiza saldo restante da venda a situacao da venda,
+                * recalcula a data para pagamento e salva a venda
+                *************************************************/
+                const saldoRestante = Math.max(
+                    Number(vendas.val_tot_venda || 0)
+                    - Number(vendas.val_desconto || 0)
+                    - Number(vendas.val_entrada || 0)
+                    - totalPagoRestante,
+                    0
+                );
+
+                vendas.situacao = saldoRestante === 0 ? 9 : 0;
+
+                void await tiposPagamentos.FindById(vendas.id_tipo_pag);
+
+                const dia_pagam = new Date(vendas.dia_pagam);
+
+                vendas.dia_pagam = new Date(dia_pagam.setDate(dia_pagam.getDate() - (tiposPagamentos.dias_apos_pagamnto - 2)));
+
+                void await vendas.Save();
+            }
 
             void await db.Commit();
             
@@ -801,6 +871,487 @@ export class ControllerCobranca {
         void await db.Close();
 
         res.status(resdata.status).json(resdata);
-    }   
+    }
+
+    static async DestinarVendas(req,res) {
+
+        const db = new Database('dbcred');
+
+        const resdata = {
+            err: 0,
+            msg: '',
+            status: 200,
+            data: []
+        }
+
+        try {
+
+            void await db.Connect();
+
+            const entidade_negocio = obterEntidadeNegocio(req);
+            const listaRecebida = Array.isArray(req.body?.lista) ? req.body.lista : [];
+            const lista = Array.from(new Set(
+                listaRecebida
+                    .map((item) => Number(typeof item === 'object' && item !== null ? item.id_venda : item))
+                    .filter((id_venda) => id_venda > 0)
+            ));
+
+            const entidades = new Entidades(db.connection,entidade_negocio);
+
+            void await entidades.FindById(Number(entidade_negocio));
+
+            if (!entidades.found) {
+                const error = new Error('Entidade de negocio nao encontrada.');
+                error.statusCode = 404;
+                throw error;
+            }
+
+            if (lista.length === 0) {
+                const error = new Error('Informe a lista de vendas selecionadas.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            const com_rota_cobranca = Number(entidades.com_rota_cobranca || 0);
+            const destinoCampo = com_rota_cobranca === 1 ? 'id_rota' : 'id_cobrador';
+            const destinoId = Number(req.body?.[destinoCampo] || req.body?.id_destino || 0);
+
+            if (destinoId <= 0) {
+                const error = new Error(`Informe um ${com_rota_cobranca === 1 ? 'id_rota' : 'id_cobrador'} valido.`);
+                error.statusCode = 400;
+                throw error;
+            }
+
+            console.log(entidade_negocio)
+
+            const destino = com_rota_cobranca === 1
+                ? new Rotas(db.connection, entidade_negocio)
+                : new Cobradores(db.connection, entidade_negocio);
+
+            void await destino.FindById(destinoId);
+
+            if (!destino.found || Number(destino.ativo || 0) !== 1) {
+                const error = new Error(`${com_rota_cobranca === 1 ? 'Rota' : 'Cobrador'} nao encontrado ou inativo.`);
+                error.statusCode = 404;
+                throw error;
+            }
+
+            void await db.Begin();
+
+            const vendas = new Vendas(db.connection, entidade_negocio);
+
+            for (const id_venda of lista) {
+
+                void await vendas.FindById(id_venda);
+
+                if (!vendas.found) {
+                    const error = new Error(`Venda ${id_venda} nao encontrada.`);
+                    error.statusCode = 404;
+                    throw error;
+                }
+
+                if (com_rota_cobranca === 1) {
+                    vendas.id_rota = destinoId;
+                } else {
+                    vendas.id_cobrador = destinoId;
+                }
+
+                void await vendas.Save();
+            }
+
+            void await db.Commit();
+
+            resdata.msg = `${lista.length} venda(s) destinada(s) com sucesso.`;
+
+        }
+        catch (error) {
+
+            void await db.RollBack();
+
+            resdata.err = Number(error.statusCode || 500);  
+            resdata.msg = error.message;
+            resdata.status = Number(error.statusCode || 500);
+
+            GravarLog('ControllerVendas.DestinarVendas', error.stack);
+        }
+
+        void await db.Close();
+
+        res.status(resdata.status).json(resdata);
+
+    }
+
+    static async RedestinarVendas(req,res){
+
+        const db = new Database('dbcred');
+
+        const resdata = {
+            err: 0,
+            msg: '',
+            status: 200
+        };
+
+        try {
+
+            void await db.Connect();
+            void await db.Begin();
+            
+            const entidade_negocio = obterEntidadeNegocio(req);
+
+            const entidades = new Entidades(db.connection);
+            const vendas = new Vendas(db.connection, entidade_negocio);
+
+            void await entidades.FindById(entidade_negocio);
+
+            if (!entidades.found) {
+                const error = new Error(`Entidade ${entidade_negocio} nao encontrada.`);
+                error.statusCode = 404;
+                throw error;
+            }
+
+            const com_rota_cobranca = Number(entidades.com_rota_cobranca || 0);
+            const destinoCampo = com_rota_cobranca === 1 ? 'id_rota' : 'id_cobrador';
+            const destinoId = Number(req.body[destinoCampo] || 0);
+            const vendaIds = req.body.vendaIds;
+
+            if (!Array.isArray(vendaIds) || vendaIds.length === 0) {
+                const error = new Error('Nenhuma venda selecionada.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (destinoId <= 0) {
+                const error = new Error(`Informe um ${com_rota_cobranca === 1 ? 'id_rota' : 'id_cobrador'} valido.`);
+                error.statusCode = 400;
+                throw error;
+            }
+
+            for (const vendaId of vendaIds) {
+
+                void await vendas.FindById(vendaId);
+
+                if(!vendas.found){
+                    const error = new Error(`Venda ${vendaId} nao encontrada.`);
+                    error.statusCode = 404;
+                    throw error;
+                }
+
+                if (com_rota_cobranca === 1) {
+                    vendas.id_rota = destinoId;
+                } else {
+                    vendas.id_cobrador = destinoId;
+                }
+
+                void await vendas.Save();
+                
+            }
+
+            void await db.Commit();
+
+            resdata.msg = "Vendas redestinadas com sucesso.";
+            
+
+        } catch (error) {
+
+            void await db.RollBack();
+
+            resdata.err = error.statusCode || 500;
+            resdata.msg = resdata.err === 500 ? 'Erro interno do servidor' : error.message;
+            resdata.status = Number(error.statusCode || 500);
+            
+            if(resdata.err !== 500) {
+                GravarLog('ControllerVendas.RedestinarVanda', error.stack);
+            }
+        }
+
+        void await db.Close();
+
+        res.status(resdata.status).json(resdata);
+
+    }
+
+    static async ClienteComRota(req, res) {
+
+        const resdadta = {
+            err: 0,
+            msg: '',
+            status: 200,
+            data: []
+        }
+
+        const db = new Database('dbcred');
+
+        try {
+
+            void await db.Connect();
+
+            const entidade_negocio = obterEntidadeNegocio(req);
+
+            const query = `SELECT id, nom_entidade, com_rota_cobranca FROM tb_entidades WHERE id = :id`;
+
+            const [result] = await db.connection.query(query, { id: entidade_negocio });
+
+            if (!result || result.length === 0) {
+                const error = new Error('Entidade nao encontrada.');
+                error.statusCode = 404;
+                throw error;
+            }
+
+            resdadta.data = Number(result.com_rota_cobranca || 0);
+
+        } catch (error) {
+
+            resdadta.err = error.statusCode || 500;
+            resdadta.msg = resdadta.err === 500 ? 'Erro interno do servidor' : error.message;
+            resdadta.status = Number(error.statusCode || 500);
+            
+            if(resdadta.err === 500) {
+                GravarLog('ControllerCobranca.ClienteComRota', error.stack);
+            }
+            
+        }
+
+        void await db.Close();
+        
+        res.status(resdadta.status).json(resdadta);
+        
+    }
+
+    static async ListaCobrancaPorRota(req, res) {
+        
+        const resdadta = {
+            err: 0,
+            msg: '',
+            status: 200,
+            data: []
+        }
+
+        const db = new Database('dbcred');
+
+        try {
+            
+            void await db.Connect();
+
+            const entidade_negocio = obterEntidadeNegocio(req);
+            const data_pag_ini = req.query.data_pag_ini;
+            const data_pag_fim = req.query.data_pag_fim;
+            const id_rota = Number(req.params.id_rota);
+
+             if (!data_pag_ini || !data_pag_fim) {
+                const error = new Error('Informe data inicial e data final.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(data_pag_ini)) {
+                const error = new Error('Data inicial invalida.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(data_pag_fim)) {
+                const error = new Error('Data final invalida.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (data_pag_ini > data_pag_fim) {
+                const error = new Error('Data inicial nao pode ser maior que data final.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (id_rota === undefined || id_rota === 0) {
+                const error = new Error('Informe o ID da rota.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            const query = `SELECT tb_vendas.id as nr_venda, dia_pagam as dt_pagamento,melhor_dia,
+                        tb_vendas.cpf_cliente as cpf,nom_cliente as nome, nom_usual as nome_usual,end_cliente as endereco,
+                        bai_cliente as bairro,cid_cliente as cidade, uf_cliente as uf,lat_cliente as latitude,lon_cliente as longitude
+                        FROM tb_vendas
+                        LEFT JOIN tb_clientes ON tb_vendas.cpf_cliente = tb_clientes.cpf_cliente
+                        WHERE id_rota = :id_rota AND 
+                        (dia_pagam >= :data_pag_ini AND dia_pagam <= :data_pag_fim) AND 
+                        tb_vendas.entidade_negocio = :entidade_negocio AND tb_vendas.situacao < 9
+                        ORDER BY situacao DESC, GREATEST(COALESCE(dia_pagam, 0), COALESCE(melhor_dia, 0))`;
+
+            const dados = await db.connection.query(query, {
+                id_rota,
+                data_pag_ini,
+                data_pag_fim,
+                entidade_negocio
+            });
+
+            resdadta.data = dados;
+            
+        } catch (error) {
+
+            resdadta.err = error.statusCode || 500;
+            resdadta.msg = resdadta.err === 500 ? 'Erro interno do servidor' : error.message;
+            resdadta.status = Number(error.statusCode || 500);
+            
+            if(resdadta.err === 500) {
+                GravarLog('ControllerCobranca.ListaCobrancaPorRota', error.stack);
+            }
+            
+        }
+
+        void await db.Close();
+
+        res.status(resdadta.status).json(resdadta);
+
+    }
+
+    static async ListaCobrancaPorCobrador(req, res) {
+        
+        const resdadta = {
+            err: 0,
+            msg: '',
+            status: 200,
+            data: []
+        }
+
+        try {
+
+            const db = new Database('dbcred');
+            
+            void await db.Connect();
+
+            const entidade_negocio = obterEntidadeNegocio(req);
+            const data_pag_ini = req.query.data_pag_ini;
+            const data_pag_fim = req.query.data_pag_fim;
+            const id_cobrador = Number(req.params.id_cobrador);
+
+             if (!data_pag_ini || !data_pag_fim) {
+                const error = new Error('Informe data inicial e data final.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(data_pag_ini)) {
+                const error = new Error('Data inicial invalida.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(data_pag_fim)) {
+                const error = new Error('Data final invalida.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (data_pag_ini > data_pag_fim) {
+                const error = new Error('Data inicial nao pode ser maior que data final.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (id_cobrador === undefined || id_cobrador === 0) {
+                const error = new Error('Informe o ID do cobrador.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            const query = `SELECT id as nr_venda, dia_pagam as dt_pagamento,melhor_dia,
+                           tb_vendas.cpf_cliente as cpf,nom_cliente as nome, nom_usual as nome_usual,end_cliente as endereco,
+                           bai_cliente as bairro,cid_cliente as cidade, uf_cliente as uf,lat_cliente as latitude,lon_cliente as longitude
+                           FROM tb_vendas
+                           LEFT JOIN tb_clientes ON tb_vendas.cpf_cliente = tb_clientes.cpf_cliente
+                           WHERE id_cobrador = :id_cobrador AND (dia_pagam >= :data_pag_ini AND dia_pagam <= :data_pag_fim) 
+                           tb_vendas.entidade_negocio = :entidade_negocio AND tb_vendas.situacao < 9
+                           ORDER BY situacao DESC, GREATEST(COALESCE(dia_pagam, 0), COALESCE(melhor_dia, 0))`;
+
+            const dados = await db.connection.query(query, {
+                id_cobrador,
+                data_pag_ini,
+                data_pag_fim,
+                entidade_negocio
+            });
+
+            resdadta.data = dados;
+            
+        } catch (error) {
+
+            resdadta.err = error.statusCode || 500;
+            resdadta.msg = resdadta.err === 500 ? 'Erro interno do servidor' : error.message;
+            resdadta.status = Number(error.statusCode || 500);
+            
+            if(resdadta.err === 500) {
+                GravarLog('ControllerCobranca.ListaCobrancaPorRota', error.stack);
+            }
+            
+        }
+
+        void await db.Close();
+
+        res.status(resdadta.status).json(resdadta);
+
+    }
+
+    static async SalvarMelhorDia(req, res) {
+        
+        const resdadta = {
+            err: 0,
+            msg: '',
+            data: null,
+            status: 200
+        };
+
+        const db = new Database('dbcred');
+
+        try {
+
+            void await db.Connect();
+
+            void await db.Begin();
+
+            const entidade_negocio = obterEntidadeNegocio(req);
+            const { id_venda, melhor_dia } = req.params;
+
+            if (!id_venda) {
+                const error = new Error('ID da venda nao informado.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (!melhor_dia) {
+                const error = new Error('Melhor dia nao informado.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            const query = `UPDATE tb_vendas SET melhor_dia = :melhor_dia WHERE entidade_negocio = :entidade_negocio AND id = :id_venda`;
+
+            await db.connection.query(query, {
+                melhor_dia,
+                id_venda,
+                entidade_negocio
+            });
+
+            await db.Commit();
+
+            resdadta.msg = 'Melhor dia salvo com sucesso.';
+            
+        } catch (error) {
+
+            await db.RollBack();
+
+            resdadta.err = error.statusCode || 500;
+            resdadta.msg = resdadta.err === 500 ? 'Erro interno do servidor' : error.message;
+            resdadta.status = Number(error.statusCode || 500);
+            
+            if(resdadta.err === 500) {
+                GravarLog('ControllerCobranca.SalvarMelhorDia', error.stack);
+            }
+            
+        }
+
+        void await db.Close();
+
+        res.status(resdadta.status).json(resdadta);
+
+    }
 
 }
