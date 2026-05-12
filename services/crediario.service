@@ -1,5 +1,5 @@
 [Unit]
-Description=Atualiza status de Vendas e Cobranças 
+Description=Atualiza status de Vendas e Cobranças e distribuições
 Wants=crediario.timer
 
 [Service]
