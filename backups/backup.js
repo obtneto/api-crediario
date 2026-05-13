@@ -1,9 +1,14 @@
-import { exec } from 'node:child_process';
 import fs from 'node:fs';
+import path from 'node:path';
+import { exec } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import {createConnection} from 'mariadb';
 import {config} from 'dotenv';
 
-config({path:'../../.env'});
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+config({path: path.resolve(__dirname, '../../.env')});
 
 async function backupEmpresa(empresaId) {
    
@@ -26,7 +31,7 @@ async function backupEmpresa(empresaId) {
     `);
 
     const tabelas = rows.map(r => r.TABLE_NAME);
-    const arquivoSaida = `./backup_empresa_${empresaId}.sql`;
+    const arquivoSaida = path.join(__dirname, `backup_empresa_${empresaId}.sql`);
 
     // Limpa o arquivo se já existir
     if (fs.existsSync(arquivoSaida)) fs.unlinkSync(arquivoSaida);
@@ -46,8 +51,13 @@ async function backupEmpresa(empresaId) {
         });
     }
 
-    console.log(`Backup concluído: ${arquivoSaida}`);
     await connection.end();
+
+    console.log(`Backup concluído: ${arquivoSaida}`);
+
 }
 
-backupEmpresa(1).catch(console.error);
+backupEmpresa(1).catch((erro) => {
+    console.error('Falha no backup:', erro.message || erro);
+    process.exitCode = 1;
+});

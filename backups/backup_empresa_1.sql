@@ -22,7 +22,11 @@
 
 /*!40000 ALTER TABLE `tb_pagamentos` DISABLE KEYS */;
 INSERT INTO `tb_pagamentos` VALUES
-(1,'202600100001',1,'2026-04-11',1,55.00,NULL,0.00,55.00);
+(1,'202600100001',1,'2026-04-11',1,55.00,NULL,0.00,55.00),
+(2,'202600100001',1,'2026-04-29',1,24.00,NULL,0.00,24.00),
+(1,'202600100002',1,'2026-05-12',1,35.00,NULL,0.00,35.00),
+(1,'202600100004',1,'2026-05-02',1,55.00,NULL,0.00,55.00),
+(1,'202600100005',1,'2026-04-30',1,25.00,NULL,0.00,25.00);
 /*!40000 ALTER TABLE `tb_pagamentos` ENABLE KEYS */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
@@ -33,7 +37,7 @@ INSERT INTO `tb_pagamentos` VALUES
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-04-11 21:15:15
+-- Dump completed on 2026-05-13 10:15:58
 /*M!999999\- enable the sandbox mode */ 
 -- MariaDB dump 10.19  Distrib 10.11.14-MariaDB, for debian-linux-gnu (x86_64)
 --
@@ -58,8 +62,8 @@ INSERT INTO `tb_pagamentos` VALUES
 
 /*!40000 ALTER TABLE `tb_itens_distrib` DISABLE KEYS */;
 INSERT INTO `tb_itens_distrib` VALUES
-(1,1,8,'20260001',1),
-(1,2,4,'20260001',1);
+(1,1,6,'20260001',1),
+(1,2,2,'20260001',1);
 /*!40000 ALTER TABLE `tb_itens_distrib` ENABLE KEYS */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
@@ -70,7 +74,7 @@ INSERT INTO `tb_itens_distrib` VALUES
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-04-11 21:15:15
+-- Dump completed on 2026-05-13 10:15:58
 /*M!999999\- enable the sandbox mode */ 
 -- MariaDB dump 10.19  Distrib 10.11.14-MariaDB, for debian-linux-gnu (x86_64)
 --
@@ -95,7 +99,8 @@ INSERT INTO `tb_itens_distrib` VALUES
 
 /*!40000 ALTER TABLE `tb_clientes` DISABLE KEYS */;
 INSERT INTO `tb_clientes` VALUES
-(1,'50365347515','OVIDIO BATISTA TRINDADE NETO','79988199231','AV SAO PAULO','1350','18 DO FORTE','ARACAJU','SE','49072310','','','OVIDIO NETO','2026-04-10 13:44:46',0,999);
+(1,'50365347515','OVÍDIO BATISTA TRINDADE NETO','79988199231','AVENIDA SÃO PAULO','1350','SANTOS DUMONT','ARACAJU','SE','49072000','-10.9045253','-37.0754022','OVIDIO','2026-04-10 13:44:46',1,999),
+(2,'38698846572','JOSEVANDA MACHADO TRINDADE','79988187756','AVENIDA SÃO PAULO','1350','SANTOS DUMONT','ARACAJU','SE','49072000','-10.9045271','-37.0754057','VANDA','2026-04-17 20:25:38',1,999);
 /*!40000 ALTER TABLE `tb_clientes` ENABLE KEYS */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
@@ -106,7 +111,7 @@ INSERT INTO `tb_clientes` VALUES
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-04-11 21:15:15
+-- Dump completed on 2026-05-13 10:15:58
 /*M!999999\- enable the sandbox mode */ 
 -- MariaDB dump 10.19  Distrib 10.11.14-MariaDB, for debian-linux-gnu (x86_64)
 --
@@ -131,7 +136,9 @@ INSERT INTO `tb_clientes` VALUES
 
 /*!40000 ALTER TABLE `tb_rotas` DISABLE KEYS */;
 INSERT INTO `tb_rotas` VALUES
-(1,'CIDADE ALTA',1,1);
+(1,'CIDADE ALTA',1,1),
+(2,'PEDREIRA',1,1),
+(3,'DIVINEIA',1,1);
 /*!40000 ALTER TABLE `tb_rotas` ENABLE KEYS */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
@@ -142,7 +149,7 @@ INSERT INTO `tb_rotas` VALUES
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-04-11 21:15:15
+-- Dump completed on 2026-05-13 10:15:58
 /*M!999999\- enable the sandbox mode */ 
 -- MariaDB dump 10.19  Distrib 10.11.14-MariaDB, for debian-linux-gnu (x86_64)
 --
@@ -167,9 +174,9 @@ INSERT INTO `tb_rotas` VALUES
 
 /*!40000 ALTER TABLE `tb_produtos` DISABLE KEYS */;
 INSERT INTO `tb_produtos` VALUES
-(1,1,'PANELA GRANDE EM ALUMINIO','PANEX','UN',65,95,20,5,1),
-(1,2,'COLCHA DE CASAL','SANTISTA','UN',55,85,15,5,1),
-(1,3,'CARDEIRA DE BALANCO','MARCA PROPRIA','UN',145,200,10,5,1);
+(1,1,'PANELA GRANDE EM ALUMINIO','PANEX','UN',64.99,94.99,20,5,1),
+(1,2,'COLCHA DE CASAL','SANTISTA','UN',54.99,84.99,15,5,1),
+(1,3,'CARDEIRA DE BALANCO','MARCA PROPRIA','UN',144.99,199.99,10,5,1);
 /*!40000 ALTER TABLE `tb_produtos` ENABLE KEYS */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
@@ -180,7 +187,7 @@ INSERT INTO `tb_produtos` VALUES
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-04-11 21:15:15
+-- Dump completed on 2026-05-13 10:15:58
 /*M!999999\- enable the sandbox mode */ 
 -- MariaDB dump 10.19  Distrib 10.11.14-MariaDB, for debian-linux-gnu (x86_64)
 --
@@ -216,7 +223,7 @@ INSERT INTO `tb_cobradores` VALUES
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-04-11 21:15:15
+-- Dump completed on 2026-05-13 10:15:58
 /*M!999999\- enable the sandbox mode */ 
 -- MariaDB dump 10.19  Distrib 10.11.14-MariaDB, for debian-linux-gnu (x86_64)
 --
@@ -241,8 +248,8 @@ INSERT INTO `tb_cobradores` VALUES
 
 /*!40000 ALTER TABLE `tb_estoque` DISABLE KEYS */;
 INSERT INTO `tb_estoque` VALUES
-(1,10,39,1),
-(2,4,35,1),
+(1,5,39,1),
+(2,0,38,1),
 (3,0,25,1);
 /*!40000 ALTER TABLE `tb_estoque` ENABLE KEYS */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -254,7 +261,7 @@ INSERT INTO `tb_estoque` VALUES
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-04-11 21:15:15
+-- Dump completed on 2026-05-13 10:15:58
 /*M!999999\- enable the sandbox mode */ 
 -- MariaDB dump 10.19  Distrib 10.11.14-MariaDB, for debian-linux-gnu (x86_64)
 --
@@ -279,9 +286,9 @@ INSERT INTO `tb_estoque` VALUES
 
 /*!40000 ALTER TABLE `tb_perfis` DISABLE KEYS */;
 INSERT INTO `tb_perfis` VALUES
-(1,'Administrador',1,1,1,1,1),
-(2,'Operador',1,1,0,1,1),
-(3,'Convidado',1,0,0,0,1);
+(1,'ADMINISTRADOR','AD',1,1,1,1,1),
+(2,'VENDEDOR','VD',1,1,0,1,1),
+(3,'COBRADOR','CB',1,1,0,1,1);
 /*!40000 ALTER TABLE `tb_perfis` ENABLE KEYS */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
@@ -292,7 +299,7 @@ INSERT INTO `tb_perfis` VALUES
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-04-11 21:15:15
+-- Dump completed on 2026-05-13 10:15:58
 /*M!999999\- enable the sandbox mode */ 
 -- MariaDB dump 10.19  Distrib 10.11.14-MariaDB, for debian-linux-gnu (x86_64)
 --
@@ -317,7 +324,7 @@ INSERT INTO `tb_perfis` VALUES
 
 /*!40000 ALTER TABLE `tb_vendedores` DISABLE KEYS */;
 INSERT INTO `tb_vendedores` VALUES
-(1,'CARLOS',11,'79998152510',1,1);
+(1,'CARLOS',11.0,'79998152510',1,1);
 /*!40000 ALTER TABLE `tb_vendedores` ENABLE KEYS */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
@@ -328,7 +335,7 @@ INSERT INTO `tb_vendedores` VALUES
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-04-11 21:15:15
+-- Dump completed on 2026-05-13 10:15:58
 /*M!999999\- enable the sandbox mode */ 
 -- MariaDB dump 10.19  Distrib 10.11.14-MariaDB, for debian-linux-gnu (x86_64)
 --
@@ -362,7 +369,7 @@ INSERT INTO `tb_vendedores` VALUES
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-04-11 21:15:15
+-- Dump completed on 2026-05-13 10:15:58
 /*M!999999\- enable the sandbox mode */ 
 -- MariaDB dump 10.19  Distrib 10.11.14-MariaDB, for debian-linux-gnu (x86_64)
 --
@@ -396,7 +403,7 @@ INSERT INTO `tb_vendedores` VALUES
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-04-11 21:15:15
+-- Dump completed on 2026-05-13 10:15:58
 /*M!999999\- enable the sandbox mode */ 
 -- MariaDB dump 10.19  Distrib 10.11.14-MariaDB, for debian-linux-gnu (x86_64)
 --
@@ -453,7 +460,28 @@ INSERT INTO `tb_estoque_mov` VALUES
 (27,'2026-04-11',1,'DISTRIBUIÇÃO DE PRODUTO',9,'20260001','Inserir/Atualizar itens da Distribuicao: 20260001 Vendedor : 001 CARLOS',1),
 (28,'2026-04-11',2,'DISTRIBUIÇÃO DE PRODUTO',4,'20260001','Inserir/Atualizar itens da Distribuicao: 20260001 Vendedor : 001 CARLOS',1),
 (29,'2026-04-11',1,'DISTRIBUIÇÃO DE PRODUTO',8,'20260001','Distribuicao: 20260001 Vendedor: 001 CARLOS',1),
-(30,'2026-04-11',2,'DISTRIBUIÇÃO DE PRODUTO',4,'20260001','Distribuicao: 20260001 Vendedor: 001 CARLOS',1);
+(30,'2026-04-11',2,'DISTRIBUIÇÃO DE PRODUTO',4,'20260001','Distribuicao: 20260001 Vendedor: 001 CARLOS',1),
+(1,'2026-04-12',2,'DEVOL',1,'202600100001','Devolução de produto referente a exclusão de item da venda ID 202600100001',1),
+(2,'2026-04-12',2,'VENDA',1,'202600100001','Movimentação de estoque referente a venda ID 202600100001',1),
+(3,'2026-04-12',1,'DISTRIBUIÇÃO DE PRODUTO',8,'20260001','Distribuicao: 20260001 Vendedor: 001 CARLOS',1),
+(4,'2026-04-12',2,'DISTRIBUIÇÃO DE PRODUTO',4,'20260001','Distribuicao: 20260001 Vendedor: 001 CARLOS',1),
+(5,'2026-04-12',2,'VENDA',1,'202600100001','Movimentação de estoque referente a venda ID 202600100001',1),
+(6,'2026-04-12',2,'DEVOL',1,'202600100001','Movimentação de estoque referente a venda ID 202600100001',1),
+(7,'2026-04-12',2,'VENDA',1,'202600100001','Movimentação de estoque referente a venda ID 202600100001',1),
+(8,'2026-04-12',2,'DEVOL',1,'202600100001','Movimentação de estoque referente a venda ID 202600100001',1),
+(9,'2026-04-12',2,'VENDA',1,'202600100001','Movimentação de estoque referente a venda ID 202600100001',1),
+(10,'2026-04-12',2,'DEVOL',1,'202600100001','Movimentação de estoque referente a venda ID 202600100001',1),
+(11,'2026-04-12',2,'DEVOL',1,'202600100001','Devolução de produto referente a exclusão de item da venda ID 202600100001',1),
+(1,'2026-04-24',1,'VENDA',1,'202600100NaN','Movimentação de estoque referente a venda ID 202600100NaN',1),
+(2,'2026-04-24',1,'VENDA',1,'202600100NaN','Movimentação de estoque referente a venda ID 202600100NaN',1),
+(3,'2026-04-24',1,'VENDA',1,'202600100002','Movimentação de estoque referente a venda ID 202600100002',1),
+(4,'2026-04-24',2,'VENDA',1,'202600100003','Movimentação de estoque referente a venda ID 202600100003',1),
+(5,'2026-04-24',1,'VENDA',1,'202600100004','Movimentação de estoque referente a venda ID 202600100004',1),
+(6,'2026-04-24',2,'VENDA',1,'202600100004','Movimentação de estoque referente a venda ID 202600100004',1),
+(1,'2026-04-27',1,'VENDA',1,'202600100005','Movimentação de estoque referente a venda ID 202600100005',1),
+(1,'2026-05-02',1,'VENDA',0,'202600100005','Movimentação de estoque referente a venda ID 202600100005',1),
+(2,'2026-05-02',1,'VENDA',0,'202600100005','Movimentação de estoque referente a venda ID 202600100005',1),
+(3,'2026-05-02',1,'VENDA',0,'202600100005','Movimentação de estoque referente a venda ID 202600100005',1);
 /*!40000 ALTER TABLE `tb_estoque_mov` ENABLE KEYS */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
@@ -464,7 +492,7 @@ INSERT INTO `tb_estoque_mov` VALUES
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-04-11 21:15:15
+-- Dump completed on 2026-05-13 10:15:58
 /*M!999999\- enable the sandbox mode */ 
 -- MariaDB dump 10.19  Distrib 10.11.14-MariaDB, for debian-linux-gnu (x86_64)
 --
@@ -500,7 +528,7 @@ INSERT INTO `tb_distribuicao` VALUES
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-04-11 21:15:15
+-- Dump completed on 2026-05-13 10:15:58
 /*M!999999\- enable the sandbox mode */ 
 -- MariaDB dump 10.19  Distrib 10.11.14-MariaDB, for debian-linux-gnu (x86_64)
 --
@@ -526,7 +554,11 @@ INSERT INTO `tb_distribuicao` VALUES
 /*!40000 ALTER TABLE `tb_itens_vendas` DISABLE KEYS */;
 INSERT INTO `tb_itens_vendas` VALUES
 ('202600100001',1,1,'prazo',1,95.00,95.00,1),
-('202600100001',2,2,'prazo',1,85.00,85.00,1);
+('202600100002',1,1,'ap',1,94.99,94.99,1),
+('202600100003',1,2,'av',1,54.99,54.99,1),
+('202600100004',1,1,'ap',1,94.99,94.99,1),
+('202600100004',2,2,'ap',1,84.99,84.99,1),
+('202600100005',1,1,'prazo',1,64.99,64.99,1);
 /*!40000 ALTER TABLE `tb_itens_vendas` ENABLE KEYS */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
@@ -537,7 +569,7 @@ INSERT INTO `tb_itens_vendas` VALUES
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-04-11 21:15:15
+-- Dump completed on 2026-05-13 10:15:58
 /*M!999999\- enable the sandbox mode */ 
 -- MariaDB dump 10.19  Distrib 10.11.14-MariaDB, for debian-linux-gnu (x86_64)
 --
@@ -563,7 +595,7 @@ INSERT INTO `tb_itens_vendas` VALUES
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-04-11 21:15:15
+-- Dump completed on 2026-05-13 10:15:58
 /*M!999999\- enable the sandbox mode */ 
 -- MariaDB dump 10.19  Distrib 10.11.14-MariaDB, for debian-linux-gnu (x86_64)
 --
@@ -588,7 +620,11 @@ INSERT INTO `tb_itens_vendas` VALUES
 
 /*!40000 ALTER TABLE `tb_vendas` DISABLE KEYS */;
 INSERT INTO `tb_vendas` VALUES
-('202600100001',1,'2026-04-11',1,NULL,1,2,'50365347515',NULL,'0','',180.00,0,'2026-04-29',NULL,0.00,'2026-04-11');
+('202600100001',1,'2026-04-11',1,NULL,2,2,'50365347515',NULL,NULL,'',95.00,16.00,0.00,9,'2026-04-06',NULL,'2026-04-29','AV','PIXX'),
+('202600100002',1,'2026-04-24',1,NULL,2,1,'50365347515','X',NULL,'',94.99,0.00,0.00,3,'2026-05-08','2026-05-08','2026-05-12','AP','CRED'),
+('202600100003',1,'2026-04-24',1,NULL,2,1,'38698846572',NULL,NULL,'',54.99,0.00,0.00,3,'2026-05-05','2026-05-10',NULL,'AV','DINH'),
+('202600100004',1,'2026-04-24',1,NULL,2,1,'38698846572',NULL,NULL,'',179.98,0.00,0.00,3,'2026-05-08','2026-05-08','2026-05-02','AP','CRED'),
+('202600100005',1,'2026-04-27',1,NULL,2,1,'50365347515',NULL,NULL,'',64.99,0.00,0.00,3,'2026-05-03','2026-05-12','2026-04-30','AV','DINH');
 /*!40000 ALTER TABLE `tb_vendas` ENABLE KEYS */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
@@ -599,7 +635,7 @@ INSERT INTO `tb_vendas` VALUES
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-04-11 21:15:15
+-- Dump completed on 2026-05-13 10:15:58
 /*M!999999\- enable the sandbox mode */ 
 -- MariaDB dump 10.19  Distrib 10.11.14-MariaDB, for debian-linux-gnu (x86_64)
 --
@@ -624,9 +660,11 @@ INSERT INTO `tb_vendas` VALUES
 
 /*!40000 ALTER TABLE `tb_usuarios` DISABLE KEYS */;
 INSERT INTO `tb_usuarios` VALUES
-(1,'admin-001','ADMINISTRADOR','ob@gmail.com','s2$A2rhZ6gJpzkt7qUCbJ5FYw$xBWpTmQBRvHFJ1zymq1S7IbuUJSSLRmwDxnzVIhBYJ0',1,0,'AA',1,NULL,'DM'),
-(2,'staff-001','ADMINISTRADOR STAFF','OBTNETO@GMAIL.COM','s2$PudYrKZJJuTUQ3L3h_eovA$Y5XMKYX_2eqBJNQTzoPomurknTowQ8ykD67pUognBzY',1,0,'SS',1,NULL,'SF'),
-(3,'ovidio-staff','OVIDIO-STAFF',NULL,'s2$WT8b8_Jc28QCs-ggPYafOQ$ZP3fHdtKYoDfLE4PA0_2FvNnS1dK7MbeDHM9hWBXkMk',1,0,'OV',1,NULL,'SF');
+(1,'admin-001','ADMINISTRADOR','ob@gmail.com','s2$A2rhZ6gJpzkt7qUCbJ5FYw$xBWpTmQBRvHFJ1zymq1S7IbuUJSSLRmwDxnzVIhBYJ0',1,0,'AA',1,NULL,'DM',NULL,NULL),
+(2,'staff-001','ADMINISTRADOR STAFF','OBTNETO@GMAIL.COM','s2$PudYrKZJJuTUQ3L3h_eovA$Y5XMKYX_2eqBJNQTzoPomurknTowQ8ykD67pUognBzY',1,0,'SS',1,NULL,'SF',NULL,NULL),
+(3,'ovidio-staff','OVIDIO-STAFF',NULL,'s2$WT8b8_Jc28QCs-ggPYafOQ$ZP3fHdtKYoDfLE4PA0_2FvNnS1dK7MbeDHM9hWBXkMk',1,0,'OV',1,NULL,'SF',1,NULL),
+(4,'carlos','CARLOS SANTOS','carlos.santos@gmail.com','s2$wS3ELGzytDnV5HH6y0yq9w$drKbrbvhLpBlMOKvDtN8tHNOECIyktJSmgdrDlKbsHU',1,0,'CS',2,NULL,'MB',1,NULL),
+(5,'chiko','FRANCISCO SANTOS','obtneto@hotmail.com','s2$BYzeZ8SEYT5dkCigOZg0Hw$Rau74MqMX1q4jUIQ3gjXGLT04TACFRy6v-6Ifwdkcwg',1,0,'FS',3,NULL,'MB',NULL,1);
 /*!40000 ALTER TABLE `tb_usuarios` ENABLE KEYS */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
@@ -637,7 +675,79 @@ INSERT INTO `tb_usuarios` VALUES
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-04-11 21:15:15
+-- Dump completed on 2026-05-13 10:15:58
+/*M!999999\- enable the sandbox mode */ 
+-- MariaDB dump 10.19  Distrib 10.11.14-MariaDB, for debian-linux-gnu (x86_64)
+--
+-- Host: localhost    Database: dbcred
+-- ------------------------------------------------------
+-- Server version	10.11.14-MariaDB-0ubuntu0.24.04.1
+
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!40101 SET NAMES utf8mb4 */;
+/*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
+/*!40103 SET TIME_ZONE='+00:00' */;
+/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
+/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
+/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
+
+--
+-- Dumping data for table `tb_forma_pagamento`
+--
+-- WHERE:  entidade_negocio=1 OR entidade_negocio=999
+
+/*!40000 ALTER TABLE `tb_forma_pagamento` DISABLE KEYS */;
+/*!40000 ALTER TABLE `tb_forma_pagamento` ENABLE KEYS */;
+/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
+
+/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
+/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
+
+-- Dump completed on 2026-05-13 10:15:58
+/*M!999999\- enable the sandbox mode */ 
+-- MariaDB dump 10.19  Distrib 10.11.14-MariaDB, for debian-linux-gnu (x86_64)
+--
+-- Host: localhost    Database: dbcred
+-- ------------------------------------------------------
+-- Server version	10.11.14-MariaDB-0ubuntu0.24.04.1
+
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!40101 SET NAMES utf8mb4 */;
+/*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
+/*!40103 SET TIME_ZONE='+00:00' */;
+/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
+/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
+/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
+
+--
+-- Dumping data for table `tb_modalidade_pagamento`
+--
+-- WHERE:  entidade_negocio=1 OR entidade_negocio=999
+
+/*!40000 ALTER TABLE `tb_modalidade_pagamento` DISABLE KEYS */;
+INSERT INTO `tb_modalidade_pagamento` VALUES
+(1,'CRED','EM CREDIARIO','AP',999),
+(2,'DINH','EM DINHEIRO','AV',999),
+(3,'PIXX','VIA PIX','AV',999);
+/*!40000 ALTER TABLE `tb_modalidade_pagamento` ENABLE KEYS */;
+/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
+
+/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
+/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
+
+-- Dump completed on 2026-05-13 10:15:58
 /*M!999999\- enable the sandbox mode */ 
 -- MariaDB dump 10.19  Distrib 10.11.14-MariaDB, for debian-linux-gnu (x86_64)
 --
@@ -673,7 +783,7 @@ INSERT INTO `tb_entidades` VALUES
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-04-11 21:15:15
+-- Dump completed on 2026-05-13 10:15:58
 /*M!999999\- enable the sandbox mode */ 
 -- MariaDB dump 10.19  Distrib 10.11.14-MariaDB, for debian-linux-gnu (x86_64)
 --
@@ -707,7 +817,7 @@ INSERT INTO `tb_entidades` VALUES
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-04-11 21:15:15
+-- Dump completed on 2026-05-13 10:15:58
 /*M!999999\- enable the sandbox mode */ 
 -- MariaDB dump 10.19  Distrib 10.11.14-MariaDB, for debian-linux-gnu (x86_64)
 --
@@ -731,6 +841,11 @@ INSERT INTO `tb_entidades` VALUES
 -- WHERE:  entidade_negocio=1 OR entidade_negocio=999
 
 /*!40000 ALTER TABLE `tb_restricao_credito` DISABLE KEYS */;
+INSERT INTO `tb_restricao_credito` VALUES
+('20260002',1,'38698846572','2026-05-11',1,'202600100003',6),
+('20260003',1,'50365347515','2026-05-11',1,'202600100005',8),
+('20260004',1,'38698846572','2026-05-12',1,'202600100004',4),
+('20260005',1,'50365347515','2026-05-12',1,'202600100002',4);
 /*!40000 ALTER TABLE `tb_restricao_credito` ENABLE KEYS */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
@@ -741,7 +856,7 @@ INSERT INTO `tb_entidades` VALUES
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-04-11 21:15:15
+-- Dump completed on 2026-05-13 10:15:58
 /*M!999999\- enable the sandbox mode */ 
 -- MariaDB dump 10.19  Distrib 10.11.14-MariaDB, for debian-linux-gnu (x86_64)
 --
@@ -766,9 +881,9 @@ INSERT INTO `tb_entidades` VALUES
 
 /*!40000 ALTER TABLE `tb_tipos_pagamentos` DISABLE KEYS */;
 INSERT INTO `tb_tipos_pagamentos` VALUES
-(1,'SEMANAL',1,1,7),
-(2,'QUINZENAL',1,1,15),
-(3,'MENSAL',1,1,30);
+(1,'SEMANAL',1,1,8),
+(2,'QUINZENAL',1,1,16),
+(3,'MENSAL',1,1,31);
 /*!40000 ALTER TABLE `tb_tipos_pagamentos` ENABLE KEYS */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
@@ -779,4 +894,4 @@ INSERT INTO `tb_tipos_pagamentos` VALUES
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-04-11 21:15:15
+-- Dump completed on 2026-05-13 10:15:58
