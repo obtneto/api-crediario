@@ -16,7 +16,7 @@ const dumpProcesso = spawn('mariadb-dump', [
 ]);
 
 const dataAtual = new Date().getHours().toString().padStart(2, '0') + ':00';
-const nomeArquivo = `backup_${dataAtual}.sql.gz`;
+const nomeArquivo = `../backups/backup_${dataAtual}.sql.gz`;
 
 if (fs.existsSync(nomeArquivo)) {
   fs.unlinkSync(nomeArquivo);
@@ -49,9 +49,9 @@ dumpProcesso.on('close', (code) => {
 });
 
 // Só faz upload se o dump foi bem sucedido
-arquivoSaida.on('finish', () => {
+arquivoSaida.on('finish', async () => {
   if (!dumpSucesso) return;
 
   console.log(`✅ Backup gerado e compactado com sucesso em [${dataHora}] - ${nomeArquivo}\n`);
-  uploadBackup(nomeArquivo);
+  await uploadBackup(nomeArquivo);
 });

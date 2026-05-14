@@ -2,10 +2,13 @@
 import { Storage } from 'megajs';
 import fs from 'fs';
 import path from 'path';
+import { config } from 'dotenv';
 
-const MEGA_EMAIL = 'obtneto@gmail.com';
-const MEGA_PASSWORD = 'S3cr3t@1967';
-const FOLDER_NAME = 'Copia';
+config({ path: '../../.env', quiet: true });
+
+const MEGA_EMAIL = process.env.MEGA_EMAIL;
+const MEGA_PASSWORD = process.env.MEGA_PASSWORD;
+const FOLDER_NAME = process.env.FOLDER_NAME;
 
 export default async function uploadBackup(filePath) {
   const storage = new Storage({
@@ -24,6 +27,15 @@ export default async function uploadBackup(filePath) {
   }
 
   const fileName = path.basename(filePath);
+
+  // Verifica se já existe um arquivo com o mesmo nome e exclui
+  const arquivoExistente = folder.children.find(f => f.name === fileName);
+  
+  if (arquivoExistente) {
+    await arquivoExistente.delete(true); // true = permanente, sem ir pra lixeira
+    console.log(`🗑️ Arquivo antigo removido: ${fileName}`);
+  }
+
   const fileContent = fs.readFileSync(filePath);
 
   // Faz upload na pasta "Copia"

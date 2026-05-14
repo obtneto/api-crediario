@@ -1,14 +1,14 @@
 [Unit]
 Description=Backup do banco de dados Crediario
-After=network-online.target network.target crediario-backup.timer
-Wants=network-online.target crediario-backup.timer
+After=network-online.target network.target
+Wants=network-online.target
 
 [Service]
 Type=oneshot
-WorkingDirectory=/home/ovidio-neto/Crediario/backend/backups
+WorkingDirectory=/home/ovidio-neto/Crediario/backend/scripts
 ExecStart=/home/ovidio-neto/.nvm/versions/node/v24.14.1/bin/node /home/ovidio-neto/Crediario/backend/scripts/backup.js
 StandardOutput=append:/home/ovidio-neto/Crediario/backend/Logs/backup.log
-StandardError=inherit
+StandardError=append:/home/ovidio-neto/Crediario/backend/Logs/backup.log
 ProtectSystem=strict
 ReadWritePaths=/home/ovidio-neto/Crediario/
 ProtectHome=read-only
