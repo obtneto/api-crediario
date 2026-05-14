@@ -1,0 +1,13 @@
+[Unit]
+Description=Truncar logs do banco de dados Crediario
+Requires=crediario-truncate-logs.service
+
+[Timer]
+Unit=crediario-truncate-logs.service
+OnCalendar=*-*-* 00:00:00
+AccuracySec=1s
+Persistent=true
+RandomizedDelaySec=5s
+
+[Install]
+WantedBy=timers.target
