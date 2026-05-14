@@ -2,7 +2,7 @@ import { spawn } from 'child_process';
 import zlib from 'zlib';
 import fs from 'fs';
 import { config } from 'dotenv';
-import uploadBackup from '../utils/upload-mega.js';
+import uploadBackup from '../utils/upload-mega-nz.js';
 
 config({ path: '../../.env', quiet: true });
 
