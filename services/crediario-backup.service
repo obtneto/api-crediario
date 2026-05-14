@@ -6,8 +6,8 @@ Wants=network-online.target crediario-backup.timer
 [Service]
 Type=oneshot
 WorkingDirectory=/home/ovidio-neto/Crediario/backend/backups
-ExecStart=/home/ovidio-neto/.nvm/versions/node/v24.14.1/bin/node /home/ovidio-neto/Crediario/backend/backups/backup.js
-StandardOutput=append:/home/ovidio-neto/Crediario/backend/backups/backup.log
+ExecStart=/home/ovidio-neto/.nvm/versions/node/v24.14.1/bin/node /home/ovidio-neto/Crediario/backend/scripts/backup.js
+StandardOutput=append:/home/ovidio-neto/Crediario/backend/Logs/backup.log
 StandardError=inherit
 ProtectSystem=strict
 ReadWritePaths=/home/ovidio-neto/Crediario/

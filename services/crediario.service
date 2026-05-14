@@ -6,8 +6,8 @@ Wants=network-online.target crediario.timer
 [Service]
 Type=oneshot
 WorkingDirectory=/home/ovidio-neto/Crediario/backend/services
-ExecStart=/usr/bin/bash /home/ovidio-neto/Crediario/backend/services/update_status.sh
-StandardOutput=append:/home/ovidio-neto/Crediario/backend/services/vendas.log
+ExecStart=/home/ovidio-neto/.nvm/versions/node/v24.14.1/bin/node /home/ovidio-neto/Crediario/backend/scripts/update_status.js
+StandardOutput=append:/home/ovidio-neto/Crediario/backend/Logs/update_status.log
 StandardError=inherit
 ProtectSystem=strict
 ReadWritePaths=/home/ovidio-neto/Crediario/
