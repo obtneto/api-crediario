@@ -6,7 +6,7 @@ Requires=crediario-backup.service
 Unit=crediario-backup.service
 OnCalendar=Mon..Sat *-*-* 08..18/2:00:00
 AccuracySec=1s
-Persistent=true
+Persistent=false
 RandomizedDelaySec=30s
 
 [Install]
