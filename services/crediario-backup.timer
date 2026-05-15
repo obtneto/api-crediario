@@ -1,0 +1,13 @@
+[Unit]
+Description=Backup do banco de dados Crediario
+Requires=crediario-backup.service
+
+[Timer]
+Unit=crediario-backup.service
+OnCalendar=Mon..Sat *-*-* 08..18/2:00:00
+AccuracySec=1s
+Persistent=false
+RandomizedDelaySec=30s
+
+[Install]
+WantedBy=timers.target

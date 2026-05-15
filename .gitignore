@@ -37,3 +37,6 @@ coverage
 *.der
 *.jks
 *.keystore
+*.json
+*.sql
+*.sql.gz

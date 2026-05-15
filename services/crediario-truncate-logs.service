@@ -1,0 +1,14 @@
+[Unit]
+Description=Truncar logs do banco de dados Crediario
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/ovidio-neto/Crediario/backend/services
+ExecStart=/usr/bin/bash /home/ovidio-neto/Crediario/backend/scripts/truncate-logs.sh
+ProtectSystem=strict
+ReadWritePaths=/home/ovidio-neto/Crediario/
+ProtectHome=read-only
+TimeoutStartSec=15s
+
+[Install]
+WantedBy=multi-user.target

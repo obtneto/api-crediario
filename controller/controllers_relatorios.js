@@ -1,114 +1,45 @@
 import Database from '../connections/dbconn.js';
-import GravarLog from '../utils/GravarLog.js';
-import {buildTableDocument, sendPdfResponse} from '../utils/PdfReport.js';
+import Relatorios from '../model/dao_relatorios.js';
+import {sendPdfResponse} from '../utils/PdfReport.js';
 import {obterEntidadeNegocio} from '../utils/CheckEntidades.js';
+import {
+    criarRespostaPadrao,
+    enviarErroJson,
+    preencherErroResposta,
+    registrarErroServidor
+} from '../utils/ControllerResponse.js';
+import {
+    criarNomeArquivoRelatorioGerencial,
+    montarDocumentoRelatorioGerencial,
+    normalizeJsonValue,
+    validarAnoMes
+} from '../relatorios/relatorio_gerencial.js';
 
-const QUERY_RELATORIO_GERENCIAL = `
-    SELECT * FROM vw_vendas_cobrancas
-    WHERE ano = :anobase AND mes = :mesbase
-`;
-
-function validarAnoMes(req) {
-    const anobase = Number.parseInt(String(req.params.anobase ?? ''), 10);
-    const mesbase = Number.parseInt(String(req.params.mesbase ?? ''), 10);
-
-    if (!Number.isInteger(anobase) || anobase < 2000 || anobase > 2100) {
-        const error = new Error('Ano base para pesquisa invalido. Informe entre 2000 e 2100.');
-        error.statusCode = 400;
-        throw error;
-    }
-
-    if (!Number.isInteger(mesbase) || mesbase < 1 || mesbase > 12) {
-        const error = new Error('Mes base para pesquisa invalido. Informe entre 1 e 12.');
-        error.statusCode = 400;
-        throw error;
-    }
-
-    return {anobase, mesbase};
-}
-
-async function consultarRelatorioGerencial(connection, anobase, mesbase) {
-    const rows = await connection.query(QUERY_RELATORIO_GERENCIAL, {anobase, mesbase});
-    return normalizeJsonValue(rows);
-}
-
-function normalizeJsonValue(value) {
-    if (typeof value === 'bigint') {
-        return value.toString();
-    }
-
-    if (Array.isArray(value)) {
-        return value.map((item) => normalizeJsonValue(item));
-    }
-
-    if (value && typeof value === 'object') {
-        const normalized = {};
-        for (const [key, currentValue] of Object.entries(value)) {
-            normalized[key] = normalizeJsonValue(currentValue);
-        }
-        return normalized;
-    }
-
-    return value;
-}
-
-function getErrorMessage(error, fallback = 'Erro interno ao processar relatorio gerencial.') {
-    const message = String(
-        error?.message ||
-        error?.text ||
-        error?.sqlMessage ||
-        error?.cause?.message ||
-        ''
-    ).trim();
-
-    if (message) {
-        return message;
-    }
-
-    const toStringMessage = String(error || '').trim();
-    if (toStringMessage) {
-        return toStringMessage;
-    }
-
-    return fallback;
-}
-
-function toCellText(value) {
-    if (value === null || value === undefined || value === '') return '-';
-    return String(value);
-}
+const RELATORIO_GERENCIAL_ERROR_MESSAGE = 'Erro ao processar relatorio gerencial.';
 
 export class ControllerRelatorios{
 
     static async RelatorioGerencial(req,res) {
 
         const db = new Database('dbcred');
-
-        const resdata = {
-            err: 0,
-            msg: '',
-            status: 200,
-            data: []
-        }
+        const resdata = criarRespostaPadrao();
 
         try {
 
-            const {anobase, mesbase} = validarAnoMes(req);
+            const {anobase, mesbase} = validarAnoMes(req.params);
 
-            void await db.Connect();
+            await db.Connect();
 
-            resdata.data = await consultarRelatorioGerencial(db.connection, anobase, mesbase);
+            const relatorios = new Relatorios(db.connection);
+            const rows = await relatorios.consultarGerencial(anobase, mesbase);
+            resdata.data = normalizeJsonValue(rows);
 
-            
-         } catch (error) {
-            resdata.err = Number(error.statusCode || 500);
-            resdata.msg = getErrorMessage(error);
-            resdata.status = Number(error.statusCode || 500);
-
-            GravarLog('ControllerRelatorios.RelatorioGerencial', error.stack);
+        } catch (error) {
+            const status = preencherErroResposta(resdata, error, RELATORIO_GERENCIAL_ERROR_MESSAGE);
+            registrarErroServidor('ControllerRelatorios.RelatorioGerencial', error, status);
         }
 
-        void await db.Close();
+        await db.Close();
 
         res.status(resdata.status).json(resdata);
 
@@ -119,75 +50,31 @@ export class ControllerRelatorios{
         const db = new Database('dbcred');
 
         try {
-            const {anobase, mesbase} = validarAnoMes(req);
+            const {anobase, mesbase} = validarAnoMes(req.params);
 
-            void await db.Connect();
+            await db.Connect();
 
-            const rows = await consultarRelatorioGerencial(db.connection, anobase, mesbase);
-
-            if (!Array.isArray(rows) || rows.length === 0) {
-                const error = new Error('Nao ha dados para impressao.');
-                error.statusCode = 404;
-                throw error;
-            }
-
-            const entidade_negocio = obterEntidadeNegocio(req);
-            let organizationName = String(entidade_negocio || 'CREDIARIO');
-
-            if (entidade_negocio > 0) {
-                const [entidade] = await db.connection.query(
-                    'SELECT nom_entidade FROM tb_entidades WHERE id = :id',
-                    {id: entidade_negocio}
-                );
-
-                if (entidade?.nom_entidade) {
-                    organizationName = String(entidade.nom_entidade);
-                }
-            }
-
-            const columns = Object.keys(rows[0] || {});
-            const body = [
-                columns.map((column) => ({
-                    text: String(column || '').replaceAll('_', ' ').toUpperCase(),
-                    bold: true,
-                    fontSize: 9,
-                    alignment: 'left'
-                })),
-                ...rows.map((row) => (
-                    columns.map((column) => ({
-                        text: toCellText(row?.[column]),
-                        alignment: 'left'
-                    }))
-                ))
-            ];
-
-            const document = buildTableDocument({
-                title: 'RELATORIO GERENCIAL',
-                organizationName,
-                subtitle: `Ano base: ${anobase} | Mes base: ${String(mesbase).padStart(2, '0')}`,
-                widths: columns.map(() => '*'),
-                body,
-                orientation: columns.length > 6 ? 'landscape' : 'portrait'
+            const relatorios = new Relatorios(db.connection);
+            const rows = normalizeJsonValue(await relatorios.consultarGerencial(anobase, mesbase));
+            const entidadeNegocio = obterEntidadeNegocio(req);
+            const organizationName = Number(entidadeNegocio) > 0
+                ? await relatorios.consultarNomeEntidade(entidadeNegocio) || String(entidadeNegocio)
+                : 'CREDIARIO';
+            const document = montarDocumentoRelatorioGerencial({
+                rows,
+                anobase,
+                mesbase,
+                organizationName
             });
 
-            await sendPdfResponse(res, `relatorio-gerencial-${anobase}-${String(mesbase).padStart(2, '0')}.pdf`, document);
+            await sendPdfResponse(res, criarNomeArquivoRelatorioGerencial(anobase, mesbase), document);
 
         } catch (error) {
-            const err = Number(error.statusCode || 500);
-
-            if (!res.headersSent) {
-                res.status(err).json({
-                    err,
-                    msg: getErrorMessage(error),
-                    status: err,
-                    data: []
-                });
-            }
-
-            if (err === 500) GravarLog('ControllerRelatorios.ImpressaoGerencial', error.stack);
+            const status = enviarErroJson(res, error, RELATORIO_GERENCIAL_ERROR_MESSAGE);
+            registrarErroServidor('ControllerRelatorios.ImpressaoGerencial', error, status);
         }
 
-        void await db.Close();
+        await db.Close();
 
     }
 
