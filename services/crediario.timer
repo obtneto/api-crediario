@@ -5,9 +5,9 @@ Requires=crediario.service
 [Timer]
 Unit=crediario.service
 OnCalendar=Mon..Sat *-*-* 07..17:00:00
-AccuracySec=1s
+AccuracySec=5m
 Persistent=true
-RandomizedDelaySec=30s
+RandomizedDelaySec=15m
 
 [Install]
 WantedBy=timers.target
