@@ -260,7 +260,7 @@ export class ControllerCobranca {
             let query = `SELECT pg.id AS id_pagamento, pg.id_venda, pg.dt_pagamento, pg.vl_pagamento, pg.num_recibo,
                                 v.${fieldname} AS id_responsavel, ${responsavelNameField} AS nom_responsavel,
                                 c.cpf_cliente, c.nom_cliente, c.nom_usual, c.end_cliente, c.bai_cliente, c.cid_cliente, c.uf_cliente,
-                                v.val_tot_venda,
+                                v.val_tot_venda,cod_modalidade_pagmt,
                                 COALESCE(pg_total.total_pago_venda, 0) AS val_total_pago,
                                 GREATEST(v.val_tot_venda - ( v.val_entrada + v.val_desconto) - COALESCE(pg_total.total_pago_venda, 0), 0) AS saldo_pagar
                          FROM tb_pagamentos pg
@@ -489,7 +489,7 @@ export class ControllerCobranca {
             const pagamentos = new Pagamentos(db.connection, entidade_negocio);
 
             const query = `SELECT tb_pagamentos.id, tb_pagamentos.dt_pagamento, tb_cobradores.nom_cobrador, 
-            tb_pagamentos.vl_pagamento, tb_pagamentos.vl_desconto
+            tb_pagamentos.vl_pagamento, tb_pagamentos.vl_desconto, tb_pagamentos.cod_modalidade_pagmt
             FROM tb_pagamentos 
             LEFT JOIN tb_cobradores ON tb_cobradores.id = tb_pagamentos.id_cobrador AND tb_cobradores.entidade_negocio = tb_pagamentos.entidade_negocio
             WHERE tb_pagamentos.entidade_negocio = ? AND tb_pagamentos.id_venda = ? 
@@ -536,6 +536,7 @@ export class ControllerCobranca {
             const vl_pagamento = parseFloat(body.vl_pagamento || 0);
             const id_cobrador = Number(body.id_cobrador || 0);
             const vl_desconto = parseFloat(body.vl_desconto || 0);
+            const cod_modalidade_pagmt = String(body.cod_modalidade_pagmt || '').toLocaleUpperCase().trim();
 
             if (id_venda <= 0) {
                 const error = new Error('ID da venda invalido.');
@@ -606,6 +607,7 @@ export class ControllerCobranca {
             pagamentos.vl_pagamento = vl_pagamento;
             pagamentos.id_cobrador = id_cobrador;
             pagamentos.vl_desconto = vl_desconto;
+            pagamentos.cod_modalidade_pagmt = cod_modalidade_pagmt;
 
             void await pagamentos.Save();
 
@@ -1322,7 +1324,10 @@ export class ControllerCobranca {
                 throw error;
             }
 
-            const query = `UPDATE tb_vendas SET melhor_dia = :melhor_dia WHERE entidade_negocio = :entidade_negocio AND id = :id_venda`;
+            const query = `UPDATE tb_vendas 
+                           SET melhor_dia = :melhor_dia 
+                           WHERE entidade_negocio = :entidade_negocio 
+                           AND id = :id_venda`;
 
             await db.connection.query(query, {
                 melhor_dia,
@@ -1354,4 +1359,43 @@ export class ControllerCobranca {
 
     }
 
+    static async ListarModalidadesPagamento(req, res) {
+        
+        const resdadta = {
+            err: 0,
+            msg: '',
+            data: null,
+            status: 200
+        };
+
+        const db = new Database('dbcred');
+
+        try {
+
+            void await db.Connect();
+
+            const query = `SELECT cod_mod_pagamento,nom_mod_pagamento FROM tb_modalidade_pagamento 
+                           WHERE cod_forma_pagamento = 'AV'`;
+
+            const rows = await db.connection.query(query);
+
+            resdadta.data = rows;
+            
+        } catch (error) {
+
+            resdadta.err = error.statusCode || 500;
+            resdadta.msg = resdadta.err === 500 ? 'Erro interno do servidor' : error.message;
+            resdadta.status = Number(error.statusCode || 500);
+            
+            if(resdadta.err === 500) {
+                GravarLog('ControllerCobranca.ListarModalidadesPagamento', error.stack);
+            }
+            
+        }
+
+        void await db.Close();
+
+        res.status(resdadta.status).json(resdadta);
+
+    }
 }

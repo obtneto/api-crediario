@@ -1,4 +1,4 @@
-export default class Perfis {
+export default class Pagamentos {
 
     #conn = null;
     #found = null;
@@ -13,7 +13,8 @@ export default class Perfis {
         vl_desconto: 0,
         id_cobrador: null,
         num_recibo: null,
-        entidade_negocio: 0
+        entidade_negocio: 0,
+        cod_modalidade_pagmt: null
     }
 
     constructor(connection, entidade_negocio = 0) {
@@ -54,6 +55,9 @@ export default class Perfis {
     set num_recibo(num_recibo) {this.#field.num_recibo =num_recibo}
     get num_recibo() { return this.#field.num_recibo}
 
+    set cod_modalidade_pagmt(cod_modalidade_pagmt) {this.#field.cod_modalidade_pagmt = cod_modalidade_pagmt}
+    get cod_modalidade_pagmt() { return this.#field.cod_modalidade_pagmt}
+
     get entidade_negocio() {return Number(this.#field.entidade_negocio)}
 
     async ExecuteQuery(query, params = {}) {
@@ -80,6 +84,7 @@ export default class Perfis {
             this.vl_desconto = rows.vl_desconto;
             this.id_cobrador = rows.id_cobrador;
             this.num_recibo = rows.num_recibo;
+            this.cod_modalidade_pagmt = rows.cod_modalidade_pagmt;
 
             this.#found = true;
             
@@ -93,7 +98,6 @@ export default class Perfis {
 
     async Save() {
 
-        
         let query;
 
         if (this.#found) {
@@ -103,7 +107,8 @@ export default class Perfis {
                      vl_pagamento = :vl_pagamento,
                      id_cobrador = :id_cobrador, 
                      num_recibo = :num_recibo, 
-                     vl_desconto = :vl_desconto
+                     vl_desconto = :vl_desconto,
+                     cod_modalidade_pagmt = :cod_modalidade_pagmt
                      WHERE entidade_negocio = :entidade_negocio AND 
                      id_venda = :id_venda AND 
                      id = :id`;
@@ -119,6 +124,7 @@ export default class Perfis {
                      num_recibo = :num_recibo, 
                      id_venda = :id_venda, 
                      vl_desconto = :vl_desconto,
+                     cod_modalidade_pagmt = :cod_modalidade_pagmt,
                      id = :id, 
                      entidade_negocio = :entidade_negocio`
         }
@@ -144,7 +150,7 @@ export default class Perfis {
 
         const query =  `SELECT IFNULL(MAX(id),0) + 1 as newid 
                         FROM ${this.#tb_name} 
-                        WHERE entidade_negocio = :entidade_negocio AND id_venda = :id_venda`;
+                        WHERE entidade_negocio = :entidade_negocio AND id_venda = :id_venda FOR UPDATE`;
                         
         const [rows] = await this.#conn.query(query,{entidade_negocio: this.#field.entidade_negocio, id_venda: this.#field.id_venda});
 

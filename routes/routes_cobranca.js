@@ -19,5 +19,6 @@ router.post('/redestinar_vendas',ControllerCobranca.RedestinarVendas);
 router.get('/listar_cobrancas_rota/:id_rota',ControllerCobranca.ListaCobrancaPorRota);
 router.get('/listar_cobrancas_cobrador/:id_cobrador',ControllerCobranca.ListaCobrancaPorCobrador);
 router.get('/salvar_melhor_dia/:id_venda/:melhor_dia',ControllerCobranca.SalvarMelhorDia);
+router.get('/listar_modalidades_pagamento',ControllerCobranca.ListarModalidadesPagamento);
 
 export default router;
