@@ -1,4 +1,7 @@
-import {buildTableDocument} from '../utils/PdfReport.js';
+import {buildTableDocument, formatCurrencyBR} from '../utils/PdfReport.js';
+
+const CURRENCY_COLUMNS = new Set(['total_vendas', 'total_cobrancas']);
+const MONTH_COLUMN = 'mes';
 
 function criarErroHttp(message, statusCode) {
     const error = new Error(message);
@@ -50,8 +53,32 @@ export function normalizeJsonValue(value) {
     return value;
 }
 
-function toCellText(value) {
+function isCurrencyColumn(column) {
+    return CURRENCY_COLUMNS.has(String(column || '').toLowerCase());
+}
+
+function isMonthColumn(column) {
+    return String(column || '').toLowerCase() === MONTH_COLUMN;
+}
+
+function formatMonthName(value) {
+    const month = Number(value || 0);
+
+    if (!Number.isInteger(month) || month < 1 || month > 12) {
+        return String(value);
+    }
+
+    const monthName = new Intl.DateTimeFormat('pt-BR', {month: 'long'}).format(
+        new Date(2020, month - 1, 1)
+    );
+
+    return monthName.toUpperCase();
+}
+
+function toCellText(value, column) {
     if (value === null || value === undefined || value === '') return '-';
+    if (isMonthColumn(column)) return formatMonthName(value);
+    if (isCurrencyColumn(column)) return formatCurrencyBR(value);
     return String(value);
 }
 
@@ -65,7 +92,7 @@ function montarBodyTabela(rows, columns) {
         })),
         ...rows.map((row) => (
             columns.map((column) => ({
-                text: toCellText(row?.[column]),
+                text: toCellText(row?.[column], column),
                 alignment: 'left'
             }))
         ))
