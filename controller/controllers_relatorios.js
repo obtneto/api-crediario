@@ -22,6 +22,10 @@ import {
     criarNomeArquivoRelatorioCobrancasPorCobrador,
     montarDocumentoRelatorioCobrancasPorCobrador
 } from '../relatorios/relatorio_cobrancas_por_cobrador.js';
+import {
+    criarNomeArquivoConsultaDeVendas,
+    montarDocumentoConsultaDeVendas
+} from '../relatorios/relatorio_consulta_de_vendas.js';
 
 const RELATORIO_GERENCIAL_ERROR_MESSAGE = 'Erro ao processar relatorio gerencial.';
 
@@ -238,4 +242,94 @@ export class ControllerRelatorios{
 
     }
 
+    static async ConsultaDeVendas(req, res) {
+
+        const db = new Database('dbcred');
+
+        const resdata = {
+            err: 0,
+            msg: '',
+            status: 200,
+            data: []
+        }
+
+        try {
+
+            await db.Connect();
+
+            const entidade_negocio = obterEntidadeNegocio(req);
+            const id_vendedor = Number(req.params.id_vendedor || 0);
+
+            if (id_vendedor <= 0) {
+                const error = new Error('ID do vendedor é obrigatório.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            const relatorios = new Relatorios(db.connection, entidade_negocio);
+            const rows = await relatorios.ConsultaDeVendas(id_vendedor);
+
+            resdata.data = normalizeJsonValue(rows);
+
+        } catch (error) {
+            const status = preencherErroResposta(resdata, error, 'Erro ao processar consulta de vendas.');
+            registrarErroServidor('ControllerRelatorios.ConsultaDeVendas', error, status);
+        }
+
+        await db.Close();
+
+        res.status(resdata.status).json(resdata);
+    }
+
+    static async ImpressaoConsultaDeVendas(req, res) {
+
+        const db = new Database('dbcred');
+
+        try {
+
+            await db.Connect();
+
+            const entidade_negocio = obterEntidadeNegocio(req);
+            const id_vendedor = Number(req.params.id_vendedor || 0);
+
+            if (id_vendedor <= 0) {
+                const error = new Error('ID do vendedor é obrigatório.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            const vendedor = await db.connection.query(`SELECT nom_vendedor FROM tb_vendedores 
+                WHERE entidade_negocio = :entidade_negocio AND id = :id_vendedor`, {
+                entidade_negocio,
+                id_vendedor
+            });
+
+            if (!vendedor || vendedor.length === 0) {
+                const error = new Error('Vendedor não encontrado.');
+                error.statusCode = 404;
+                throw error;
+            }
+
+            const relatorios = new Relatorios(db.connection, entidade_negocio);
+            const rows = normalizeJsonValue(await relatorios.ConsultaDeVendas(id_vendedor));
+            const organizationName = Number(entidade_negocio) > 0
+                ? await relatorios.consultarNomeEntidade(entidade_negocio) || String(entidade_negocio)
+                : 'CREDIARIO';
+            const document = montarDocumentoConsultaDeVendas({
+                rows,
+                idVendedor: id_vendedor,
+                vendedorNome: vendedor[0].nom_vendedor,
+                organizationName
+            });
+
+            await sendPdfResponse(res, criarNomeArquivoConsultaDeVendas(id_vendedor), document);
+
+        } catch (error) {
+            const status = enviarErroJson(res, error, 'Erro ao processar impressao de consulta de vendas.');
+            registrarErroServidor('ControllerRelatorios.ImpressaoConsultaDeVendas', error, status);
+        }
+
+        await db.Close();
+
+    }
 }
