@@ -18,6 +18,10 @@ import {
     criarNomeArquivoRelatorioVendasPorVendedores,
     montarDocumentoRelatorioVendasPorVendedores
 } from '../relatorios/relatorio_vendas_por_vendedores.js';
+import {
+    criarNomeArquivoRelatorioCobrancasPorCobrador,
+    montarDocumentoRelatorioCobrancasPorCobrador
+} from '../relatorios/relatorio_cobrancas_por_cobrador.js';
 
 const RELATORIO_GERENCIAL_ERROR_MESSAGE = 'Erro ao processar relatorio gerencial.';
 
@@ -30,11 +34,12 @@ export class ControllerRelatorios{
 
         try {
 
+            const entidade_negocio = obterEntidadeNegocio(req);
             const {anobase, mesbase} = validarAnoMes(req.params);
 
             await db.Connect();
 
-            const relatorios = new Relatorios(db.connection);
+            const relatorios = new Relatorios(db.connection, entidade_negocio);
             const rows = await relatorios.consultarGerencial(anobase, mesbase);
             resdata.data = normalizeJsonValue(rows);
 
@@ -54,11 +59,12 @@ export class ControllerRelatorios{
         const db = new Database('dbcred');
 
         try {
+            const entidade_negocio = obterEntidadeNegocio(req);
             const {anobase, mesbase} = validarAnoMes(req.params);
 
             await db.Connect();
 
-            const relatorios = new Relatorios(db.connection);
+            const relatorios = new Relatorios(db.connection, entidade_negocio);
             const rows = normalizeJsonValue(await relatorios.consultarGerencial(anobase, mesbase));
             const entidadeNegocio = obterEntidadeNegocio(req);
             const organizationName = Number(entidadeNegocio) > 0
@@ -92,6 +98,7 @@ export class ControllerRelatorios{
 
             await db.Connect();
 
+            const entidade_negocio = obterEntidadeNegocio(req);
             const anobase = Number(req.params.anobase || 0);
             const mesbase = Number(req.params.mesbase || 0);
 
@@ -101,7 +108,7 @@ export class ControllerRelatorios{
                 throw error;
             }
 
-            const relatorios = new Relatorios(db.connection);
+            const relatorios = new Relatorios(db.connection, entidade_negocio);
             const rows = await relatorios.VendasPorVendedores(anobase, mesbase);
             resdata.data = normalizeJsonValue(rows);
 
@@ -124,6 +131,7 @@ export class ControllerRelatorios{
 
             await db.Connect();
 
+            const entidade_negocio = obterEntidadeNegocio(req);
             const anobase = Number(req.params.anobase || 0);
             const mesbase = Number(req.params.mesbase || 0);
 
@@ -133,7 +141,7 @@ export class ControllerRelatorios{
                 throw error;
             }
 
-            const relatorios = new Relatorios(db.connection);
+            const relatorios = new Relatorios(db.connection, entidade_negocio);
             const rows = normalizeJsonValue(await relatorios.VendasPorVendedores(anobase, mesbase));
             const entidadeNegocio = obterEntidadeNegocio(req);
             const organizationName = Number(entidadeNegocio) > 0
@@ -149,6 +157,81 @@ export class ControllerRelatorios{
         } catch (error) {
             const status = enviarErroJson(res, error, 'Erro ao processar impressao de vendas por vendedores.');
             registrarErroServidor('ControllerRelatorios.ImpressaoVendasPorVendedores', error, status);
+        }
+
+        await db.Close();
+
+    }
+
+    static async RelatorioCobrancasPorCobrador(req,res) {
+
+        const db = new Database('dbcred');
+
+        const resdata = criarRespostaPadrao();
+
+        try {
+
+            await db.Connect();
+
+            const entidade_negocio = obterEntidadeNegocio(req);
+            const anobase = Number(req.params.anobase || 0);
+            const mesbase = Number(req.params.mesbase || 0);
+
+            if (anobase === 0 || mesbase === 0) {
+                const error = new Error('Ano e mês são obrigatórios.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            const relatorios = new Relatorios(db.connection, entidade_negocio);
+            const rows = await relatorios.CobrancasPorCobrador(anobase, mesbase);
+            resdata.data = normalizeJsonValue(rows);
+
+        } catch (error) {
+            const status = preencherErroResposta(resdata, error, 'Erro ao processar relatorio de cobranças por cobrador.');
+            registrarErroServidor('ControllerRelatorios.RelatorioCobrancasPorCobrador', error, status);
+        }
+
+        await db.Close();
+
+        res.status(resdata.status).json(resdata);
+
+    }
+
+    static async ImpressaoCobrancasPorCobrador(req,res) {
+
+        const db = new Database('dbcred');
+
+        try {
+
+            await db.Connect();
+
+            const entidade_negocio = obterEntidadeNegocio(req);
+            const anobase = Number(req.params.anobase || 0);
+            const mesbase = Number(req.params.mesbase || 0);
+
+            if (anobase === 0 || mesbase === 0) {
+                const error = new Error('Ano e mês são obrigatórios.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            const relatorios = new Relatorios(db.connection, entidade_negocio);
+            const rows = normalizeJsonValue(await relatorios.CobrancasPorCobrador(anobase, mesbase));
+            const entidadeNegocio = obterEntidadeNegocio(req);
+            const organizationName = Number(entidadeNegocio) > 0
+                ? await relatorios.consultarNomeEntidade(entidadeNegocio) || String(entidadeNegocio)
+                : 'CREDIARIO';
+            const document = montarDocumentoRelatorioCobrancasPorCobrador({
+                rows,
+                organizationName
+            });
+
+            await sendPdfResponse(res, criarNomeArquivoRelatorioCobrancasPorCobrador(), document);
+
+        } catch (error) {
+            const status = enviarErroJson(res, error, 'Erro ao processar impressao de cobranças por cobrador.');
+            registrarErroServidor('ControllerRelatorios.ImpressaoCobrancasPorCobrador', error, status);
         }
 
         await db.Close();
