@@ -250,13 +250,21 @@ export function buildTableDocument({
     body = [],
     orientation = 'portrait',
     summaryCards = [],
+    summaryCardRows = null,
     tableTitle = ''
 }) {
     const generatedAt = formatDateBR(new Date(), true);
     const normalizedSummaryCards = Array.isArray(summaryCards)
         ? summaryCards.filter((item) => item && (item.label || item.value))
         : [];
-    const summaryBlocks = chunkItems(normalizedSummaryCards, 4).map((group, groupIndex, groups) => ({
+    const normalizedSummaryRows = Array.isArray(summaryCardRows)
+        ? summaryCardRows
+            .map((row) => Array.isArray(row)
+                ? row.filter((item) => item && (item.label || item.value))
+                : [])
+            .filter((row) => row.length > 0)
+        : chunkItems(normalizedSummaryCards, 4);
+    const summaryBlocks = normalizedSummaryRows.map((group, groupIndex, groups) => ({
         columns: group.map((item) => ({
             width: item?.width || `${(100 / group.length).toFixed(2)}%`,
             ...createInfoCard(item?.label, item?.value)

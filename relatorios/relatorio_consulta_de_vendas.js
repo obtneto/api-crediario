@@ -144,21 +144,25 @@ export function montarDocumentoConsultaDeVendas({
         totalSaldo
     } = montarBodyTabela(rows);
     const nomeVendedor = vendedorNome || 'Sem vendedor';
+    const vendedorResumo = idVendedor ? `${idVendedor} - ${nomeVendedor}` : nomeVendedor;
 
     return buildTableDocument({
         title: 'RELATORIO DE CONSULTA DE VENDAS',
         organizationName,
         description: 'Consulta de vendas por vendedor',
         subtitle: `Vendedor: ${nomeVendedor} | ID: ${idVendedor}`,
-        summaryCards: [
-            { label: 'Vendedor', value: nomeVendedor },
-            { label: 'Codigo Vendedor', value: idVendedor },
-            { label: 'Qtde Vendas', value: formatIntegerBR(rows.length) },
-            { label: 'Valor Total', value: formatCurrencyBR(totalVendas) },
-            { label: 'Entrada', value: formatCurrencyBR(totalEntradas) },
-            { label: 'Desconto', value: formatCurrencyBR(totalDescontos) },
-            { label: 'Pagamentos', value: formatCurrencyBR(totalPagamentos) },
-            { label: 'Saldo', value: formatCurrencyBR(totalSaldo) }
+        summaryCardRows: [
+            [
+                { label: 'Vendedor', value: vendedorResumo, width: '50%' },
+                { label: 'Qtde Vendas', value: formatIntegerBR(rows.length), width: '25%' },
+                { label: 'Valor Total', value: formatCurrencyBR(totalVendas), width: '25%' }
+            ],
+            [
+                { label: 'Entrada', value: formatCurrencyBR(totalEntradas), width: '25%' },
+                { label: 'Desconto', value: formatCurrencyBR(totalDescontos), width: '25%' },
+                { label: 'Pagamentos', value: formatCurrencyBR(totalPagamentos), width: '25%' },
+                { label: 'Saldo', value: formatCurrencyBR(totalSaldo), width: '25%' }
+            ]
         ],
         tableTitle: `Vendas do vendedor - ${nomeVendedor}`,
         widths: ['8%', '7%', '9%', '15%', '8%', '8%', '8%', '8%', '8%', '7%', '7%', '7%'],
