@@ -40,16 +40,28 @@ export default class Relatorios {
         return await this.connection.query(query, {anobase, mesbase, entidade_negocio: this.entidade_negocio});
     }
 
-    async ConsultaDeVendas(id_vendedor) {
+    async ConsultarVendasdoVendedor(id_vendedor,anobase,mesbase) {
 
         const query = `SELECT id,dt_venda,cpf_cliente,nome_cliente,val_tot_venda, val_entrada,val_desconto,valor_pagamentos,saldo_a_pagar,prox_pagamnt,ult_pagamnt,situacao 
                        FROM vw_vendas_do_vendedores
-                       WHERE id_vendedor = :id_vendedor AND entidade_negocio = :entidade_negocio`;
+                       WHERE id_vendedor = :id_vendedor AND
+                             anobase = :anobase AND
+                             mesbase = :mesbase AND
+                             entidade_negocio = :entidade_negocio`;
 
-        return await this.connection.query(query, {id_vendedor, entidade_negocio: this.entidade_negocio});
+        return await this.connection.query(query, {id_vendedor, anobase, mesbase, entidade_negocio: this.entidade_negocio});
     }
 
-    async ConsultarVendasdoVendedor(id_vendedor) {
-        return await this.ConsultaDeVendas(id_vendedor);
+    async ConsultarCobrancasdoCobrador(id_cobrador,anobase,mesbase) {
+
+        const query = `SELECT id_venda,dt_pagamento,cpf_cliente,nome_cliente,vl_pagamento,nom_mod_pagamento
+                       FROM vw_cobrancas_do_cobrador
+                       WHERE id_cobrador = :id_cobrador AND
+                             anobase = :anobase AND
+                             mesbase = :mesbase AND
+                             entidade_negocio = :entidade_negocio`;
+
+        return await this.connection.query(query, {id_cobrador, anobase, mesbase, entidade_negocio: this.entidade_negocio});
     }
+
 }

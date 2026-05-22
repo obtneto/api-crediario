@@ -128,6 +128,7 @@ function montarBodyTabela(rows) {
 export function montarDocumentoConsultaDeVendas({
     rows = [],
     idVendedor,
+    vendedorNome = '',
     organizationName = 'CREDIARIO'
 }) {
     if (!Array.isArray(rows) || rows.length === 0) {
@@ -142,13 +143,16 @@ export function montarDocumentoConsultaDeVendas({
         totalPagamentos,
         totalSaldo
     } = montarBodyTabela(rows);
+    const nomeVendedor = vendedorNome || 'Sem vendedor';
 
     return buildTableDocument({
         title: 'RELATORIO DE CONSULTA DE VENDAS',
         organizationName,
         description: 'Consulta de vendas por vendedor',
-        subtitle: `Vendedor ID: ${idVendedor}`,
+        subtitle: `Vendedor: ${nomeVendedor} | ID: ${idVendedor}`,
         summaryCards: [
+            { label: 'Vendedor', value: nomeVendedor },
+            { label: 'Codigo Vendedor', value: idVendedor },
             { label: 'Qtde Vendas', value: formatIntegerBR(rows.length) },
             { label: 'Valor Total', value: formatCurrencyBR(totalVendas) },
             { label: 'Entrada', value: formatCurrencyBR(totalEntradas) },
@@ -156,7 +160,7 @@ export function montarDocumentoConsultaDeVendas({
             { label: 'Pagamentos', value: formatCurrencyBR(totalPagamentos) },
             { label: 'Saldo', value: formatCurrencyBR(totalSaldo) }
         ],
-        tableTitle: 'Vendas do vendedor',
+        tableTitle: `Vendas do vendedor - ${nomeVendedor}`,
         widths: ['8%', '7%', '9%', '15%', '8%', '8%', '8%', '8%', '8%', '7%', '7%', '7%'],
         body,
         orientation: 'landscape'

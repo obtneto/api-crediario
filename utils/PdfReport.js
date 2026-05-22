@@ -15,6 +15,10 @@ pdfMake.addFonts({
     }
 });
 
+if (typeof pdfMake.setUrlAccessPolicy === 'function') {
+    pdfMake.setUrlAccessPolicy(() => false);
+}
+
 export function formatCurrencyBR(value) {
     const number = Number(value || 0);
 

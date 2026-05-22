@@ -26,6 +26,11 @@ import {
     criarNomeArquivoConsultaDeVendas,
     montarDocumentoConsultaDeVendas
 } from '../relatorios/relatorio_consulta_de_vendas.js';
+import {
+    criarNomeArquivoConsultaDeCobrancas,
+    montarDocumentoConsultaDeCobrancas
+} from '../relatorios/relatorio_consulta_de_cobrancas.js';
+import GravarLog from '../utils/GravarLog.js';
 
 const RELATORIO_GERENCIAL_ERROR_MESSAGE = 'Erro ao processar relatorio gerencial.';
 
@@ -259,6 +264,8 @@ export class ControllerRelatorios{
 
             const entidade_negocio = obterEntidadeNegocio(req);
             const id_vendedor = Number(req.params.id_vendedor || 0);
+            const anobase = Number(req.params.anobase || 0);
+            const mesbase = Number(req.params.mesbase || 0);
 
             if (id_vendedor <= 0) {
                 const error = new Error('ID do vendedor é obrigatório.');
@@ -266,8 +273,14 @@ export class ControllerRelatorios{
                 throw error;
             }
 
+            if (anobase === 0 || mesbase === 0) {
+                const error = new Error('Ano e mês são obrigatórios.');
+                error.statusCode = 400;
+                throw error;
+            }
+
             const relatorios = new Relatorios(db.connection, entidade_negocio);
-            const rows = await relatorios.ConsultaDeVendas(id_vendedor);
+            const rows = await relatorios.ConsultarVendasdoVendedor(id_vendedor, anobase, mesbase);
 
             resdata.data = normalizeJsonValue(rows);
 
@@ -291,9 +304,17 @@ export class ControllerRelatorios{
 
             const entidade_negocio = obterEntidadeNegocio(req);
             const id_vendedor = Number(req.params.id_vendedor || 0);
+            const anobase = Number(req.params.anobase || 0);
+            const mesbase = Number(req.params.mesbase || 0);
 
             if (id_vendedor <= 0) {
                 const error = new Error('ID do vendedor é obrigatório.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (anobase === 0 || mesbase === 0) {
+                const error = new Error('Ano e mês são obrigatórios.');
                 error.statusCode = 400;
                 throw error;
             }
@@ -311,7 +332,7 @@ export class ControllerRelatorios{
             }
 
             const relatorios = new Relatorios(db.connection, entidade_negocio);
-            const rows = normalizeJsonValue(await relatorios.ConsultaDeVendas(id_vendedor));
+            const rows = normalizeJsonValue(await relatorios.ConsultarVendasdoVendedor(id_vendedor, anobase, mesbase));
             const organizationName = Number(entidade_negocio) > 0
                 ? await relatorios.consultarNomeEntidade(entidade_negocio) || String(entidade_negocio)
                 : 'CREDIARIO';
@@ -319,14 +340,177 @@ export class ControllerRelatorios{
                 rows,
                 idVendedor: id_vendedor,
                 vendedorNome: vendedor[0].nom_vendedor,
-                organizationName
+                organizationName,
+                anobase,
+                mesbase
             });
 
-            await sendPdfResponse(res, criarNomeArquivoConsultaDeVendas(id_vendedor), document);
+            await sendPdfResponse(res, criarNomeArquivoConsultaDeVendas(id_vendedor, anobase, mesbase), document);
 
         } catch (error) {
             const status = enviarErroJson(res, error, 'Erro ao processar impressao de consulta de vendas.');
             registrarErroServidor('ControllerRelatorios.ImpressaoConsultaDeVendas', error, status);
+        }
+
+        await db.Close();
+
+    }
+
+    static async ConsultaDeCobrancas(req,res) {
+
+        const db = new Database("dbcred");
+        const resdata = criarRespostaPadrao();
+
+        try {
+
+            await db.Connect();
+
+            const id_cobrador = Number(req.params.id_cobrador || 0);
+            const anobase = Number(req.params.anobase || 0);
+            const mesbase = Number(req.params.mesbase || 0);
+            const entidade_negocio = obterEntidadeNegocio(req);
+
+            if (id_cobrador <= 0) {
+                const error = new Error('ID do cobrador é obrigatório.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (anobase === 0 || mesbase === 0) {
+                const error = new Error('Ano e mês são obrigatórios.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            const relatorios = new Relatorios(db.connection, entidade_negocio);
+
+            const rows = await relatorios.ConsultarCobrancasdoCobrador(id_cobrador, anobase, mesbase);
+
+            resdata.data = normalizeJsonValue(rows);
+
+        } catch (error) {
+
+            const status = preencherErroResposta(resdata, error, 'Erro ao processar consulta de cobranças.');
+            registrarErroServidor('ControllerRelatorios.ConsultaDeCobrancas', error, status);
+
+        }
+
+        await db.Close();
+
+        res.status(resdata.status).json(resdata);
+
+    }
+
+    static async CobrancaDOCobrador(req,res) {
+
+        const db = new Database('dbcred');
+
+        const resdata = {
+            err: 0,
+            msg: '',
+            status: 200,
+            data: []
+        }
+
+        try {
+
+            await db.Connect();
+
+            const entidade_negocio = obterEntidadeNegocio(req);
+            const id_cobrador = Number(req.params.id_cobrador || 0);
+            const anobase = Number(req.params.anobase || 0);
+            const mesbase = Number(req.params.mesbase || 0);
+
+            if (id_cobrador <= 0) {
+                const error = new Error('ID do cobrador é obrigatório.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (anobase === 0 || mesbase === 0) {
+                const error = new Error('Ano e mês são obrigatórios.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            const relatorios = new Relatorios(db.connection, entidade_negocio);
+
+            const rows = await relatorios.ConsultarCobrancasdoCobrador(id_cobrador, anobase, mesbase);
+
+            resdata.data = normalizeJsonValue(rows);
+
+        } catch (error) {
+
+            resdata.err = error.statusCode || 500;
+            resdata.msg = resdata.err === 500 ? 'Erro interno do servidor' : error.message;
+            resdata.status = error.statusCode || 500;
+
+            if (resdata.err === 500) GravarLog('ControllerRelatorios.CobrancaDOCobrador', error.stack);
+
+        }
+
+        await db.Close();
+
+        res.status(resdata.status).json(resdata);
+
+    }
+
+    static async ImpressaoConsultaDeCobrancas(req, res) {
+
+        const db = new Database('dbcred');
+
+        try {
+
+            await db.Connect();
+
+            const entidade_negocio = obterEntidadeNegocio(req);
+            const id_cobrador = Number(req.params.id_cobrador || 0);
+            const anobase = Number(req.params.anobase || 0);
+            const mesbase = Number(req.params.mesbase || 0);
+
+            if (id_cobrador <= 0) {
+                const error = new Error('ID do cobrador é obrigatório.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            if (anobase === 0 || mesbase === 0) {
+                const error = new Error('Ano e mês são obrigatórios.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            const cobrador = await db.connection.query(`SELECT nom_cobrador FROM tb_cobradores
+                WHERE entidade_negocio = :entidade_negocio AND id = :id_cobrador`, {
+                entidade_negocio,
+                id_cobrador
+            });
+
+            if (!cobrador || cobrador.length === 0) {
+                const error = new Error('Cobrador não encontrado.');
+                error.statusCode = 404;
+                throw error;
+            }
+
+            const relatorios = new Relatorios(db.connection, entidade_negocio);
+            const rows = normalizeJsonValue(await relatorios.ConsultarCobrancasdoCobrador(id_cobrador, anobase, mesbase));
+            const organizationName = Number(entidade_negocio) > 0
+                ? await relatorios.consultarNomeEntidade(entidade_negocio) || String(entidade_negocio)
+                : 'CREDIARIO';
+            const document = montarDocumentoConsultaDeCobrancas({
+                rows,
+                idCobrador: id_cobrador,
+                cobradorNome: cobrador[0].nom_cobrador,
+                organizationName,
+                anobase,
+                mesbase
+            });
+
+            await sendPdfResponse(res, criarNomeArquivoConsultaDeCobrancas(id_cobrador, anobase, mesbase), document);
+
+        } catch (error) {
+            const status = enviarErroJson(res, error, 'Erro ao processar impressao de consulta de cobranças.');
+            registrarErroServidor('ControllerRelatorios.ImpressaoConsultaDeCobrancas', error, status);
         }
 
         await db.Close();
