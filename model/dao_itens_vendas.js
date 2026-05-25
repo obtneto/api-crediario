@@ -149,7 +149,7 @@ export default class ItensVendas {
 
         const query = `SELECT IFNULL(MAX(id),0) + 1 as newid FROM ${this.#tb_name}
                        WHERE entidade_negocio = :entidade_negocio AND 
-                       id_venda = :id_venda`;
+                       id_venda = :id_venda FOR UPDATE`;
 
         const [rows] = await this.#conn.query(query,{entidade_negocio: this.#field.entidade_negocio,id_venda: this.#field.id_venda});
 

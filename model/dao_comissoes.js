@@ -128,11 +128,12 @@ export default class Comissoes {
 
     async #newId() {
 
-        const query = `SELECT MAX(num_recibo) AS num_recibo FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio`;
+        const query = `SELECT MAX(num_recibo) AS num_recibo FROM ${this.#tb_name} 
+        WHERE entidade_negocio = :entidade_negocio FOR UPDATE`;
 
         const [rows] = await this.#conn.query(query, { entidade_negocio: this.#entidade_negocio });
 
-        const num_recibo = rows?.num_reciibo ?? '1'
+        const num_recibo = rows?.num_recibo ?? '1'
 
         const query_check_ano = "SELECT ano_corrente FROM tb_check_ano WHERE id = 1";
 

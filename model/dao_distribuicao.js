@@ -119,7 +119,7 @@ export default class Distribuicao {
         
         const query =  `SELECT IFNULL(MAX(id),0) + 1 as newid 
                         FROM ${this.#tb_name} 
-                        WHERE entidade_negocio = :entidade_negocio`;
+                        WHERE entidade_negocio = :entidade_negocio FOR UPDATE`;
         
         const [rows] = await this.#conn.query(query,{
             entidade_negocio: this.#field.entidade_negocio

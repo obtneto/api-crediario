@@ -225,7 +225,8 @@ export default class Vendas {
 
     async #newId() {
         
-        const query_new_id =  `SELECT IFNULL(MAX(id),0) as newid FROM ${this.#tb_name} WHERE entidade_negocio = :entidade_negocio`;
+        const query_new_id =  `SELECT IFNULL(MAX(id),0) as newid FROM ${this.#tb_name} 
+        WHERE entidade_negocio = :entidade_negocio FOR UPDATE`;
         
         const [rows] = await this.#conn.query(query_new_id,{entidade_negocio: this.#field.entidade_negocio});
 

@@ -133,7 +133,7 @@ export default class EstoqueMov {
     async #newId(dt_mov) {
 
         const query = `SELECT IFNULL(MAX(id),0) + 1 as newid FROM ${this.#tb_name}
-                       WHERE entidade_negocio = :entidade_negocio AND dt_mov = :dt_mov`;
+                       WHERE entidade_negocio = :entidade_negocio AND dt_mov = :dt_mov FOR UPDATE`;
 
         const [rows] = await this.#conn.query(query,{entidade_negocio: this.#field.entidade_negocio,dt_mov});
 
