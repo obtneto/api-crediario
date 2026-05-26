@@ -15,6 +15,13 @@ const MEGA_EMAIL = process.env.MEGA_EMAIL;
 const MEGA_PASSWORD = process.env.MEGA_PASSWORD;
 const FOLDER_NAME = process.env.FOLDER_NAME;
 
+function criarStorageMega() {
+  return new Storage({
+    email: MEGA_EMAIL,
+    password: MEGA_PASSWORD,
+  });
+}
+
 function validarConfiguracao() {
   const variaveisFaltantes = [
     ['MEGA_EMAIL', MEGA_EMAIL],
@@ -29,13 +36,73 @@ function validarConfiguracao() {
   }
 }
 
-async function listarArquivosBackup() {
+function formataDataMega(timestamp) {
+  if (!timestamp) return null;
+
+  const data = new Date(timestamp);
+
+  if (Number.isNaN(data.getTime())) return null;
+
+  return data.toLocaleString('sv-SE', {
+    timeZone: '-03:00',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  });
+}
+
+function localizarPastaBackupsMega(storage) {
+  const folder = storage.root.children.find((arquivo) => arquivo.name === FOLDER_NAME && arquivo.directory);
+
+  if (!folder) {
+    const error = new Error(`Pasta "${FOLDER_NAME}" não encontrada no Mega!`);
+    error.statusCode = 404;
+    throw error;
+  }
+
+  return folder;
+}
+
+async function listarArquivosBackupLocal() {
   const entradas = await fs.promises.readdir(BACKUPS_DIR, { withFileTypes: true });
 
   return entradas
     .filter((entrada) => entrada.isFile())
     .map((entrada) => path.join(BACKUPS_DIR, entrada.name))
     .sort();
+}
+
+export async function listarArquivosBackupMega() {
+  validarConfiguracao();
+
+  const storage = criarStorageMega();
+
+  try {
+    await storage.ready;
+
+    const folder = localizarPastaBackupsMega(storage);
+    const arquivos = Array.isArray(folder.children) ? folder.children.filter((arquivo) => !arquivo.directory) : [];
+
+    return arquivos
+      .map((arquivo) => {
+        const dataArquivo = formataDataMega(arquivo.createdAt);
+
+        return {
+          nome_arquivo: arquivo.name || '',
+          data_criacao: dataArquivo,
+          data_modificacao: dataArquivo,
+          tamanho_arquivo: Number(arquivo.size || 0),
+        };
+      })
+      .sort((a, b) => a.nome_arquivo.localeCompare(b.nome_arquivo, 'pt-BR'));
+  } finally {
+    await storage.close().catch((error) => {
+      console.error(`❌ Falha ao fechar conexão com Mega.nz: ${error.message}`);
+    });
+  }
 }
 
 async function limparArquivosBackupMega(folder) {
@@ -73,10 +140,7 @@ async function enviarArquivoBackup(storage, folder, filePath) {
 export default async function uploadBackup() {
   validarConfiguracao();
 
-  const storage = new Storage({
-    email: MEGA_EMAIL,
-    password: MEGA_PASSWORD,
-  });
+  const storage = criarStorageMega();
 
   let totalFalhas = 0;
 
@@ -85,15 +149,11 @@ export default async function uploadBackup() {
     await storage.ready;
 
     // Localiza a pasta configurada no Mega
-    const folder = storage.root.children.find((arquivo) => arquivo.name === FOLDER_NAME);
-
-    if (!folder) {
-      throw new Error(`Pasta "${FOLDER_NAME}" não encontrada no Mega!`);
-    }
+    const folder = localizarPastaBackupsMega(storage);
 
     await limparArquivosBackupMega(folder);
 
-    const arquivosBackup = await listarArquivosBackup();
+    const arquivosBackup = await listarArquivosBackupLocal();
 
     if (arquivosBackup.length === 0) {
       console.log(`Nenhum arquivo de backup encontrado em ${BACKUPS_DIR}`);

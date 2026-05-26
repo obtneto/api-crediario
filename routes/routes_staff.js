@@ -20,7 +20,9 @@ router.get('/usuarios', ControllerStaffUsuarios.Listar);
 router.get('/usuarios/:id', ControllerStaffUsuarios.Editar);
 router.post('/usuarios', ControllerStaffUsuarios.Salvar);
 router.post('/usuarios/:id/excluir', ControllerStaffUsuarios.Excluir);
-router.get('/listar_backups', ControllerBackups.Listar);
+router.get('/listar_backups', ControllerBackups.ListarLocal);
+router.get('/listar_backups_local', ControllerBackups.ListarLocal);
+router.get('/listar_backups_mega', ControllerBackups.ListarMega);
 
 router.get('/forma_pagamentos/listar',ControllerFormaPagamento.Listar);
 router.get('/forma_pagamentos/buscar_por_id/:id',ControllerFormaPagamento.BuscarPorId);
