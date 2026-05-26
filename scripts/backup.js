@@ -2,7 +2,6 @@ import { spawn } from 'child_process';
 import zlib from 'zlib';
 import fs from 'fs';
 import { config } from 'dotenv';
-import uploadBackup from '../utils/upload-mega-nz.js';
 
 config({ path: '../../.env', quiet: true });
 
@@ -53,5 +52,5 @@ arquivoSaida.on('finish', async () => {
   if (!dumpSucesso) return;
 
   console.log(`✅ Backup gerado e compactado com sucesso em [${dataHora}] - ${nomeArquivo}\n`);
-  await uploadBackup(nomeArquivo);
+  
 });
