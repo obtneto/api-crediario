@@ -105,7 +105,36 @@ export async function listarArquivosBackupMega() {
   }
 }
 
-async function limparArquivosBackupMega(folder) {
+export async function limparPastaBackupsMega() {
+  validarConfiguracao();
+
+  const storage = criarStorageMega();
+
+  try {
+    await storage.ready;
+
+    const folder = localizarPastaBackupsMega(storage);
+    const arquivosRemotos = Array.isArray(folder.children) ? folder.children.filter((arquivo) => !arquivo.directory) : [];
+
+    if (arquivosRemotos.length === 0) {
+      console.log('Nenhum arquivo de backup encontrado para remoção no Mega.nz');
+      return;
+    }
+
+    console.log(`Encontrados ${arquivosRemotos.length} arquivos de backup para remoção no Mega.nz:`);
+    arquivosRemotos.forEach((arquivo) => {
+      console.log(`- ${arquivo.name || ''} (Criado em: ${formataDataMega(arquivo.createdAt)})`);
+    });
+
+    await limparArquivosBackupMega(folder);
+  } finally {
+    await storage.close().catch((error) => {
+      console.error(`❌ Falha ao fechar conexão com Mega.nz: ${error.message}`);
+    });
+  }
+}
+
+export async function limparArquivosBackupMega(folder) {
   const arquivosRemotos = folder.children.filter((arquivo) => !arquivo.directory);
 
   if (arquivosRemotos.length === 0) {

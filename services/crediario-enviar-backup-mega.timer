@@ -1,0 +1,13 @@
+[Unit]
+Description=Timer Upload de Arquivos de backup ao Mega
+Requires=crediario-backup.service
+
+[Timer]
+Unit=crediario-enviar-backup-mega.service
+OnCalendar=Mon..Sat *-*-* 19:00:00
+AccuracySec=5m
+Persistent=false
+RandomizedDelaySec=8m
+
+[Install]
+WantedBy=timers.target
