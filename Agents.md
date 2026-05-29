@@ -1,7 +1,7 @@
 # AGENTS.md
 
 ## Escopo
-Este arquivo define as regras específicas do backend do projeto Crediario.
+Este arquivo define as regras específicas do backend nesse projeto.
 
 ## Papel principal nesta pasta
 Nesta área, o especialista principal é:
@@ -38,6 +38,9 @@ O backend deve:
 - Tratar erros de forma consistente
 - Validar inputs sempre
 - Manter contratos claros para consumo pelo frontend
+
+## Uso obrigatório do Context7
+O agente backend deve usar o Context7 sempre que criar, alterar ou revisar/analisar classes,functions, rotas e scripts em geral.
 
 ## Regras de domínio
 Sempre considerar:
