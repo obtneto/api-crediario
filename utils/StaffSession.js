@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import crypto from 'node:crypto';
+import { getConfiguredSecret, useSecureCookies } from './SecurityConfig.js';
 import { isTokenBlacklisted } from './TokenBlacklist.js';
 
 const COOKIE_NAME = 'crediario_staff_token';
@@ -9,7 +10,10 @@ const TOKEN_VERSION = 1;
 const IV_LENGTH = 12;
 
 function getSecret() {
-    return String(process.env.STAFF_AUTH_SECRET || process.env.AUTH_JWT_SECRET || process.env.AUTH_COOKIE_SECRET || 'Cred3215987%$#@!');
+    return getConfiguredSecret(
+        ['STAFF_AUTH_SECRET', 'AUTH_JWT_SECRET', 'AUTH_COOKIE_SECRET'],
+        'STAFF_AUTH_SECRET, AUTH_JWT_SECRET ou AUTH_COOKIE_SECRET'
+    );
 }
 
 function getEncryptionKey() {
@@ -136,7 +140,7 @@ function writeSession(res, sessionData = {}) {
     res.setHeader(RESPONSE_TOKEN_HEADER, token);
     res.cookie(COOKIE_NAME, token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        secure: useSecureCookies(),
         sameSite: 'lax',
         path: '/',
         maxAge: ttlMs
@@ -172,14 +176,14 @@ export function renovarSessaoStaffHttpOnly(res, sessionData = {}) {
 export function limparSessaoStaffHttpOnly(res) {
     res.clearCookie(COOKIE_NAME, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        secure: useSecureCookies(),
         sameSite: 'lax',
         path: '/'
     });
 
     res.cookie(COOKIE_NAME, '', {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        secure: useSecureCookies(),
         sameSite: 'lax',
         path: '/',
         expires: new Date(0),

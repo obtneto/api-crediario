@@ -17,7 +17,6 @@ import {addTokenToBlacklist} from '../utils/TokenBlacklist.js';
 import {criptografarSenha, senhaPrecisaUpgrade, SENHA_RESET_PADRAO, validarSenha} from '../utils/Criptografia.js';
 import {desencriptar} from '../utils/DecriptPayload.js';
 import { validate, authSessionSchema, usuarioSalvarSchema } from '../utils/RequestValidator.js';
-import {enviarEmailResend} from '../utils/EnvioEmail.js'
 
 const PASSWORD_REGEX = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=\S{8,}).+$/;
 
@@ -1606,7 +1605,7 @@ export class ControllerVendedores{
             void await db.RollBack();
 
             resdata.err = 500;
-            resdata.msg = error.stack;
+            resdata.msg = 'Erro interno do servidor (500). Contate o administrador do sistema.';
             resdata.status = 500;
 
             GravarLog('ControllerVendedores.Salvar', error.stack);
@@ -1847,8 +1846,10 @@ export class ControllerCobradores{
             void await db.RollBack();
 
             resdata.err = 500;
-            resdata.msg = error.stack;
+            resdata.msg = 'Erro interno do servidor (500). Contate o administrador do sistema.';
             resdata.status = 500;
+
+            GravarLog('ControllerCobradores.Salvar', error.stack);
 
         }
 
@@ -2109,8 +2110,10 @@ export class ControllerProdutos {
             void await db.RollBack();
 
             resdata.err = 500;
-            resdata.msg = error.stack;
+            resdata.msg = 'Erro interno do servidor (500). Contate o administrador do sistema.';
             resdata.status = 500;
+
+            GravarLog('ControllerProdutos.Salvar', error.stack);
 
         }
 
@@ -2351,7 +2354,7 @@ export class ControllerRotas {
             void await db.RollBack();
 
             resdata.err = 500;
-            resdata.msg = error.stack;
+            resdata.msg = 'Erro interno do servidor (500). Contate o administrador do sistema.';
             resdata.status = 500;
 
             GravarLog('ControllerRotas.Salvar', error.stack);

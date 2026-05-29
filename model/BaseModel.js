@@ -104,8 +104,6 @@ export default class BaseModel {
                        SET ${fields}
                        WHERE entidade_negocio = :entidade_negocio AND id = :id`;
 
-        console.log(query);
-
         return query;
     }
 }

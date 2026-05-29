@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
 import { promisify } from 'node:util';
+import { getConfiguredSecret } from './SecurityConfig.js';
 
 const scryptAsync = promisify(crypto.scrypt);
 const HASH_PREFIX = 's2$';
@@ -22,7 +23,10 @@ function normalizarSenha(password) {
 }
 
 function getSecret() {
-    return String(process.env.AUTH_PASSWORD_SECRET || process.env.AUTH_JWT_SECRET || process.env.AUTH_COOKIE_SECRET || 'Cred3215987%$#@!');
+    return getConfiguredSecret(
+        ['AUTH_PASSWORD_SECRET', 'AUTH_JWT_SECRET', 'AUTH_COOKIE_SECRET'],
+        'AUTH_PASSWORD_SECRET, AUTH_JWT_SECRET ou AUTH_COOKIE_SECRET'
+    );
 }
 
 async function gerarHashScrypt(password = '', saltBuffer = null) {

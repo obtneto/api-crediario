@@ -1,4 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
+import GravarLog from './GravarLog.js';
 
 /**
  * Gera uma cobrança PIX usando a API do OpenPix
@@ -11,7 +12,6 @@ import { v4 as uuidv4 } from 'uuid';
 export async function GerarPagamentoPix(options = {}) {
   const {
     valor = 50.00,
-    descricao = 'Pagamento PIX',
     correlationID = null
   } = options;
 
@@ -60,7 +60,7 @@ export async function GerarPagamentoPix(options = {}) {
     };
 
   } catch (error) {
-    console.error('Erro ao gerar cobrança PIX:', error);
+    GravarLog('GeraPix.GerarPagamentoPix', error?.stack || error?.message || String(error));
     throw error;
   }
 }
@@ -103,7 +103,7 @@ export async function ConsultarCobrancaPix(correlationID) {
     };
 
   } catch (error) {
-    console.error('Erro ao consultar cobrança PIX:', error);
+    GravarLog('GeraPix.ConsultarCobrancaPix', error?.stack || error?.message || String(error));
     throw error;
   }
 }

@@ -151,8 +151,6 @@ export class ControllerComissoes {
             const fieldname = req.params.fieldname;  //id_vendedor ou id_cobrador
             const fieldnamePermitido = fieldname === 'id_vendedor' || fieldname === 'id_cobrador';
 
-            console.log(id,fieldname)
-
             if (!id || id <= 0) {
                 const error = new Error('ID do cobrador ou vendedor invalido.');
                 error.statusCode = 400;

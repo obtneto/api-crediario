@@ -14,6 +14,8 @@ import {config} from 'dotenv';
 import helmet from 'helmet';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { allowPrivateNetworkCorsOrigins } from './utils/SecurityConfig.js';
+import { getStatusCode, registrarErroServidor } from './utils/ControllerResponse.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -32,7 +34,9 @@ app.use(helmet());
 app.use(
     express.urlencoded({
       extended: true,
-      limit: '8kb'
+      limit: '8kb',
+      parameterLimit: 100,
+      depth: 5
     })
 );
 
@@ -73,6 +77,10 @@ function isPrivateIpv6(hostname = '') {
         || /^fe80:/i.test(hostname);
 }
 
+function sanitizeLogValue(value = '') {
+    return String(value || '').replace(/[\r\n\t]/g, ' ').slice(0, 200);
+}
+
 function isAllowedOrigin(origin) {
     if (!origin) {
         return true;
@@ -85,6 +93,10 @@ function isAllowedOrigin(origin) {
     try {
         const parsedOrigin = new URL(origin);
         const hostname = normalizeHostname(parsedOrigin.hostname);
+
+        if (!allowPrivateNetworkCorsOrigins()) {
+            return false;
+        }
 
         return localHostnames.has(hostname)
             || hostname.endsWith('.local')
@@ -102,8 +114,10 @@ const corsOptions = {
             return callback(null, true);
         }
 
-        console.log('CORS denied for origin:', origin);
-        return callback(new Error('Origem nao permitida pelo CORS.'));
+        const error = new Error('Origem nao permitida pelo CORS.');
+        error.statusCode = 403;
+        console.warn('CORS denied for origin:', sanitizeLogValue(origin));
+        return callback(error);
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
@@ -124,6 +138,40 @@ app.use(route_cobranca);
 app.use(route_comissoes);
 app.use(route_relatorios);
 app.use(route_backups);
+
+app.use((req, res) => {
+    res.status(404).json({
+        err: 404,
+        msg: 'Rota nao encontrada.',
+        status: 404,
+        data: []
+    });
+});
+
+app.use((error, req, res, next) => {
+    if (res.headersSent) {
+        return next(error);
+    }
+
+    const status = getStatusCode(error);
+
+    if (status >= 500) {
+        registrarErroServidor('Express.GlobalErrorHandler', error, status);
+    }
+
+    return res.status(status).json({
+        err: status,
+        msg: status === 413
+            ? 'Payload excede o limite permitido.'
+            : status === 400
+                ? 'Requisicao invalida.'
+                : status === 403
+                    ? 'Acesso negado.'
+                    : 'Erro interno do servidor (500). Contate o administrador do sistema.',
+        status,
+        data: []
+    });
+});
 
 app.listen(PORT, HOST, () => {
     console.log(`API executando em ${HOST}:${PORT}`);
