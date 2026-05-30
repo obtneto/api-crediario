@@ -14,8 +14,8 @@ router.get('/listar_restricoes/:pesq',ControllerClientes.ListarRestricoes);
 router.get('/listar_restricoes_mobile/',ControllerClientes.ListarRestricoesMobile);
 router.get('/inserir_restricao/:cpf',ControllerClientes.EditarRestricao);
 router.post('/salvar_restricao',ControllerClientes.SalvarRestricao);
-router.get('/excluir_restricao/:cpf',ControllerClientes.ExcluirRestricao);
+router.delete('/restricoes/:cpf', ControllerClientes.ExcluirRestricao);
 router.get('/existe_restricao/:cpf',ControllerClientes.ExisteRestricao);
-router.get('/retira_restricao/:cpf',ControllerClientes.RetiraRestricao)
+router.post('/restricoes/:cpf/retirar', ControllerClientes.RetiraRestricao);
 
 export default router;

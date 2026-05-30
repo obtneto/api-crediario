@@ -3,12 +3,18 @@ import { ControllerStaffAuth, ControllerStaffEntidades, ControllerStaffUsuarios 
 import { ControllerBackups } from '../controller/controller_backups.js';
 import {ControllerFormaPagamento,ControllerModalidadePagamento} from '../controller/controller_parametrizacao.js'
 import { criarMiddlewareSessaoStaff } from '../utils/StaffRouteSessionMiddleware.js';
+import { criarRateLimit } from '../utils/RateLimit.js';
 
 const router = Router();
+const staffAuthSessionLimiter = criarRateLimit({
+    windowMs: 5 * 60 * 1000,
+    max: 6,
+    message: 'Muitas tentativas de login staff. Aguarde alguns minutos e tente novamente.'
+});
 
 router.use(criarMiddlewareSessaoStaff());
 
-router.post('/auth/session', ControllerStaffAuth.IniciarSessao);
+router.post('/auth/session', staffAuthSessionLimiter, ControllerStaffAuth.IniciarSessao);
 router.get('/auth/session', ControllerStaffAuth.SessaoAtual);
 router.post('/auth/logout', ControllerStaffAuth.EncerrarSessao);
 

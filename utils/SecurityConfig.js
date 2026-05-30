@@ -1,5 +1,3 @@
-const LEGACY_DEV_SECRET = 'Cred3215987%$#@!';
-
 function isProduction() {
     return String(process.env.NODE_ENV || '').trim().toLowerCase() === 'production';
 }
@@ -15,11 +13,7 @@ export function getConfiguredSecret(envNames = [], label = 'Segredo de seguranca
         }
     }
 
-    if (isProduction()) {
-        throw new Error(`${label} nao configurado para ambiente de producao.`);
-    }
-
-    return LEGACY_DEV_SECRET;
+    throw new Error(`${label} nao configurado.`);
 }
 
 export function useSecureCookies() {

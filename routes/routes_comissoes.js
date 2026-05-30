@@ -13,7 +13,7 @@ router.get('/listar_adiantamentos_ativos/:id/:fieldname', ControllerComissoes.Li
 router.get('/imprimir_adiantamentos_ativos/:id/:fieldname', ControllerComissoes.ImprimirAdiantamentosAtivos);
 router.get('/editar_adiantamento/:id_adiantamento/', ControllerComissoes.EditarAdiantamento);
 router.post('/salvar_adiantamento', ControllerComissoes.SalvarAdiantamento);
-router.get('/excluir_adiantamento/:id_adiantamento/', ControllerComissoes.ExcluirAdiantamento);
+router.delete('/adiantamentos/:id_adiantamento', ControllerComissoes.ExcluirAdiantamento);
 
  /*********************************************************
 * Recibos de Pagamentos Comissões 

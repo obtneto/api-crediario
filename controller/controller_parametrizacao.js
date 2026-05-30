@@ -83,6 +83,22 @@ function garantirEntidadeAtiva(entidade = {}, mensagem = 'A entidade vinculada a
     throw error;
 }
 
+function tratarErroExclusaoComDependencias(error, fallbackMessage, entidadeLabel = 'registro') {
+    if (Number(error?.errno || 0) === 1451) {
+        return {
+            err: 409,
+            status: 409,
+            msg: `${entidadeLabel} vinculado a outros registros. Inative em vez de excluir.`
+        };
+    }
+
+    return {
+        err: 500,
+        status: 500,
+        msg: fallbackMessage || error?.message || 'Erro interno do servidor.'
+    };
+}
+
 async function buscarUsuariosAutenticacao(connection, user, options = {}) {
     const allowMobileMode = Boolean(options?.allowMobileMode);
     const filtroModoAcesso = allowMobileMode
@@ -921,7 +937,8 @@ export class ControllerUsuarios{
 
             const usuarios = new Usuarios(db.connection, entidade_negocio);
 
-            void await usuarios.Excluir(id);
+            usuarios.id = id;
+            void await usuarios.Excluir();
             resdata.data = [];
 
             void await db.Commit();
@@ -930,9 +947,14 @@ export class ControllerUsuarios{
              
             void await db.RollBack();
 
-            resdata.err = 500;
-            resdata.msg = error.message;
-            resdata.status = 500;
+            const handled = tratarErroExclusaoComDependencias(
+                error,
+                error.message,
+                'Usuario'
+            );
+            resdata.err = handled.err;
+            resdata.msg = handled.msg;
+            resdata.status = handled.status;
 
             GravarLog('ControllerUsuarios.Excluir', error.stack);
 
@@ -1249,7 +1271,6 @@ export class ControllerPerfis{
             resdata.data = await perfis.FindById(id);
 
         } catch (error) {
-
             resdata.err = error.statusCode || 500;
             resdata.msg = error.message;
             resdata.status = error.statusCode || 500;
@@ -1322,9 +1343,12 @@ export class ControllerPerfis{
             
             void await db.RollBack();
 
-            resdata.err = error.statusCode || 500;
-            resdata.msg = error.message;
-            resdata.status = error.statusCode || 500;
+            const handled = Number(error?.statusCode || 0) === 404
+                ? { err: 404, status: 404, msg: error.message }
+                : tratarErroExclusaoComDependencias(error, error.message, 'Perfil');
+            resdata.err = handled.err;
+            resdata.msg = handled.msg;
+            resdata.status = handled.status;
 
             if (resdata.err == 500) GravarLog('ControllerPerfis.Salvar', error.stack);
 
@@ -1364,7 +1388,8 @@ export class ControllerPerfis{
 
             const perfils = new Perfis(db.connection,entidade);
 
-            void await perfils.Excluir(id);
+            perfils.id = id;
+            void await perfils.Excluir();
             
             void await db.Commit();
 
@@ -1642,7 +1667,8 @@ export class ControllerVendedores{
 
             void await vendedores.FindById(id);
 
-            void await vendedores.Excluir(id);
+            vendedores.id = id;
+            void await vendedores.Excluir();
 
             void await db.Commit();
             
@@ -1650,9 +1676,14 @@ export class ControllerVendedores{
              
             void await db.RollBack();
 
-            resdata.err = 500;
-            resdata.msg = error.message;
-            resdata.status = 500;
+            const handled = tratarErroExclusaoComDependencias(
+                error,
+                error.message,
+                'Vendedor'
+            );
+            resdata.err = handled.err;
+            resdata.msg = handled.msg;
+            resdata.status = handled.status;
 
             GravarLog('ControllerVendedores.Excluir', error.stack);
 
@@ -1884,7 +1915,8 @@ export class ControllerCobradores{
             void await cobradores.FindById(id);
 
 
-            void await cobradores.Excluir(id);
+            cobradores.id = id;
+            void await cobradores.Excluir();
 
             void await db.Commit();
             
@@ -1892,9 +1924,14 @@ export class ControllerCobradores{
              
             void await db.RollBack();
 
-            resdata.err = 500;
-            resdata.msg = error.message;
-            resdata.status = 500;
+            const handled = tratarErroExclusaoComDependencias(
+                error,
+                error.message,
+                'Cobrador'
+            );
+            resdata.err = handled.err;
+            resdata.msg = handled.msg;
+            resdata.status = handled.status;
 
         }
 
@@ -2149,7 +2186,8 @@ export class ControllerProdutos {
             if (!registro) throw new Error('Nao foi possivel excluir esse produto')
 
 
-            void await produtos.Excluir(id);
+            produtos.id = id;
+            void await produtos.Excluir();
             resdata.data = [];
 
             void await db.Commit();
@@ -2158,9 +2196,15 @@ export class ControllerProdutos {
              
             void await db.RollBack();
 
-            resdata.err = 500;
-            resdata.msg = error.message;
-            resdata.status = 500;
+            if (Number(error?.errno || 0) === 1451) {
+                resdata.err = 409;
+                resdata.msg = 'Produto vinculado a registros de estoque ou vendas. Inative o produto em vez de excluir.';
+                resdata.status = 409;
+            } else {
+                resdata.err = 500;
+                resdata.msg = error.message;
+                resdata.status = 500;
+            }
 
             console.log(error.stack)
 
@@ -2389,7 +2433,8 @@ export class ControllerRotas {
 
             const rotas = new Rotas(db.connection, entidade_negocio);
 
-            void await rotas.Excluir(id);
+            rotas.id = id;
+            void await rotas.Excluir();
 
             void await db.Commit();
             
@@ -2397,9 +2442,14 @@ export class ControllerRotas {
              
             void await db.RollBack();
 
-            resdata.err = 500;
-            resdata.msg = error.message;
-            resdata.status = 500;
+            const handled = tratarErroExclusaoComDependencias(
+                error,
+                error.message,
+                'Rota'
+            );
+            resdata.err = handled.err;
+            resdata.msg = handled.msg;
+            resdata.status = handled.status;
 
             GravarLog('ControllerRotas.Excluir', error.stack);
         }
@@ -2630,8 +2680,8 @@ export class ControllerTiposPagamentos{
             const tipos = new TiposPagamentos(db.connection, entidade_negocio);
             void await tipos.FindById(id);
 
-
-            void await tipos.Excluir(id);
+            tipos.id = id;
+            void await tipos.Excluir();
 
             resdata.msg = 'Tipo de pagamento excluido com sucesso.';
 
@@ -2641,9 +2691,14 @@ export class ControllerTiposPagamentos{
             
             void await db.RollBack();
 
-            resdata.err = 500;
-            resdata.msg = error.message;
-            resdata.status = 500;
+            const handled = tratarErroExclusaoComDependencias(
+                error,
+                error.message,
+                'Tipo de pagamento'
+            );
+            resdata.err = handled.err;
+            resdata.msg = handled.msg;
+            resdata.status = handled.status;
 
             GravarLog('ControllerTiposPagamentos.Excluir', error.stack);
 
@@ -2734,9 +2789,15 @@ export class ControllerFormaPagamento {
 
         } catch (error) {
             
-            resdata.err = error.status || 500;
-            resdata.msg = resdata.err === 500 ? 'Erro interno do servidor' : error.message;
-            resdata.status = error.status || 500;
+            if (Number(error?.errno || 0) === 1451) {
+                resdata.err = 409;
+                resdata.msg = 'Forma de pagamento vinculada a outros registros. Inative em vez de excluir.';
+                resdata.status = 409;
+            } else {
+                resdata.err = error.status || 500;
+                resdata.msg = resdata.err === 500 ? 'Erro interno do servidor' : error.message;
+                resdata.status = error.status || 500;
+            }
 
             if(resdata.err === 500) GravarLog('ControllerFormaPagamento.Buscar', error.stack);
 
@@ -2790,9 +2851,15 @@ export class ControllerFormaPagamento {
 
         } catch (error) {
             
-            resdata.err = error.status || 500;
-            resdata.msg = resdata.err === 500 ? 'Erro interno do servidor' : error.message;
-            resdata.status = error.status || 500;
+            if (Number(error?.errno || 0) === 1451) {
+                resdata.err = 409;
+                resdata.msg = 'Modalidade de pagamento vinculada a outros registros. Inative em vez de excluir.';
+                resdata.status = 409;
+            } else {
+                resdata.err = error.status || 500;
+                resdata.msg = resdata.err === 500 ? 'Erro interno do servidor' : error.message;
+                resdata.status = error.status || 500;
+            }
 
             if(resdata.err === 500) GravarLog('ControllerFormaPagamento.BuscarPorCodigo', error.stack);
 

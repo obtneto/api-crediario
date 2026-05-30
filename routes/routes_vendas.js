@@ -12,7 +12,7 @@ router.get('/listar_distrib_produto/:id_vendedor/:nom_produto',ControllerDistrib
 router.get('/listar_distrib_com_saldo/:id_vendedor',ControllerDistribuicao.ListarDistruicaoComSaldo)
 router.get('/imprimir_distrib/:id_vendedor',ControllerDistribuicao.Imprimir);
 router.get('/editar_distrib/:id_distrib',ControllerDistribuicao.Editar);
-router.get('/excluir_distrib/:dt_distrib-:id_distrib',ControllerDistribuicao.Excluir);
+router.delete('/distribuicao/:dt_distrib-:id_distrib', ControllerDistribuicao.Excluir);
 router.post('/salvar_distrib',ControllerDistribuicao.Salvar);
 //router.post('/retornar_distrib',ControllerDistribuicao.DevolverProduto)
 
