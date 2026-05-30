@@ -39,8 +39,19 @@ O backend deve:
 - Validar inputs sempre
 - Manter contratos claros para consumo pelo frontend
 
-## Uso obrigatório do Context7
-O agente backend deve usar o Context7 sempre que criar, alterar ou revisar/analisar classes,functions, rotas e scripts em geral.
+## Ferramentas obrigatórias do Backend
+
+1. Context7
+   - Obrigatório para criação, alteração, revisão e análise de código.
+
+2. Express REST API Skill
+   - Skill:
+     npx skills add https://github.com/pluginagentmarketplace/custom-plugin-nodejs --skill express-rest-api
+   - Obrigatório para qualquer implementação Express.
+
+3. MCPs permitidos
+   - Context7
+   - puppeteer MCP (apenas para validação e testes de integração quando necessário)
 
 ## Regras de domínio
 Sempre considerar:
