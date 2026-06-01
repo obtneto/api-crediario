@@ -10,7 +10,7 @@ export default class Database {
     //#script = null
 
     constructor(database) {
-        if (!database) throw new Error('Forneça o nome do Banco de Dados');
+        if (!database) throw new Error('Forneça o nome do Banco de Dados!');
         this.#dbname = database;
     }
 
