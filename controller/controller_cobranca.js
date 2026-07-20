@@ -115,7 +115,7 @@ export class ControllerCobranca {
             COALESCE(v.val_entrada, 0) AS val_entrada, COALESCE(v.val_desconto, 0) AS val_desconto,
             COALESCE(SUM(COALESCE(p.vl_pagamento, 0)), 0) AS val_total_pago,
             GREATEST(
-                COALESCE(v.val_tot_venda, 0) - (COALESCE(v.val_desconto, 0) + COALESCE(v.val_entrada, 0))
+                COALESCE(v.val_tot_venda, 0) - (COALESCE(v.val_desconto, 0) - COALESCE(v.val_entrada, 0))
                 - COALESCE(SUM(COALESCE(p.vl_pagamento, 0)), 0),
                 0
             ) AS saldo_pagar, v.situacao
