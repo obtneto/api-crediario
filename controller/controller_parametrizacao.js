@@ -11,11 +11,11 @@ import Estoque from '../model/dao_estoque.js';
 import FormaPagamento from '../model/dao_forma_pagamento.js';
 import ModoPagamento from '../model/dao_modo_pagamentos.js';
 import GravarLog from '../utils/GravarLog.js';
-import {obterEntidadeNegocio} from '../utils/CheckEntidades.js';
-import {definirSessaoHttpOnly, limparSessaoHttpOnly, obterSessaoHttpOnly, renovarSessaoHttpOnly, getCurrentToken} from '../utils/AuthSession.js';
-import {addTokenToBlacklist} from '../utils/TokenBlacklist.js';
-import {criptografarSenha, senhaPrecisaUpgrade, SENHA_RESET_PADRAO, validarSenha} from '../utils/Criptografia.js';
-import {desencriptar} from '../utils/DecriptPayload.js';
+import { obterEntidadeNegocio } from '../utils/CheckEntidades.js';
+import { definirSessaoHttpOnly, limparSessaoHttpOnly, obterSessaoHttpOnly, renovarSessaoHttpOnly, getCurrentToken } from '../utils/AuthSession.js';
+import { addTokenToBlacklist } from '../utils/TokenBlacklist.js';
+import { criptografarSenha, senhaPrecisaUpgrade, SENHA_RESET_PADRAO, validarSenha } from '../utils/Criptografia.js';
+import { desencriptar } from '../utils/DecriptPayload.js';
 import { validate, authSessionSchema, usuarioSalvarSchema } from '../utils/RequestValidator.js';
 
 const PASSWORD_REGEX = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=\S{8,}).+$/;
@@ -49,7 +49,7 @@ function normalizarPerfilAcesso(usuario = {}) {
 function montarRespostaAutenticacao(usuario = {}, entidade = {}) {
 
     const fullname = String(usuario?.nom_completo || usuario?.usuario || '').trim();
-    const {type_perfil, perfil} = normalizarPerfilAcesso(usuario);
+    const { type_perfil, perfil } = normalizarPerfilAcesso(usuario);
 
     return {
         authenticated: true,
@@ -135,7 +135,7 @@ async function buscarUsuarioAutenticacao(connection, entidade_negocio, user, opt
 }
 
 async function buscarEntidadeAuth(entidades, entidade_negocio) {
-    
+
     const [entidade] = await entidades.ExecuteQuery(
         `SELECT id, nom_entidade, com_rota_cobranca, ativo FROM tb_entidades WHERE id = :id`,
         { id: entidade_negocio }
@@ -621,7 +621,7 @@ export class ControllerAuth {
             void await usuarios.Save();
             void await db.Commit();
 
-            const sessao = montarRespostaAutenticacao({...usuario, reset_password: 0}, entidade);
+            const sessao = montarRespostaAutenticacao({ ...usuario, reset_password: 0 }, entidade);
             const sessaoPersistida = definirSessaoHttpOnly(res, {
                 ...sessao,
                 entidade_negocio
@@ -649,9 +649,9 @@ export class ControllerAuth {
     }
 }
 
-export class ControllerUsuarios{
+export class ControllerUsuarios {
 
-    static async Listar(req,res) {
+    static async Listar(req, res) {
 
         const db = new Database('dbcred');
 
@@ -667,10 +667,10 @@ export class ControllerUsuarios{
         }
 
         try {
-            
-            const pesq =  req.params.pesq;
+
+            const pesq = req.params.pesq;
             const entidade = obterEntidadeNegocio(req);
-            
+
             void await db.Connect();
 
             const usuario = new Usuarios(db.connection, entidade);
@@ -694,10 +694,10 @@ export class ControllerUsuarios{
 
             query = `SELECT id,nom_entidade FROM tb_entidades WHERE id = :entidade`;
 
-            resdata.data.entidades = await entidades.ExecuteQuery(query,{ entidade });
+            resdata.data.entidades = await entidades.ExecuteQuery(query, { entidade });
 
             let perfisRows = await perfis.ExecuteQuery(`SELECT id,nom_perfil FROM tb_perfis WHERE entidade_negocio = :entidade_negocio`, { entidade_negocio: entidade });
-            
+
             resdata.data.perfis = perfisRows;
 
 
@@ -716,7 +716,7 @@ export class ControllerUsuarios{
 
     }
 
-    static async Editar(req,res) {
+    static async Editar(req, res) {
 
         const db = new Database('dbcred');
 
@@ -728,7 +728,7 @@ export class ControllerUsuarios{
         }
 
         try {
-            
+
             const id = req.params.id
             const entidade = obterEntidadeNegocio(req);
 
@@ -754,7 +754,7 @@ export class ControllerUsuarios{
             resdata.msg = error.message;
             resdata.status = 500;
 
-            GravarLog('ControllerUsuarios.Editar', error.stack);    
+            GravarLog('ControllerUsuarios.Editar', error.stack);
         }
 
         void await db.Close();
@@ -763,7 +763,7 @@ export class ControllerUsuarios{
 
     }
 
-    static async Salvar(req,res) {
+    static async Salvar(req, res) {
 
         const db = new Database('dbcred');
 
@@ -776,14 +776,14 @@ export class ControllerUsuarios{
 
         try {
 
-            let {id,usuario,nom_completo,email,id_perfil,id_cobrador,id_vendedor,modo_acesso,reset_password,password} = req.body;
+            let { id, usuario, nom_completo, email, id_perfil, id_cobrador, id_vendedor, modo_acesso, reset_password, password } = req.body;
             const entidade = obterEntidadeNegocio(req);
 
-            const validated = validate(usuarioSalvarSchema, {id,usuario,nom_completo,email,id_perfil,id_cobrador,id_vendedor,modo_acesso,reset_password,password});
-            ({ id, usuario, nom_completo, email, id_perfil, id_vendedor,id_cobrador, modo_acesso, reset_password, password } = validated);
+            const validated = validate(usuarioSalvarSchema, { id, usuario, nom_completo, email, id_perfil, id_cobrador, id_vendedor, modo_acesso, reset_password, password });
+            ({ id, usuario, nom_completo, email, id_perfil, id_vendedor, id_cobrador, modo_acesso, reset_password, password } = validated);
 
             const passwordNormalizado = String(password || '').trim();
-            
+
             void await db.Connect();
 
             void await db.Begin();
@@ -888,17 +888,17 @@ export class ControllerUsuarios{
 
             const ini = nom_completo.split(' ');
 
-            let iniciais = ini[0].substring(0,1) + ini[ini.length -1].substring(0,1)
+            let iniciais = ini[0].substring(0, 1) + ini[ini.length - 1].substring(0, 1)
 
             usuarios.iniciais = iniciais;
-            
+
             void await usuarios.Save();
 
             void await db.Commit();
             resdata.msg = 'Usuario salvo com sucesso.';
 
         } catch (error) {
-            
+
             void await db.RollBack();
 
             resdata.err = Number(error.statusCode || 500);
@@ -915,7 +915,7 @@ export class ControllerUsuarios{
 
     }
 
-    static async Excluir(req,res) {
+    static async Excluir(req, res) {
 
         const db = new Database('dbcred');
 
@@ -942,9 +942,9 @@ export class ControllerUsuarios{
             resdata.data = [];
 
             void await db.Commit();
-            
+
         } catch (error) {
-             
+
             void await db.RollBack();
 
             const handled = tratarErroExclusaoComDependencias(
@@ -967,9 +967,9 @@ export class ControllerUsuarios{
     }
 }
 
-export class ControllerModoAcessos{
+export class ControllerModoAcessos {
 
-    static async ListarModoAcessosDesktop(req,res) {
+    static async ListarModoAcessosDesktop(req, res) {
 
         const db = new Database('dbcred');
 
@@ -987,7 +987,7 @@ export class ControllerModoAcessos{
             const query = "SELECT * FROM tb_modo_acessos WHERE modo_acesso IN ('DT','DM','MB')";
 
             resdata.data = await db.connection.execute(query);
-            
+
         } catch (error) {
 
             resdata.err = 500;
@@ -1003,7 +1003,7 @@ export class ControllerModoAcessos{
 
     }
 
-    static async ListarModoAcessosMobile(req,res) {
+    static async ListarModoAcessosMobile(req, res) {
 
         const db = new Database('dbcred');
 
@@ -1032,7 +1032,7 @@ export class ControllerModoAcessos{
             WHERE modo_acesso IN ('DM','MB')`;
 
             resdata.data = await db.connection.execute(query);
-            
+
         } catch (error) {
 
             resdata.err = 500;
@@ -1049,9 +1049,9 @@ export class ControllerModoAcessos{
     }
 }
 
-export class ControllerEntidades{
+export class ControllerEntidades {
 
-    static async ListarAtivos(req,res) {
+    static async ListarAtivos(req, res) {
 
         const db = new Database('dbcred');
 
@@ -1070,8 +1070,8 @@ export class ControllerEntidades{
 
             let query = `SELECT id,nom_entidade,nom_responsavel,num_cnpj,cel_contato
             FROM tb_entidades WHERE ativo = 1 AND id = :id`;
-            
-            resdata.data = await entidades.ExecuteQuery(query, {id});
+
+            resdata.data = await entidades.ExecuteQuery(query, { id });
 
         } catch (error) {
 
@@ -1088,7 +1088,7 @@ export class ControllerEntidades{
 
     }
 
-    static async Listar(req,res) {
+    static async Listar(req, res) {
 
         const db = new Database('dbcred');
 
@@ -1131,7 +1131,7 @@ export class ControllerEntidades{
 
     }
 
-    static async Salvar(req,res) {
+    static async Salvar(req, res) {
 
         const db = new Database('dbcred');
 
@@ -1144,8 +1144,8 @@ export class ControllerEntidades{
 
         try {
 
-            const {id,nom_entidade,nom_responsavel,num_cnpj,cel_contato,percent_desconto_cobranca,percent_desconto_venda,cel_whatsapp_bussiness,ativo} = req.body;
-            
+            const { id, nom_entidade, nom_responsavel, num_cnpj, cel_contato, percent_desconto_cobranca, percent_desconto_venda, cel_whatsapp_bussiness, ativo } = req.body;
+
             void await db.Connect();
 
             void await db.Begin();
@@ -1163,13 +1163,13 @@ export class ControllerEntidades{
             entidades.percent_desconto_venda = percent_desconto_venda;
             entidades.percent_desconto_cobranca = percent_desconto_cobranca;
             entidades.ativo = ativo;
-           
+
             void await entidades.Save();
 
             void await db.Commit();
 
         } catch (error) {
-            
+
             void await db.RollBack();
 
             resdata.err = 500;
@@ -1187,9 +1187,9 @@ export class ControllerEntidades{
     }
 }
 
-export class ControllerPerfis{
+export class ControllerPerfis {
 
-    static async Listar(req,res) {
+    static async Listar(req, res) {
 
         const db = new Database('dbcred');
 
@@ -1203,13 +1203,13 @@ export class ControllerPerfis{
         }
 
         try {
-            
+
             const pesq = req.params.pesq;
             const entidade_negocio = obterEntidadeNegocio(req)
 
             void await db.Connect();
 
-            const perfis = new Perfis(db.connection,entidade_negocio );
+            const perfis = new Perfis(db.connection, entidade_negocio);
 
             let query = `SELECT * FROM tb_perfis WHERE entidade_negocio = :entidade_negocio`;
 
@@ -1222,8 +1222,8 @@ export class ControllerPerfis{
 
             const rows = await perfis.ExecuteQuery(query, params);
 
-            console.log(rows,pesq,entidade_negocio)
-            
+            console.log(rows, pesq, entidade_negocio)
+
             resdata.data.perfis = rows;
 
         } catch (error) {
@@ -1242,7 +1242,7 @@ export class ControllerPerfis{
 
     }
 
-    static async Editar(req,res) {
+    static async Editar(req, res) {
 
         const db = new Database('dbcred');
 
@@ -1254,7 +1254,7 @@ export class ControllerPerfis{
         }
 
         try {
-            
+
             const id = Number(req.params.id || 0);
             const entidade = obterEntidadeNegocio(req);
 
@@ -1275,7 +1275,7 @@ export class ControllerPerfis{
             resdata.msg = error.message;
             resdata.status = error.statusCode || 500;
 
-            if(resdata.err == 500) GravarLog('ControllerPerfis.Editar', error.stack);
+            if (resdata.err == 500) GravarLog('ControllerPerfis.Editar', error.stack);
 
         }
 
@@ -1285,7 +1285,7 @@ export class ControllerPerfis{
 
     }
 
-    static async Salvar(req,res) {
+    static async Salvar(req, res) {
 
         const db = new Database('dbcred');
 
@@ -1298,7 +1298,7 @@ export class ControllerPerfis{
 
         try {
 
-            const {id,nom_perfil,cod_perfil,selecionar,insert,atualizar,excluir} = req.body;
+            const { id, nom_perfil, cod_perfil, selecionar, insert, atualizar, excluir } = req.body;
             const entidade = obterEntidadeNegocio(req);
 
             if (!id) {
@@ -1318,7 +1318,7 @@ export class ControllerPerfis{
                 error.statusCode = 400;
                 throw error;
             }
-            
+
             void await db.Connect();
 
             void await db.Begin();
@@ -1334,13 +1334,13 @@ export class ControllerPerfis{
             perfils.insert = insert ? 1 : 0;
             perfils.atualizar = atualizar ? 1 : 0;
             perfils.excluir = excluir ? 1 : 0;
-           
+
             void await perfils.Save();
 
             void await db.Commit();
 
         } catch (error) {
-            
+
             void await db.RollBack();
 
             const handled = Number(error?.statusCode || 0) === 404
@@ -1360,7 +1360,7 @@ export class ControllerPerfis{
 
     }
 
-    static async Excluir(req,res) {
+    static async Excluir(req, res) {
 
         const db = new Database('dbcred');
 
@@ -1381,27 +1381,27 @@ export class ControllerPerfis{
                 error.statusCode = 404;
                 throw error;
             }
-            
+
             void await db.Connect();
 
             void await db.Begin();
 
-            const perfils = new Perfis(db.connection,entidade);
+            const perfils = new Perfis(db.connection, entidade);
 
             perfils.id = id;
             void await perfils.Excluir();
-            
+
             void await db.Commit();
 
         } catch (error) {
-            
+
             void await db.RollBack();
 
             resdata.err = error.statusCode || 500;
             resdata.msg = error.message;
             resdata.status = error.statusCode || 500;
 
-            if(resdata.err == 500) GravarLog('ControllerPerfis.Excluir', error.stack);
+            if (resdata.err == 500) GravarLog('ControllerPerfis.Excluir', error.stack);
 
         }
 
@@ -1411,7 +1411,7 @@ export class ControllerPerfis{
 
     }
 
-    static async ListarTiposPerfis (req,res){
+    static async ListarTiposPerfis(req, res) {
 
         const db = new Database('dbcred');
 
@@ -1423,7 +1423,7 @@ export class ControllerPerfis{
         }
 
         try {
-            
+
             void await db.Connect();
 
             const query = `SELECT cod_tipo_perfil,nom_tipo_perfil FROM tb_tipos_perfis`;
@@ -1433,12 +1433,12 @@ export class ControllerPerfis{
             resdata.data = tipos;
 
         } catch (error) {
-            
+
             resdata.err = error.statusCode || 500;
             resdata.msg = error.message;
             resdata.status = error.statusCode || 500;
 
-            if(resdata.err == 500) GravarLog('ControllerPerfis.ListarTiposPerfis', error.stack);
+            if (resdata.err == 500) GravarLog('ControllerPerfis.ListarTiposPerfis', error.stack);
 
         }
 
@@ -1449,9 +1449,9 @@ export class ControllerPerfis{
     }
 }
 
-export class ControllerVendedores{
+export class ControllerVendedores {
 
-    static async Listar(req,res) {
+    static async Listar(req, res) {
 
         const db = new Database('dbcred');
 
@@ -1466,14 +1466,14 @@ export class ControllerVendedores{
         }
 
         try {
-            
-            const pesq =  req.params.pesq;
+
+            const pesq = req.params.pesq;
             const entidade = obterEntidadeNegocio(req);
-            
+
             void await db.Connect();
 
             const vendedores = new Vendedores(db.connection, entidade);
-            const entidades = new Entidades(db.connection,entidade);
+            const entidades = new Entidades(db.connection, entidade);
 
             let query = null;
 
@@ -1502,7 +1502,7 @@ export class ControllerVendedores{
 
     }
 
-     static async ListarAtivos(req,res) {
+    static async ListarAtivos(req, res) {
 
         const db = new Database('dbcred');
 
@@ -1517,14 +1517,14 @@ export class ControllerVendedores{
         }
 
         try {
-            
-            const pesq =  req.params.pesq;
+
+            const pesq = req.params.pesq;
             const entidade = obterEntidadeNegocio(req);
-            
+
             void await db.Connect();
 
             const vendedores = new Vendedores(db.connection, entidade);
-            const entidades = new Entidades(db.connection,entidade);
+            const entidades = new Entidades(db.connection, entidade);
 
             let query = null;
 
@@ -1553,7 +1553,7 @@ export class ControllerVendedores{
 
     }
 
-    static async Editar(req,res) {
+    static async Editar(req, res) {
 
         const db = new Database('dbcred');
 
@@ -1565,7 +1565,7 @@ export class ControllerVendedores{
         }
 
         try {
-            
+
             const id = Number(req.params.id || 500);
             const entidade_negocio = obterEntidadeNegocio(req);
 
@@ -1590,7 +1590,7 @@ export class ControllerVendedores{
 
     }
 
-    static async Salvar(req,res) {
+    static async Salvar(req, res) {
 
         const db = new Database('dbcred');
 
@@ -1603,9 +1603,9 @@ export class ControllerVendedores{
 
         try {
 
-            let {id,nom_vendedor,comissao,cel_contato,ativo} = req.body;
+            let { id, nom_vendedor, comissao, cel_contato, ativo } = req.body;
             const entidade_negocio = obterEntidadeNegocio(req);
-            
+
             void await db.Connect();
 
             void await db.Begin();
@@ -1626,7 +1626,7 @@ export class ControllerVendedores{
             void await db.Commit();
 
         } catch (error) {
-            
+
             void await db.RollBack();
 
             resdata.err = 500;
@@ -1643,7 +1643,7 @@ export class ControllerVendedores{
 
     }
 
-    static async Excluir(req,res) {
+    static async Excluir(req, res) {
 
         const db = new Database('dbcred');
 
@@ -1671,9 +1671,9 @@ export class ControllerVendedores{
             void await vendedores.Excluir();
 
             void await db.Commit();
-            
+
         } catch (error) {
-             
+
             void await db.RollBack();
 
             const handled = tratarErroExclusaoComDependencias(
@@ -1696,9 +1696,9 @@ export class ControllerVendedores{
     }
 }
 
-export class ControllerCobradores{
+export class ControllerCobradores {
 
-    static async Listar(req,res) {
+    static async Listar(req, res) {
 
         const db = new Database('dbcred');
 
@@ -1713,10 +1713,10 @@ export class ControllerCobradores{
         }
 
         try {
-            
-            const pesq =  req.params.pesq;
+
+            const pesq = req.params.pesq;
             const entidade_negocio = obterEntidadeNegocio(req);
-            
+
             void await db.Connect();
 
             const cobradores = new Cobradores(db.connection, entidade_negocio);
@@ -1749,7 +1749,7 @@ export class ControllerCobradores{
 
     }
 
-    static async ListarAtivos(req,res) {
+    static async ListarAtivos(req, res) {
 
         const db = new Database('dbcred');
 
@@ -1764,10 +1764,10 @@ export class ControllerCobradores{
         }
 
         try {
-            
-            const pesq =  req.params.pesq;
+
+            const pesq = req.params.pesq;
             const entidade_negocio = obterEntidadeNegocio(req);
-            
+
             void await db.Connect();
 
             const cobradores = new Cobradores(db.connection, entidade_negocio);
@@ -1800,7 +1800,7 @@ export class ControllerCobradores{
 
     }
 
-    static async Editar(req,res) {
+    static async Editar(req, res) {
 
         const db = new Database('dbcred');
 
@@ -1812,13 +1812,13 @@ export class ControllerCobradores{
         }
 
         try {
-            
+
             const id = req.params.id
             const entidade_negocio = obterEntidadeNegocio(req);
 
             void await db.Connect();
 
-            const cobradores  = new Cobradores(db.connection, entidade_negocio);
+            const cobradores = new Cobradores(db.connection, entidade_negocio);
 
             resdata.data = await cobradores.FindById(id);
 
@@ -1837,7 +1837,7 @@ export class ControllerCobradores{
 
     }
 
-    static async Salvar(req,res) {
+    static async Salvar(req, res) {
 
         const db = new Database('dbcred');
 
@@ -1850,9 +1850,9 @@ export class ControllerCobradores{
 
         try {
 
-            let {id,nom_cobrador,comissao,cel_contato,ativo} = req.body;
+            let { id, nom_cobrador, comissao, cel_contato, ativo } = req.body;
             const entidade_negocio = obterEntidadeNegocio(req);
-            
+
             void await db.Connect();
 
             void await db.Begin();
@@ -1873,7 +1873,7 @@ export class ControllerCobradores{
             void await db.Commit();
 
         } catch (error) {
-            
+
             void await db.RollBack();
 
             resdata.err = 500;
@@ -1890,7 +1890,7 @@ export class ControllerCobradores{
 
     }
 
-    static async Excluir(req,res) {
+    static async Excluir(req, res) {
 
         const db = new Database('dbcred');
 
@@ -1910,7 +1910,7 @@ export class ControllerCobradores{
 
             void await db.Begin();
 
-            const cobradores = new Cobradores(db.connection,entidade_negocio);
+            const cobradores = new Cobradores(db.connection, entidade_negocio);
 
             void await cobradores.FindById(id);
 
@@ -1919,9 +1919,9 @@ export class ControllerCobradores{
             void await cobradores.Excluir();
 
             void await db.Commit();
-            
+
         } catch (error) {
-             
+
             void await db.RollBack();
 
             const handled = tratarErroExclusaoComDependencias(
@@ -1944,7 +1944,7 @@ export class ControllerCobradores{
 
 export class ControllerProdutos {
 
-    static async Listar(req,res) {
+    static async Listar(req, res) {
 
         const db = new Database('dbcred');
 
@@ -1959,10 +1959,10 @@ export class ControllerProdutos {
         }
 
         try {
-            
-            const pesq =  req.params.pesq;
+
+            const pesq = req.params.pesq;
             const entidade_negocio = obterEntidadeNegocio(req);
-            
+
             void await db.Connect();
 
             const produtos = new Produtos(db.connection, entidade_negocio);
@@ -1995,7 +1995,7 @@ export class ControllerProdutos {
 
     }
 
-    static async ListarAtivos(req,res) {
+    static async ListarAtivos(req, res) {
 
         const db = new Database('dbcred');
 
@@ -2010,10 +2010,10 @@ export class ControllerProdutos {
         }
 
         try {
-            
-            const pesq =  req.params.pesq;
+
+            const pesq = req.params.pesq;
             const entidade_negocio = obterEntidadeNegocio(req);
-            
+
             void await db.Connect();
 
             const produtos = new Produtos(db.connection, entidade_negocio);
@@ -2046,7 +2046,7 @@ export class ControllerProdutos {
 
     }
 
-    static async Editar(req,res) {
+    static async Editar(req, res) {
 
         const db = new Database('dbcred');
 
@@ -2058,7 +2058,7 @@ export class ControllerProdutos {
         }
 
         try {
-            
+
             const id = req.params.id || null
             const entidade_negocio = obterEntidadeNegocio(req);
 
@@ -2070,7 +2070,7 @@ export class ControllerProdutos {
 
             void await db.Connect();
 
-            const produtos  = new Produtos(db.connection, entidade_negocio);
+            const produtos = new Produtos(db.connection, entidade_negocio);
 
             resdata.data = await produtos.FindById(id);
 
@@ -2088,7 +2088,7 @@ export class ControllerProdutos {
 
     }
 
-    static async Salvar(req,res) {
+    static async Salvar(req, res) {
 
         const db = new Database('dbcred');
 
@@ -2101,14 +2101,14 @@ export class ControllerProdutos {
 
         try {
 
-            let {id,nom_produto,mar_produto,und_produto,prc_vista,prc_prazo,estq_max,estq_min,ativo} = req.body;
+            let { id, nom_produto, mar_produto, und_produto, prc_vista, prc_prazo, estq_max, estq_min, ativo } = req.body;
             const entidade_negocio = obterEntidadeNegocio(req);
-            
+
             void await db.Connect();
 
             void await db.Begin();
 
-            const estoque = new Estoque(db.connection,entidade_negocio);
+            const estoque = new Estoque(db.connection, entidade_negocio);
             const produtos = new Produtos(db.connection, entidade_negocio);
 
             void await produtos.FindById(id);
@@ -2135,7 +2135,7 @@ export class ControllerProdutos {
                 estoque.id_produto = produtos.id;
                 estoque.qt_disponivel = 0;
                 estoque.qt_reservada = 0;
-                
+
                 void await estoque.Save();
 
             }
@@ -2143,7 +2143,7 @@ export class ControllerProdutos {
             void await db.Commit();
 
         } catch (error) {
-            
+
             void await db.RollBack();
 
             resdata.err = 500;
@@ -2160,7 +2160,7 @@ export class ControllerProdutos {
 
     }
 
-    static async Excluir(req,res) {
+    static async Excluir(req, res) {
 
         const db = new Database('dbcred');
 
@@ -2191,9 +2191,9 @@ export class ControllerProdutos {
             resdata.data = [];
 
             void await db.Commit();
-            
+
         } catch (error) {
-             
+
             void await db.RollBack();
 
             if (Number(error?.errno || 0) === 1451) {
@@ -2219,7 +2219,7 @@ export class ControllerProdutos {
 
 export class ControllerRotas {
 
-    static async Listar(req,res) {
+    static async Listar(req, res) {
 
         const db = new Database('dbcred');
 
@@ -2234,10 +2234,10 @@ export class ControllerRotas {
         }
 
         try {
-            
-            const pesq =  req.params.pesq;
+
+            const pesq = req.params.pesq;
             const entidade_negocio = obterEntidadeNegocio(req);
-            
+
             void await db.Connect();
 
             const rotas = new Rotas(db.connection, entidade_negocio);
@@ -2271,7 +2271,7 @@ export class ControllerRotas {
 
     }
 
-    static async ListarAtivas(req,res) {
+    static async ListarAtivas(req, res) {
 
         const db = new Database('dbcred');
 
@@ -2286,10 +2286,10 @@ export class ControllerRotas {
         }
 
         try {
-            
-            const pesq =  req.params.pesq;
+
+            const pesq = req.params.pesq;
             const entidade_negocio = obterEntidadeNegocio(req);
-            
+
             void await db.Connect();
 
             const rotas = new Rotas(db.connection, entidade_negocio);
@@ -2323,7 +2323,7 @@ export class ControllerRotas {
 
     }
 
-    static async Editar(req,res) {
+    static async Editar(req, res) {
 
         const db = new Database('dbcred');
 
@@ -2335,19 +2335,19 @@ export class ControllerRotas {
         }
 
         try {
-            
+
             const id = req.params.id
             const entidade_negocio = obterEntidadeNegocio(req);
 
             void await db.Connect();
 
-            const rotas  = new Rotas(db.connection, entidade_negocio);
+            const rotas = new Rotas(db.connection, entidade_negocio);
 
             resdata.data = await rotas.FindById(id);
 
 
         } catch (error) {
-            
+
             resdata.err = 500;
             resdata.msg = error.message;
             resdata.status = 500;
@@ -2361,7 +2361,7 @@ export class ControllerRotas {
 
     }
 
-    static async Salvar(req,res) {
+    static async Salvar(req, res) {
 
         const db = new Database('dbcred');
 
@@ -2374,9 +2374,9 @@ export class ControllerRotas {
 
         try {
 
-            let {id,nom_rota,ativo} = req.body;
+            let { id, nom_rota, ativo } = req.body;
             const entidade_negocio = obterEntidadeNegocio(req);
-            
+
             void await db.Connect();
 
             void await db.Begin();
@@ -2394,7 +2394,7 @@ export class ControllerRotas {
             void await db.Commit();
 
         } catch (error) {
-            
+
             void await db.RollBack();
 
             resdata.err = 500;
@@ -2411,7 +2411,7 @@ export class ControllerRotas {
 
     }
 
-    static async Excluir(req,res) {
+    static async Excluir(req, res) {
 
         const db = new Database('dbcred');
 
@@ -2437,9 +2437,9 @@ export class ControllerRotas {
             void await rotas.Excluir();
 
             void await db.Commit();
-            
+
         } catch (error) {
-             
+
             void await db.RollBack();
 
             const handled = tratarErroExclusaoComDependencias(
@@ -2461,9 +2461,9 @@ export class ControllerRotas {
     }
 }
 
-export class ControllerTiposPagamentos{
+export class ControllerTiposPagamentos {
 
-    static async Listar(req,res) {
+    static async Listar(req, res) {
 
         const db = new Database('dbcred');
 
@@ -2477,7 +2477,7 @@ export class ControllerTiposPagamentos{
         }
 
         try {
-            
+
             const pesq = req.params.pesq;
             const entidade_negocio = obterEntidadeNegocio(req);
 
@@ -2494,7 +2494,7 @@ export class ControllerTiposPagamentos{
             }
 
             const rows = await tipos.ExecuteQuery(query, params);
-            
+
             resdata.data.tipos = rows;
 
         } catch (error) {
@@ -2512,7 +2512,7 @@ export class ControllerTiposPagamentos{
 
     }
 
-    static async ListarAtivos(req,res) {
+    static async ListarAtivos(req, res) {
 
         const db = new Database('dbcred');
 
@@ -2526,7 +2526,7 @@ export class ControllerTiposPagamentos{
         }
 
         try {
-            
+
             const pesq = req.params.pesq;
             const entidade_negocio = obterEntidadeNegocio(req);
 
@@ -2543,7 +2543,7 @@ export class ControllerTiposPagamentos{
             }
 
             const rows = await tipos.ExecuteQuery(query, params);
-            
+
             resdata.data.tipos = rows;
 
         } catch (error) {
@@ -2561,7 +2561,7 @@ export class ControllerTiposPagamentos{
 
     }
 
-    static async Editar(req,res) {
+    static async Editar(req, res) {
 
         const db = new Database('dbcred');
 
@@ -2573,13 +2573,13 @@ export class ControllerTiposPagamentos{
         }
 
         try {
-            
+
             const id = req.params.id;
             const entidade_negocio = obterEntidadeNegocio(req);
 
             void await db.Connect();
 
-            const tipos = new TiposPagamentos(db.connection,entidade_negocio);
+            const tipos = new TiposPagamentos(db.connection, entidade_negocio);
 
             resdata.data = await tipos.FindById(id);
 
@@ -2599,7 +2599,7 @@ export class ControllerTiposPagamentos{
 
     }
 
-    static async Salvar(req,res) {
+    static async Salvar(req, res) {
 
         const db = new Database('dbcred');
 
@@ -2612,7 +2612,7 @@ export class ControllerTiposPagamentos{
 
         try {
 
-            const {id,nom_tipo,ativo,dias_apos_pagamnto} = req.body;
+            const { id, nom_tipo, ativo, dias_apos_pagamnto } = req.body;
             const entidade_negocio = obterEntidadeNegocio(req);
             const diasAposPagamento = Number(dias_apos_pagamnto ?? 0);
 
@@ -2621,12 +2621,12 @@ export class ControllerTiposPagamentos{
                 error.statusCode = 400;
                 throw error;
             }
-            
+
             void await db.Connect();
 
             void await db.Begin();
 
-            const tipos = new TiposPagamentos(db.connection,entidade_negocio);
+            const tipos = new TiposPagamentos(db.connection, entidade_negocio);
 
             void await tipos.FindById(id);
 
@@ -2634,13 +2634,13 @@ export class ControllerTiposPagamentos{
             tipos.nom_tipo = nom_tipo;
             tipos.ativo = ativo;
             tipos.dias_apos_pagamnto = diasAposPagamento;
-            
+
             void await tipos.Save();
 
             void await db.Commit();
 
         } catch (error) {
-            
+
             void await db.RollBack();
 
             resdata.err = 500;
@@ -2657,7 +2657,7 @@ export class ControllerTiposPagamentos{
 
     }
 
-    static async Excluir(req,res) {
+    static async Excluir(req, res) {
 
         const db = new Database('dbcred');
 
@@ -2672,7 +2672,7 @@ export class ControllerTiposPagamentos{
 
             const id = req.params.id;
             const entidade_negocio = obterEntidadeNegocio(req);
-            
+
             void await db.Connect();
 
             void await db.Begin();
@@ -2688,7 +2688,7 @@ export class ControllerTiposPagamentos{
             void await db.Commit();
 
         } catch (error) {
-            
+
             void await db.RollBack();
 
             const handled = tratarErroExclusaoComDependencias(
@@ -2725,7 +2725,7 @@ export class ControllerFormaPagamento {
         }
 
         try {
-            
+
             void await db.Connect();
 
             const formaPagamento = new FormaPagamento(db.connection);
@@ -2737,7 +2737,7 @@ export class ControllerFormaPagamento {
             resdata.data = data;
 
         } catch (error) {
-            
+
             resdata.err = 500;
             resdata.msg = error.message;
             resdata.status = 500;
@@ -2749,10 +2749,10 @@ export class ControllerFormaPagamento {
         void await db.Close();
 
         res.status(resdata.status).json(resdata);
-        
+
     }
 
-    static async BuscarPorId(req,res) {
+    static async BuscarPorId(req, res) {
 
         const db = new Database('dbcred');
 
@@ -2766,9 +2766,9 @@ export class ControllerFormaPagamento {
         try {
 
             const id = Number(req.params.id || 0);
-            
+
             void await db.Connect();
-    
+
             if (id === undefined) {
                 const error = new Error('ID não informado');
                 error.status = 400;
@@ -2777,7 +2777,7 @@ export class ControllerFormaPagamento {
 
             const formaPagamento = new FormaPagamento(db.connection);
 
-            const data =  await formaPagamento.FindById(id)
+            const data = await formaPagamento.FindById(id)
 
             if (!formaPagamento.found) {
                 const error = new Error('Forma de pagamento não encontrada');
@@ -2788,7 +2788,7 @@ export class ControllerFormaPagamento {
             resdata.data = data;
 
         } catch (error) {
-            
+
             if (Number(error?.errno || 0) === 1451) {
                 resdata.err = 409;
                 resdata.msg = 'Forma de pagamento vinculada a outros registros. Inative em vez de excluir.';
@@ -2799,17 +2799,17 @@ export class ControllerFormaPagamento {
                 resdata.status = error.status || 500;
             }
 
-            if(resdata.err === 500) GravarLog('ControllerFormaPagamento.Buscar', error.stack);
+            if (resdata.err === 500) GravarLog('ControllerFormaPagamento.Buscar', error.stack);
 
         }
 
         void await db.Close();
 
         res.status(resdata.status).json(resdata);
-        
+
     }
 
-    static async BuscarPorCodigo(req,res) {
+    static async BuscarPorCodigo(req, res) {
 
         const db = new Database('dbcred');
 
@@ -2823,9 +2823,9 @@ export class ControllerFormaPagamento {
         try {
 
             const codigo = String(req.params.cod_forma || '').trim();
-            
+
             void await db.Connect();
-    
+
             if (!codigo) {
                 const error = new Error('Código não informado');
                 error.status = 400;
@@ -2850,7 +2850,7 @@ export class ControllerFormaPagamento {
             };
 
         } catch (error) {
-            
+
             if (Number(error?.errno || 0) === 1451) {
                 resdata.err = 409;
                 resdata.msg = 'Modalidade de pagamento vinculada a outros registros. Inative em vez de excluir.';
@@ -2861,17 +2861,17 @@ export class ControllerFormaPagamento {
                 resdata.status = error.status || 500;
             }
 
-            if(resdata.err === 500) GravarLog('ControllerFormaPagamento.BuscarPorCodigo', error.stack);
+            if (resdata.err === 500) GravarLog('ControllerFormaPagamento.BuscarPorCodigo', error.stack);
 
         }
 
         void await db.Close();
 
         res.status(resdata.status).json(resdata);
-        
+
     }
 
-    static async Salvar(req,res) {
+    static async Salvar(req, res) {
 
         const db = new Database('dbcred');
 
@@ -2892,7 +2892,7 @@ export class ControllerFormaPagamento {
             const cod_forma = req.body.cod_forma || '';
             const nom_forma = req.body.nom_forma || '';
 
-            if(id === undefined) {
+            if (id === undefined) {
                 const error = new Error('ID não informado');
                 error.status = 400;
                 throw error;
@@ -2916,26 +2916,26 @@ export class ControllerFormaPagamento {
             void await db.Commit();
 
             resdata.msg = "Forma de pagamento salva com sucesso";
-            
+
         } catch (error) {
 
             void await db.RollBack();
-            
+
             resdata.err = error.status || 500;
             resdata.msg = resdata.err === 500 ? 'Erro interno do servidor' : error.message;
             resdata.status = error.status || 500;
 
-            if(resdata.err === 500) GravarLog('ControllerFormaPagamento.Salvar', error.stack);
+            if (resdata.err === 500) GravarLog('ControllerFormaPagamento.Salvar', error.stack);
 
         }
 
         void await db.Close();
 
         res.status(resdata.status).json(resdata);
-        
+
     }
 
-    static async Excluir(req,res) {
+    static async Excluir(req, res) {
 
         const db = new Database('dbcred');
 
@@ -2954,7 +2954,7 @@ export class ControllerFormaPagamento {
 
             const cod_forma = String(req.params.cod_forma || req.body.cod_forma || '').trim();
 
-            if(!cod_forma) {
+            if (!cod_forma) {
                 const error = new Error('Código da forma de pagamento não informado');
                 error.status = 400;
                 throw error;
@@ -2975,7 +2975,7 @@ export class ControllerFormaPagamento {
             void await db.Commit();
 
             resdata.msg = "Forma de pagamento excluída com sucesso";
-            
+
         } catch (error) {
 
             void await db.RollBack();
@@ -2984,7 +2984,7 @@ export class ControllerFormaPagamento {
             resdata.msg = resdata.err === 500 ? 'Erro interno do servidor' : error.message;
             resdata.status = error.status || 500;
 
-            if(resdata.err === 500) GravarLog('ControllerFormaPagamento.Excluir', error.stack);
+            if (resdata.err === 500) GravarLog('ControllerFormaPagamento.Excluir', error.stack);
 
         }
 
@@ -2993,14 +2993,14 @@ export class ControllerFormaPagamento {
         res.status(resdata.status).json(resdata);
 
     }
-    
+
 }
 
 export class ControllerModalidadePagamento {
 
-    static async Listar(req,res) {
+    static async Listar(req, res) {
 
-        const db =  new Database('dbcred');
+        const db = new Database('dbcred');
 
         const resdata = {
             err: 0,
@@ -3020,20 +3020,20 @@ export class ControllerModalidadePagamento {
             let query = "SELECT id, cod_mod_pagamento,nom_mod_pagamento ,cod_forma_pagamento FROM tb_modalidade_pagamento";
 
             if (cod_forma !== "undefined") {
-               query += " WHERE cod_forma_pagamento = :cod_forma";
+                query += " WHERE cod_forma_pagamento = :cod_forma";
             }
 
             const rows = await modoPagamento.ExecuteQuery(query, { cod_forma });
 
             resdata.data = rows;
-            
+
         } catch (error) {
 
             resdata.err = 500;
             resdata.msg = error.message;
             resdata.status = error.status || 500;
 
-            if(resdata.err === 500) GravarLog('ControllerModalidadePagamento.Listar', error.stack);
+            if (resdata.err === 500) GravarLog('ControllerModalidadePagamento.Listar', error.stack);
         }
 
         void await db.Close();
@@ -3042,9 +3042,9 @@ export class ControllerModalidadePagamento {
 
     }
 
-    static async BuscarPorId(req,res) {
+    static async BuscarPorId(req, res) {
 
-        const db =  new Database('dbcred');
+        const db = new Database('dbcred');
 
         const resdata = {
             err: 0,
@@ -3081,14 +3081,14 @@ export class ControllerModalidadePagamento {
                 nom_mod_pagamento: modoPagamento.nom_mod_pagamento,
                 cod_forma_pagamento: modoPagamento.cod_forma_pagamento
             };
-            
+
         } catch (error) {
 
             resdata.err = error.status || 500;
             resdata.msg = resdata.err === 500 ? 'Erro interno do servidor' : error.message;
             resdata.status = error.status || 500;
 
-            if(resdata.err === 500) GravarLog('ControllerModalidadePagamento.BuscarPorId', error.stack);
+            if (resdata.err === 500) GravarLog('ControllerModalidadePagamento.BuscarPorId', error.stack);
         }
 
         void await db.Close();
@@ -3097,9 +3097,9 @@ export class ControllerModalidadePagamento {
 
     }
 
-    static async BuscarPorCodigo(req,res) {
+    static async BuscarPorCodigo(req, res) {
 
-        const db =  new Database('dbcred');
+        const db = new Database('dbcred');
 
         const resdata = {
             err: 0,
@@ -3136,14 +3136,14 @@ export class ControllerModalidadePagamento {
                 nom_mod_pagamento: modoPagamento.nom_mod_pagamento,
                 cod_forma_pagamento: modoPagamento.cod_forma_pagamento
             };
-            
+
         } catch (error) {
 
             resdata.err = error.status || 500;
             resdata.msg = resdata.err === 500 ? 'Erro interno do servidor' : error.message;
             resdata.status = error.status || 500;
 
-            if(resdata.err === 500) GravarLog('ControllerModalidadePagamento.BuscarPorCodigo', error.stack);
+            if (resdata.err === 500) GravarLog('ControllerModalidadePagamento.BuscarPorCodigo', error.stack);
         }
 
         void await db.Close();
@@ -3152,9 +3152,9 @@ export class ControllerModalidadePagamento {
 
     }
 
-    static async Salvar(req,res) {
+    static async Salvar(req, res) {
 
-        const db =  new Database('dbcred');
+        const db = new Database('dbcred');
 
         const resdata = {
             err: 0,
@@ -3205,8 +3205,8 @@ export class ControllerModalidadePagamento {
             void await db.Commit();
 
             resdata.msg = "Modalidade de pagamento salva com sucesso";
-           
-            
+
+
         } catch (error) {
 
             void await db.RollBack();
@@ -3215,7 +3215,7 @@ export class ControllerModalidadePagamento {
             resdata.msg = resdata.err === 500 ? 'Erro interno do servidor' : error.message;
             resdata.status = error.status || 500;
 
-            if(resdata.err === 500) GravarLog('ControllerModalidadePagamento.Salvar', error.stack);
+            if (resdata.err === 500) GravarLog('ControllerModalidadePagamento.Salvar', error.stack);
         }
 
         void await db.Close();
@@ -3226,7 +3226,7 @@ export class ControllerModalidadePagamento {
 
     static async Excluir(req, res) {
 
-        const db =  new Database('dbcred');
+        const db = new Database('dbcred');
 
         const resdata = {
             err: 0,
@@ -3264,8 +3264,8 @@ export class ControllerModalidadePagamento {
             void await db.Commit();
 
             resdata.msg = "Modalidade de pagamento excluída com sucesso";
-           
-            
+
+
         } catch (error) {
 
             void await db.RollBack();
@@ -3274,7 +3274,7 @@ export class ControllerModalidadePagamento {
             resdata.msg = resdata.err === 500 ? 'Erro interno do servidor' : error.message;
             resdata.status = error.status || 500;
 
-            if(resdata.err === 500) GravarLog('ControllerModalidadePagamento.Excluir', error.stack);
+            if (resdata.err === 500) GravarLog('ControllerModalidadePagamento.Excluir', error.stack);
         }
 
         void await db.Close();

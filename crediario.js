@@ -10,7 +10,7 @@ import route_staff from './routes/routes_staff.js';
 import route_relatorios from './routes/routes_relatorios.js';
 import route_backups from './routes/routes_backups.js';
 
-import {config} from 'dotenv';
+import { config } from 'dotenv';
 import helmet from 'helmet';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -33,15 +33,15 @@ app.use(helmet());
 
 app.use(
     express.urlencoded({
-      extended: true,
-      limit: '8kb',
-      parameterLimit: 100,
-      depth: 5
+        extended: true,
+        limit: '8kb',
+        parameterLimit: 100,
+        depth: 5
     })
 );
 
 
-app.use(express.json({limit:'8kb'}));
+app.use(express.json({ limit: '8kb' }));
 
 const defaultAllowedOrigins = [
     'http://localhost',
@@ -179,4 +179,4 @@ app.listen(PORT, HOST, () => {
 
 /*https.createServer(options,app).listen(443, () => {
     console.log('Servidor HTTPS rodando na porta 443');
-});*/ 
+});*/

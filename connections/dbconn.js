@@ -1,10 +1,10 @@
-import {createConnection} from 'mariadb';
+import { createConnection } from 'mariadb';
 import { config } from "dotenv";
 
-config({path: '/home/ovidio-neto/Crediario/.env',quiet: true});
+config({ path: '/home/ovidio-neto/Crediario/.env', quiet: true });
 
 export default class Database {
-    
+
     #dbname = null;
     #conn = null;
     //#script = null
@@ -24,15 +24,15 @@ export default class Database {
 
         this.#conn = await createConnection({
             host: process.env.DB_HOST,
-            user:  process.env.DB_USER,
+            user: process.env.DB_USER,
             port: process.env.DB_PORT,
             database: this.#dbname,
-            password: process.env.DB_PASSWORD, 
+            password: process.env.DB_PASSWORD,
             namedPlaceholders: true,
             decimalAsNumber: true,
             dateStrings: true,
             multipleStatements: true,
-            initSql: "SET time_zone = '-03:00'" 
+            initSql: "SET time_zone = '-03:00'"
         });
 
     };
@@ -56,7 +56,7 @@ export default class Database {
     async CreateEvents() {
 
         const scriptAtualizaAnoBase = `UPDATE tb_check_ano SET ano_corrente = YEAR(NOW()), id = 1;`
-        
+
         void await this.#conn.query(scriptAtualizaAnoBase);
 
     }
